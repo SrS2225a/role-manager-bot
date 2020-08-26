@@ -201,16 +201,6 @@ class Events(commands.Cog):
                     else:
                         await after.remove_roles(role, reason='User is no longer Streaming')
 
-        # for public flags roles
-        if not before.activity == after.activity:
-            member = after
-            for flag, value in member.public_flags:
-                if value is True:
-                    public = await cursor.fetchval("SELECT role FROM boost WHERE guild = $1 and type = $2 and date = $3", member.guild.id, 'flag', flag)
-                    if public not in [role.id for role in member.roles] and public is not None:
-                        role = member.guild.get_role(role_id=public)
-                        await member.add_roles(role, reason='User has Public_Flags')
-
         # for custom roles
         if not before.roles == after.roles:
             guild = after.guild

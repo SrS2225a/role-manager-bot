@@ -7,6 +7,7 @@ class Tasks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.boosters.start()
+        self.flags.start()
 
     @tasks.loop(hours=12.0)
     async def boosters(self):
@@ -48,6 +49,29 @@ class Tasks(commands.Cog):
             traceback.print_exc()
 
     @boosters.before_loop
+    async def before_printer(self):
+        await self.bot.wait_until_ready()
+
+    @tasks.loop(hours=18.0)
+    async def flags(self):
+        try:
+            cursor = await self.bot.db.acquire()
+            for member in self.bot.get_all_members():
+                for flag, value in member.public_flags:
+                    public = await cursor.fetchval("SELECT role FROM boost WHERE guild = $1 and type = $2 and date = $3", member.guild.id, 'flag', flag)
+                    if value is True and public not in [role.id for role in member.roles] and public is not None:
+                        role = member.guild.get_role(role_id=public)
+                        await member.add_roles(role, reason='User has Public_Flags')
+                    elif value is False and public in [role.id for role in member.roles] and public is not None:
+                        role = member.guild.get_role(role_id=public)
+                        await member.remove_roles(role, reason='User has Public_Flags')
+            print('complete')
+
+        except Exception:
+            import traceback
+            traceback.print_exc()
+
+    @flags.before_loop
     async def before_printer(self):
         await self.bot.wait_until_ready()
 
