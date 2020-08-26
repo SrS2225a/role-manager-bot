@@ -15,7 +15,7 @@ class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self._cd = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.member)
-        self.__cd = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.default)
+        self.__cd = commands.CooldownMapping.from_cooldown(1.0, 80.0, commands.BucketType.default)
 
     # set the bots custom status
     @commands.Cog.listener()
@@ -44,15 +44,15 @@ class Events(commands.Cog):
             cursor = await self.bot.db.acquire()
             # ranking cooldown ratelimiter
             if not retry_after:
-                global results, channel, level, exp, check, dark
+                global dark
                 diff1 = await cursor.fetchval("SELECT system FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'difficulty')
                 blacklist = await cursor.fetch("SELECT role FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'blacklist')
                 # checks if the guild has enabled ranking and user not in blacklist
                 for no in blacklist:
                     if no[0] == message.channel.id or no[0] in [role.id for role in message.author.roles]:
                         dark = True
-                else:
-                    dark = False
+                    else:
+                        dark = False
                 if diff1 is not None and dark is False:
                     difficulty = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'difficulty')
                     weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", message.author.guild.id, 'message')
@@ -68,8 +68,9 @@ class Events(commands.Cog):
 
                         xp_start = result1[1]
                         lvl_start = result1[2]
-                        xp_end = round(difficulty * result1[1] // 2 + difficulty * 8)
+                        xp_end = round(difficulty * result1[2] / 2 + difficulty * result1[2])
                         # checks if we have leveled up then updates the member level
+
                         if xp_end < xp_start:
                             lvl_start = lvl_start + 1
                             embed = discord.Embed(title='Congratulations!',
@@ -153,6 +154,7 @@ class Events(commands.Cog):
         cursor = await self.bot.db.acquire()
         guild = member.guild
         voice = await cursor.fetch("SELECT role, date::int8 FROM boost WHERE guild = $1 and type = $2", member.guild.id, 'voice')
+
         for channel in voice:
             role = guild.get_role(role_id=channel[0])
             # gives the set role if the member joined the corresponding vc
@@ -172,7 +174,7 @@ class Events(commands.Cog):
                 dark = True
             else:
                 dark = False
-        if diff1 is not None and dark is True:
+        if diff1 is not None and dark is False:
             if after.deaf or after.mute or after.self_mute or after.self_deaf or after.afk is True or None or after.channel is None:
                 self.bot.active.remove(member)
             else:
@@ -186,13 +188,11 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         cursor = await self.bot.db.acquire()
-        global guild, member, role
-        guildid = after.guild.id
 
         # detects if an user is streaming and gives an role accordingly
         if not before.activity == after.activity:
             guild = after.guild
-            stream = await cursor.fetchrow("SELECT live FROM settings WHERE guild = $1", guildid)
+            stream = await cursor.fetchrow("SELECT live FROM settings WHERE guild = $1", guild.id)
             role = guild.get_role(role_id=stream)
             if role is not None:
                 for activity in after.activities:
@@ -202,47 +202,42 @@ class Events(commands.Cog):
                         await after.remove_roles(role, reason='User is no longer Streaming')
 
         # for public flags roles
-        member = after
-        for flag, value in member.public_flags:
-            if value is True:
-                public = await cursor.fetchval("SELECT role FROM boost WHERE guild = $1 and type = $2 and date = $3", member.guild.id, 'flag', flag)
-                if public not in [role.id for role in member.roles] and public is not None:
-                    role = guild.get_role(role_id=public)
-                    await member.add_roles(role, reason='User has Public_Flags')
+        if not before.activity == after.activity:
+            member = after
+            for flag, value in member.public_flags:
+                if value is True:
+                    public = await cursor.fetchval("SELECT role FROM boost WHERE guild = $1 and type = $2 and date = $3", member.guild.id, 'flag', flag)
+                    if public not in [role.id for role in member.roles] and public is not None:
+                        role = member.guild.get_role(role_id=public)
+                        await member.add_roles(role, reason='User has Public_Flags')
 
         # for custom roles
         if not before.roles == after.roles:
             guild = after.guild
             memberid = after.id
-            member = after
-            roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1", guildid)
-            result = await cursor.fetchval("SELECT remove FROM settings WHERE guild = $1", guildid)
+            roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1", guild.id)
+            result = await cursor.fetchval("SELECT remove FROM settings WHERE guild = $1", guild.id)
 
             # if enabled deletes the created custom role once the set required role gets removed
             if roleauth not in [role.id for role in after.roles]:
-                role = await cursor.fetchrow("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memberid, guildid, 'custom')
+                role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memberid, guild.id, 'custom')
                 if role is not None and "customrole" == result:
-                    crole = await cursor.fetchrow(
-                        "DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4",
-                        guildid, role, memberid, 'custom')
+                    crole = await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guild.id, role, memberid, 'custom')
                     guild.get_role(role_id=role)
                     await crole.delete(reason='Required Role Was Removed From Member')
 
         # for sticky roles
-        master = await cursor.fetch("SELECT role FROM reward WHERE guild = $1 and type = $2", guildid, 'sticky')
-        for n in master:
-            n = n[0]
-            # if enabled gives back an set role if an member left with said role
-            type = await cursor.fetchrow(
-                "SELECT role FROM roles WHERE role = $1 and guild = $2 and member = $3 and type = $4",
-                n, guildid, after.id, 'sticky')
-            if n in [role.id for role in after.roles] and type is None:
-                await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)",
-                                     guildid, after.id, n, 'sticky')
-            if n not in [role.id for role in after.roles] and type is not None:
-                await cursor.execute(
-                    "DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4",
-                    guildid, n, after.id, 'sticky')
+        if not before.roles == after.roles:
+            guildid = after.guild.id
+            master = await cursor.fetch("SELECT role FROM reward WHERE guild = $1 and type = $2", guildid, 'sticky')
+            for n in master:
+                n = n[0]
+                # if enabled gives back an set role if an member left with said role
+                type = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and guild = $2 and member = $3 and type = $4", n, guildid, after.id, 'sticky')
+                if n in [role.id for role in after.roles] and type is None:
+                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, after.id, n, 'sticky')
+                if n not in [role.id for role in after.roles] and type is not None:
+                    await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guildid, n, after.id, 'sticky')
 
         await self.bot.db.release(cursor)
 
@@ -485,9 +480,7 @@ class Events(commands.Cog):
                 retry_after = self.__cd.update_rate_limit(user)
                 # rate limited for vc ranking
                 if not retry_after:
-                    print(user)
                     # ranking for vc's
-                    global check
                     difficulty = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", user.author.guild.id, 'difficulty')
                     weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", user.guild.id, 'voice')
                     check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", user.author.guild.id, 'keep')

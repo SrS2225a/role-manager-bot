@@ -409,22 +409,6 @@ class Other(commands.Cog, name='Other Commands'):
         await self.bot.db.release(cursor)
 
     @commands.command()
-    @commands.has_permissions(manage_guild=True)
-    async def rankup(self, ctx, type, level: int, *, role: discord.Role):
-        """Allows you to Set what role to give upon a user reaching a level for text or voice"""
-        cursor = await self.bot.db.acquire()
-        if type in ('message', 'voice'):
-            diff = type + " rank"
-            check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4",ctx.guild.id, diff, role.id, level)
-            if check is not None:
-                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4", ctx.guild.id, diff, role.id, level)
-                await ctx.send(f"{diff} Deleted Successfully!")
-            else:
-                await cursor.execute("INSERT INTO leveling(guild, system, role, level) VALUES($1, $2, $3, $4)", ctx.guild.id, diff, role.id, level)
-                await ctx.send(f"{diff} Set Successfully!")
-        await self.bot.db.release(cursor)
-
-    @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def say(self, ctx, channel: discord.TextChannel, *, message):
         """Sends a message to the current channel, as though it was sent by the bot"""

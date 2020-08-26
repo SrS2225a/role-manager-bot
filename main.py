@@ -45,7 +45,7 @@ with open("emojis.json", "r") as unicode:
 
 # connects to database
 async def connect():
-    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=settings['user'], password=settings['password'], database='database', command_timeout=20, max_inactive_connection_lifetime=20)
+    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=settings['user'], password=settings['password'], database='database')
 
 asyncio.get_event_loop().run_until_complete(connect())
 

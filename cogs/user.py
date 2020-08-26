@@ -124,7 +124,7 @@ class User(commands.Cog, name='User Commands'):
             await ctx.send("Top Rankings Cannot Be Above 100!")
             return
         if type == 'rankings':
-            diff1 = await cursor.fetchval("SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'levels')
+            diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'difficulty')
             if diff1 is not None:
                 result = await cursor.fetch("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC LIMIT $2", ctx.guild.id, rank)
                 table = []
@@ -161,7 +161,7 @@ class User(commands.Cog, name='User Commands'):
                 await ctx.send("Partnerships is currently disabled for this bot!")
         await self.bot.db.release(cursor)
 
-    @commands.command()
+    @commands.command(aliases=['level'])
     async def rank(self, ctx, *, user: discord.Member = None):
         """Shows your ranking status or someone else's"""
         global channel
@@ -171,6 +171,8 @@ class User(commands.Cog, name='User Commands'):
         if difficulty is not None:
             result = await cursor.fetchrow("SELECT exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2", ctx.guild.id, member.id)
             ranking = await cursor.fetch("SELECT user_id FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC", ctx.guild.id)
+            print(difficulty)
+            print(result)
 
             i = 0
             for row in ranking:
@@ -187,7 +189,7 @@ class User(commands.Cog, name='User Commands'):
 
                 await ctx.send(embed=embed)
             else:
-                xp_end = round(difficulty * result[1] // 2 + difficulty * 8)
+                xp_end = round(difficulty * result[1] / 2 + difficulty * result[1])
                 bar = tqdm(total=xp_end, ncols=24, miniters=1, ascii='□◧■', bar_format='{l_bar}{bar}')
                 bar.update(result[0])
 
@@ -212,7 +214,7 @@ class User(commands.Cog, name='User Commands'):
         """Sets a reminder with an given time"""
         cursor = await self.bot.db.acquire()
         if type == 'list':
-            reminders = await cursor.fetch("SELECT * FROM vote WHERE guild = $1", ctx.author.id)
+            reminders = await cursor.fetch("SELECT * FROM remind WHERE guild = $1", ctx.author.id)
             embed = discord.Embed(title=f"{ctx.author} Reminders")
             if reminders is None:
                 embed.description = 'You Have No Reminders!'
@@ -225,7 +227,7 @@ class User(commands.Cog, name='User Commands'):
             return
 
         elif type == 'delete':
-            await cursor.execute('DELETE FROM vote WHERE guild = $1 and message = $2', ctx.author.id, duration)
+            await cursor.execute('DELETE FROM remind WHERE guild = $1 and message = $2', ctx.author.id, duration)
             await ctx.send(f"Reminder Deleted Successfully!")
             return
 
@@ -269,13 +271,13 @@ class User(commands.Cog, name='User Commands'):
             stamp = delta.timestamp()
             rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
             remind_id = random.choices(rand, k=7)
-            await cursor.execute("INSERT INTO vote(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.author.id, ''.join(remind_id), stamp, description, user.id)
+            await cursor.execute("INSERT INTO remind(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.author.id, ''.join(remind_id), stamp, description, user.id)
             await ctx.send(f"Reminding you in {display_time(time)} about {description}")
             await asyncio.sleep(time)
-            reminders = await cursor.fetchrow("SELECT * FROM vote WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
+            reminders = await cursor.fetchrow("SELECT * FROM remind WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
             if reminders is not None:
                 await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about {description}")
-                await cursor.execute("DELETE FROM vote WHERE guild = ? and message = ?", ctx.author.id, ''.join(remind_id))
+                await cursor.execute("DELETE FROM remind WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
             await self.bot.db.release(cursor)
 
     @commands.command()
