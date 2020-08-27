@@ -58,14 +58,14 @@ class Tasks(commands.Cog):
             cursor = await self.bot.db.acquire()
             for member in self.bot.get_all_members():
                 for flag, value in member.public_flags:
-                    public = await cursor.fetchval("SELECT role FROM boost WHERE guild = $1 and type = $2 and date = $3", member.guild.id, 'flag', flag)
+                    stmt = await cursor.prepare("SELECT role FROM boost WHERE guild = $1 and type = $2 and date = $3")
+                    public = await stmt.fetchval(member.guild.id, 'flag', flag)
+                    role = member.guild.get_role(role_id=public)
                     if value is True and public not in [role.id for role in member.roles] and public is not None:
-                        role = member.guild.get_role(role_id=public)
                         await member.add_roles(role, reason='User has Public_Flags')
                     elif value is False and public in [role.id for role in member.roles] and public is not None:
-                        role = member.guild.get_role(role_id=public)
                         await member.remove_roles(role, reason='User has Public_Flags')
-            print('complete')
+            await self.bot.db.release(cursor)
 
         except Exception:
             import traceback
