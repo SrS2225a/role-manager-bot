@@ -26,7 +26,7 @@ async def __init__(self, bot):
     self.bot = bot
 
 # sets bots command prefix
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('&'))
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'))
 bot.active = []
 bot.emoji = []
 bot.version = '5.16.7'
