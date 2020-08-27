@@ -25,7 +25,7 @@ import os
 async def __init__(self, bot):
     self.bot = bot
 
-# sets bots command prefix
+# sets bots command prefix and bot variables
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'))
 bot.active = []
 bot.emoji = []
