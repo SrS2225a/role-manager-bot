@@ -39,7 +39,6 @@ class Settings(commands.Cog, name='Settings Commands'):
                 position, amount, tag, guild)
             await ctx.send("Custom Set Successfully!")
         await self.bot.db.release(cursor)
-        await self.bot.db.release(cursor)
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
@@ -70,7 +69,7 @@ class Settings(commands.Cog, name='Settings Commands'):
         else:
             await cursor.execute("DELETE FROM reward WHERE role = $1 and guild = $2 and type = $3", rolemaster, guild, 'sticky')
             await ctx.send("Sticky Role Deleted Successfully!")
-        await self.bot.db.release()
+        await self.bot.db.release(cursor)
 
     @commands.command()
     async def suggestions(self, ctx, *, channel: discord.TextChannel):
@@ -226,7 +225,6 @@ class Settings(commands.Cog, name='Settings Commands'):
         if flag in ('staff', 'partner', 'hypesquad', 'bug_hunter', 'hypesquad_bravery', 'hypesquad_brilliance', 'hypesquad_balance', 'early_supporter', 'team_user', 'system', 'bug_hunter_level_2', 'verified_bot', 'verified_bot_developer'):
             guild = ctx.guild.id
             result = await cursor.fetchval("SELECT role FROM boost WHERE role = $1 and date = $2 and guild = $3 and type = $4", role.id, flag, guild, 'flag')
-            print(result)
             if result is None:
                 await cursor.execute("INSERT INTO boost(guild, role, date, type) VALUES($1, $2, $3, $4)", guild, role.id, flag, 'flag')
                 await ctx.send("Flags Role Set Successfully!")
@@ -250,6 +248,8 @@ class Settings(commands.Cog, name='Settings Commands'):
             await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and level = $3 and difficulty = $4 and type = $5 and role = $6", ctx.guild.id, 'partners', amount, reward, channel, role)
             await ctx.send("Partner Requirement Deleted Successfully!")
         else:
+            if channel != check:
+                await cursor.execute("UPDATE leveling SET type = $1 WHERE guild = $2 and system = $3", channel, ctx.guild.id, 'partners')
             await cursor.execute(f"INSERT INTO leveling(guild, system, level, difficulty, type, role) VALUES($1, $2, $3, $4, $5, $6)", ctx.guild.id, 'partners', amount, reward, channel, role)
             await ctx.send("Partner Requirement Set Successfully!")
         await self.bot.db.release(cursor)

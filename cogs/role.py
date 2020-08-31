@@ -39,7 +39,9 @@ class Role(commands.Cog, name="Role Commands"):
                     await member.remove_roles(role)
         else:
             member = await commands.MemberConverter().convert(ctx, to)
-            if not role.id not in [role.id for role in member.roles] and type in "add":
+            print('member')
+            if role.id not in [role.id for role in member.roles] and type in "add":
+                print('add')
                 await member.add_roles(role)
             elif role.id in [role.id for role in member.roles] and type in "remove":
                 await member.remove_roles(role)

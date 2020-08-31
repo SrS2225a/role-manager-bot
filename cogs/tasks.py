@@ -64,7 +64,7 @@ class Tasks(commands.Cog):
                     if value is True and public not in [role.id for role in member.roles] and public is not None:
                         await member.add_roles(role, reason='User has Public_Flags')
                     elif value is False and public in [role.id for role in member.roles] and public is not None:
-                        await member.remove_roles(role, reason='User has Public_Flags')
+                        await member.remove_roles(role, reason='User no longer has Public_Flags')
             await self.bot.db.release(cursor)
 
         except Exception:

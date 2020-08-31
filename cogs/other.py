@@ -115,8 +115,7 @@ class Other(commands.Cog, name='Other Commands'):
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
         role = role.id
-        chan = ctx.channel
-        main = chan.id + message.id
+        main = message.id + ctx.channel.id
         emote = re.findall(r'(\d+)\s*', emoji)
         if blacklist is not None:
             roles = blacklist.id

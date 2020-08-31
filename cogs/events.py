@@ -49,57 +49,84 @@ class Events(commands.Cog):
                 blacklist = await cursor.fetch("SELECT role FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'blacklist')
                 # checks if the guild has enabled ranking and user not in blacklist
                 for no in blacklist:
-                    if no[0] == message.channel.id or no[0] in [role.id for role in message.author.roles]:
-                        dark = True
-                    else:
-                        dark = False
-                if diff1 is not None and dark is False:
-                    difficulty = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'difficulty')
-                    weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", message.author.guild.id, 'message')
-                    check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'keep')
-                    multiply = await cursor.fetch("SELECT role, difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'multiplier')
-                    result = await cursor.fetchval(f"SELECT user_id FROM levels WHERE guild_id = $1 and user_id = $2", message.author.guild.id, message.author.id)
+                    if no[0] != message.channel.id or no[0] not in [role.id for role in message.author.roles] and diff1 is not None:
+                        difficulty = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'difficulty')
+                        weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", message.author.guild.id, 'message')
+                        check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'keep')
+                        multiply = await cursor.fetch("SELECT role, difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'multiplier')
+                        result = await cursor.fetchval(f"SELECT user_id FROM levels WHERE guild_id = $1 and user_id = $2", message.author.guild.id, message.author.id)
 
-                    # checks if the member sending the message been ranked before, and if they haven't place them into the database
-                    if result is None:
-                        await cursor.execute("INSERT INTO levels(guild_id, user_id, channel_id, exp, lvl) VALUES($1,$2,$3,$4)", message.author.guild.id, message.author.id, message.channel.id, 0, 0)
-                    else:
-                        result1 = await cursor.fetchrow("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2", message.author.guild.id, message.author.id)
-
-                        xp_start = result1[1]
-                        lvl_start = result1[2]
-                        xp_end = round(difficulty * result1[2] / 2 + difficulty * result1[2])
-                        # checks if we have leveled up then updates the member level
-
-                        if xp_end < xp_start:
-                            lvl_start = lvl_start + 1
-                            embed = discord.Embed(title='Congratulations!',
-                                                  description=f'{message.author.mention} has leveled up to level {lvl_start}.',
-                                                  colour=discord.Colour.blue())
-                            embed.set_thumbnail(url=message.author.avatar_url)
-                            await message.channel.send(embed=embed)
-                            levels = await cursor.fetch("SELECT level FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'rank')
-                            await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", lvl_start, 0, message.guild.id, message.author.id)
-                            for levels in levels:
-                                if lvl_start >= levels[0] and check == 1:
-                                    lvl_roles = await cursor.fetchrow("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", message.author.guild.id, lvl_start, 'levels')
-                                    lvl_role = message.guild.get_role(lvl_roles[0])
-                                    await message.author.add_roles(lvl_role, reason='User leveled up')
-                                elif lvl_start >= levels[0] and check == 0:
-                                    lvl_roles = await cursor.fetchrow("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", message.author.guild.id, lvl_start, 'levels')
-                                    lvl_role = message.guild.get_role(lvl_roles[0])
-                                    await message.author.add_roles(lvl_role, reason='User leveled up')
-                                    roles = await cursor.fetch("SELECT role FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'rank')
-                                    for role in roles:
-                                        if role in [role.id for role in message.author.roles] and role != lvl_role.id:
-                                            roles = message.guild.get_role(role_id=int(role))
-                                            await message.author.remove_roles(roles, reason='Leveling Role Replace')
+                        # checks if the member sending the message been ranked before, and if they haven't place them into the database
+                        if result is None:
+                            await cursor.execute("INSERT INTO levels(guild_id, user_id, channel_id, exp, lvl) VALUES($1,$2,$3,$4)", message.author.guild.id, message.author.id, message.channel.id, 0, 0)
                         else:
-                            for multi in multiply:
-                                if multi[0] == message.channel.id or multi[0] in [role.id for role in message.author.roles]:
-                                    weight += multi[1] ^ multi[1]
-                            # if the above condition did not meet, just give the member exp instead
-                            await cursor.fetchrow("UPDATE levels SET exp = $1, channel_id = $2 WHERE guild_id = $3 and user_id = $4", result1[1] + random.randint(0, weight), message.channel.id, message.guild.id, message.author.id)
+                            result1 = await cursor.fetchrow("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2", message.author.guild.id, message.author.id)
+
+                            xp_start = result1[1]
+                            lvl_start = result1[2]
+                            xp_end = round(difficulty * result1[2] / 2 + difficulty * result1[2])
+                            # checks if we have leveled up then updates the member level
+
+                            if xp_end < xp_start:
+                                lvl_start = lvl_start + 1
+                                embed = discord.Embed(title='Congratulations!',
+                                                      description=f'{message.author.mention} has leveled up to level {lvl_start}.',
+                                                      colour=discord.Colour.blue())
+                                embed.set_thumbnail(url=message.author.avatar_url)
+                                await message.channel.send(embed=embed)
+                                levels = await cursor.fetch("SELECT level FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'rank')
+                                await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", lvl_start, 0, message.guild.id, message.author.id)
+                                for levels in levels:
+                                    if lvl_start >= levels[0] and check == 1:
+                                        lvl_roles = await cursor.fetchrow("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", message.author.guild.id, lvl_start, 'levels')
+                                        lvl_role = message.guild.get_role(lvl_roles[0])
+                                        await message.author.add_roles(lvl_role, reason='User leveled up')
+                                    elif lvl_start >= levels[0] and check == 0:
+                                        lvl_roles = await cursor.fetchrow("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", message.author.guild.id, lvl_start, 'levels')
+                                        lvl_role = message.guild.get_role(lvl_roles[0])
+                                        await message.author.add_roles(lvl_role, reason='User leveled up')
+                                        roles = await cursor.fetch("SELECT role FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'rank')
+                                        for role in roles:
+                                            if role in [role.id for role in message.author.roles] and role != lvl_role.id:
+                                                roles = message.guild.get_role(role_id=int(role))
+                                                await message.author.remove_roles(roles, reason='Leveling Role Replace')
+                            else:
+                                for multi in multiply:
+                                    if multi[0] == message.channel.id or multi[0] in [role.id for role in message.author.roles]:
+                                        weight += multi[1] ^ multi[1]
+                                # if the above condition did not meet, just give the member exp instead
+                                await cursor.fetchrow("UPDATE levels SET exp = $1, channel_id = $2 WHERE guild_id = $3 and user_id = $4", result1[1] + random.randint(0, weight), message.channel.id, message.guild.id, message.author.id)
+
+            # PARTNERS
+            channel = message.channel
+            partner = await cursor.fetchrow(
+                "SELECT type, role, level, difficulty FROM leveling WHERE guild = $1 and system = $2",
+                message.guild.id, 'partners')
+            result = await cursor.fetchrow("SELECT announce FROM settings WHERE announce = $1 and guild = $2",
+                                           channel.id, message.guild.id)
+            # checks if partnerships tracking been enabled
+            chan = message.guild.get_channel(result[0]) if result is not None else None
+
+            # checks if the pm has completed an partnership, then give them one point
+            role = message.guild.get_role(partner[1])
+            if message.channel.id == partner[0] and role.id in [role.id for role in message.author.roles]:
+                if re.search(r".*[https://]?discord(.*(gg))\S?\w{6}.*\n?", message.content):
+                    user = await cursor.fetchrow("SELECT number FROM partner WHERE guild = $1 and member = $2",
+                                                 message.guild.id, message.author.id)
+                    if user is None:
+                        await cursor.execute("INSERT INTO partner(guild, member, number) VALUES($1, $2, $3)",
+                                             message.guild.id, message.author.id, 1)
+                    else:
+                        # if enabled congratulates the pm if they meet the set threshold
+                        user = user[0] + 1
+                        if user == partner[2]:
+                            reward = message.guild.get_role(partner[3])
+                            if chan is not None and reward.id not in [role.id for role in message.author.roles]:
+                                await chan.send(
+                                    f"Congrats to {message.author.mention} for completing {user} partnerships for {message.guild}!")
+                            await message.author.add_roles(reward)
+                        await cursor.execute("UPDATE partner SET number = $1 WHERE guild = $2 and member = $3",
+                                             user, message.guild.id, message.author.id)
 
             # AFK
             afk = await cursor.fetch("SELECT member, message FROM afk WHERE guild = $1", message.guild.id)
@@ -116,35 +143,6 @@ class Events(commands.Cog):
                     him = message.guild.get_member(user[0])
                     await channel.send(f"{message.author.mention} {him} is currently AFK with the reason {user[1]}!")
 
-            # PARTNERS
-            requirement = await cursor.fetch(
-                "SELECT type, role, level, difficulty FROM leveling WHERE guild = $1 and system = $2",
-                message.guild.id, 'partners')
-            result = await cursor.fetchrow("SELECT announce FROM settings WHERE announce = $1 and guild = $2",
-                                           channel.id, message.guild.id)
-            # checks if partnerships tracking been enabled
-            chan = message.guild.get_channel(result[0]) if result is not None else None
-            for partner in requirement:
-                # checks if the pm has completed an partnership, then give them one point
-                role = message.guild.get_role(partner[1])
-                if message.channel.id == partner[0] and role.id in [role.id for role in message.author.roles]:
-                    if re.search(r".*[https://]?discord(.*(gg))\S?\w{6}.*\n?", message.content):
-                        user = await cursor.fetchrow("SELECT number FROM partner WHERE guild = $1 and member = $2",
-                                                     message.guild.id, message.author.id)
-                        if user is None:
-                            await cursor.execute("INSERT INTO partner(guild, member, number) VALUES($1, $2, $3)",
-                                                 message.guild.id, message.author.id, 1)
-                        else:
-                            # congratulates the pm if they meet the set threshold
-                            user = user[0] + 1
-                            if user >= partner[2]:
-                                reward = message.guild.get_role(partner[3])
-                                if chan is not None and reward.id not in [role.id for role in message.author.roles]:
-                                    await chan.send(
-                                        f"Congrats to {message.author.mention} for completing {user} partnerships for {message.guild}!")
-                                await message.author.add_roles(reward)
-                            await cursor.execute("UPDATE partner SET number = $1 WHERE guild = $2 and member = $3",
-                                                 user, message.guild.id, message.author.id)
             await self.bot.db.release(cursor)
 
     @commands.Cog.listener()
@@ -170,19 +168,16 @@ class Events(commands.Cog):
         blacklist = await cursor.fetch("SELECT role FROM leveling WHERE guild = $1 and system = $2", member.guild.id, 'blacklist')
         # checks if the guild has enabled ranking and user not in blacklist
         for no in blacklist:
-            if no[0] == member.channel.id or no[0] in [role.id for role in member.author.roles]:
-                dark = True
-            else:
-                dark = False
-        if diff1 is not None and dark is False:
-            if after.deaf or after.mute or after.self_mute or after.self_deaf or after.afk is True or None or after.channel is None:
-                self.bot.active.remove(member)
-            else:
-                self.bot.active.append(member)
-            if self.bot.active and len(self.bot.active) == 1:
-                self.vc.start()
-            elif not self.bot.active:
-                self.vc.cancel()
+            if no[0] != member.channel.id or no[0] not in [role.id for role in member.author.roles] and diff1 is not None:
+                if after.deaf or after.mute or after.self_mute or after.self_deaf or after.afk is True or None or after.channel is None:
+                    self.bot.active.remove(member)
+                else:
+                    self.bot.active.append(member)
+                if self.bot.active and len(self.bot.active) == 1:
+                    self.vc.start()
+                elif not self.bot.active:
+                    self.vc.cancel()
+                    
         await self.bot.db.release(cursor)
 
     @commands.Cog.listener()
@@ -209,11 +204,11 @@ class Events(commands.Cog):
             result = await cursor.fetchval("SELECT remove FROM settings WHERE guild = $1", guild.id)
 
             # if enabled deletes the created custom role once the set required role gets removed
-            if roleauth not in [role.id for role in after.roles]:
+            if roleauth not in [role.id for role in after.roles] and 'customrole' == result:
                 role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memberid, guild.id, 'custom')
-                if role is not None and "customrole" == result:
-                    crole = await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guild.id, role, memberid, 'custom')
-                    guild.get_role(role_id=role)
+                if role is not None:
+                    await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guild.id, role, memberid, 'custom')
+                    crole = guild.get_role(role_id=role)
                     await crole.delete(reason='Required Role Was Removed From Member')
 
         # for sticky roles
@@ -282,16 +277,15 @@ class Events(commands.Cog):
         user_id = payload.user_id
         emoji = str(payload.emoji)
         main = message_id + channel_id
+        # support for custom emojis
         emote = re.findall(r'(\d+)\s*', emoji)
         if emote:
             emoji = emote[0]
-        chanmsg = await cursor.fetchval("SELECT master FROM reaction WHERE guild = $1 and type = $2 and master = $3",
-                                        guild_id, emoji, main)
+        chanmsg = await cursor.fetchval("SELECT master FROM reaction WHERE guild = $1 and type = $2 and master = $3", guild_id, emoji, main)
         # checks if we have actually reacted
         if chanmsg == main and not payload.member.bot:
-            role = await cursor.fetchrow("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3",
-                                         main, emoji, guild_id)
-            role = random.choice(role)
+            role = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", main, emoji, guild_id)
+            role = random.choice(role)[0]
             whitelist = await cursor.fetchval(
                 "SELECT blacklist FROM reaction WHERE role = $1 and master = $2 and guild = $3 and type = $4",
                 role, main, guild_id, emoji)
@@ -311,7 +305,7 @@ class Events(commands.Cog):
                 role = string
             guild = self.bot.get_guild(guild_id)
             member = await guild.fetch_member(user_id)
-            roless = guild.get_role(role_id=int(role))
+            mroles = guild.get_role(role_id=int(role))
             # if enabled check if we are in the whitelist and continue
             if whitelist not in [role.id for role in member.roles] and whitelist != 0:
                 await member.send("You do not have the required role to get this role from reaction roles!")
@@ -322,12 +316,12 @@ class Events(commands.Cog):
                 for role in roles:
                     string = role[0].replace("o", "")
                     role = string
-                    for rolec in [role.id for role in member.roles]:
-                        if str(role) == str(rolec):
+                    for role2 in [role.id for role in member.roles]:
+                        if str(role) == str(role2):
                             await member.send(
                                 "You cannot change your roles after reacting from this reaction role category!")
                             return
-                await member.add_roles(roless, reason='User reacted to reaction role')
+                await member.add_roles(mroles, reason='User reacted to reaction role')
 
             elif "r" in word and member is not None:
                 for role in roles:
@@ -336,10 +330,10 @@ class Events(commands.Cog):
                     if int(role) in [role.id for role in member.roles]:
                         roles = guild.get_role(role_id=int(role))
                         await member.remove_roles(roles, reason='User unreacted to reaction role')
-                    await member.add_roles(roless, reason='User reacted to reaction role')
+                    await member.add_roles(mroles, reason='User reacted to reaction role')
 
             elif "n" in word and member is not None:
-                await member.add_roles(roless, reason='User reacted to reaction role')
+                await member.add_roles(mroles, reason='User reacted to reaction role')
         await self.bot.db.release(cursor)
 
     @commands.Cog.listener()
@@ -356,7 +350,7 @@ class Events(commands.Cog):
         emote = re.findall(r'(\d+)\s*', emoji)
         if emote:
             emoji = emote[0]
-        chanmsg = await cursor.fetchval("SELECT master FROM reaction WHERE guild = $1 and type = $2", guild_id, emoji)
+        chanmsg = await cursor.fetchval("SELECT master FROM reaction WHERE guild = $1 and type = $2 and master = $3", guild_id, emoji, main)
         # checks if we have actually removed our reaction
         if main == chanmsg:
             role = await cursor.fetchval("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", chanmsg, emoji, guild_id)
@@ -378,21 +372,20 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        # updates users invite leaves if the joiner left the guild
         cursor = await self.bot.db.acquire()
-        now = member.joined_at.timestamp()
+        # if enabled deletes the user from leveling if they left the guild
         clear = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", member.guild.id, 'clear')
         if clear is not None:
             await cursor.execute("DELETE FROM levels WHERE guild_id = $1 and user_id = $2", member.guild.id, member.id)
-        amount = await cursor.fetchval(
-            "SELECT invite FROM invite2 WHERE guild = $1 and member = $2 and timestamp = $3",
-            member.guild.id, member.id, now)
-        check = await cursor.fetchval("SELECT amount2 FROM invite WHERE guild = $1 and invite = $2",
-                                     member.guild.id, amount)
+
+        # updates users invite leaves if the joiner left the guild
+        now = member.joined_at.timestamp()
+        amount = await cursor.fetchval("SELECT invite FROM invite2 WHERE guild = $1 and member = $2 and timestamp = $3", member.guild.id, member.id, now)
+        check = await cursor.fetchval("SELECT amount2 FROM invite WHERE guild = $1 and invite = $2", member.guild.id, amount)
         if check is None:
             check = 1
         else:
-            check = check + 1
+            check += 1
         await cursor.execute("UPDATE invite SET amount2 = $1 WHERE guild = $2 and invite = $3", check, member.guild.id, amount)
         await cursor.execute("DELETE FROM invite2 WHERE member = $1 and timestamp = $2", member.id, now)
         await self.bot.db.release(cursor)
@@ -403,16 +396,13 @@ class Events(commands.Cog):
         guildid = member.guild.id
         guild = member.guild
         auto = await cursor.fetchval("SELECT prefix FROM settings WHERE guild = $1", guildid)
-        master = await cursor.fetch("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3",
-                                    guildid, member.id, 'sticky')
-        announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
-        channel = guild.get_channel(announcement)
 
         # code for auto roles
         if auto not in [role.id for role in member.roles] and auto is not None:
             role = guild.get_role(role_id=auto)
             await member.add_roles(role, reason='Auto role')
 
+        master = await cursor.fetch("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, member.id, 'sticky')
         # code for sticky roles
         for select in master:
             if select[0] not in [role.id for role in member.roles] and select[0] is not None:
@@ -420,34 +410,29 @@ class Events(commands.Cog):
                 await member.add_roles(srole, reason='User had sticky roles when leaving')
 
         # code for invite rewards
+        announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
         check = await cursor.fetch("SELECT date::int8, role FROM boost WHERE guild = $1 and type = $2 ORDER BY date DESC", guildid, 'invite')
         invite = await guild.invites()
+        channel = guild.get_channel(announcement)
         for invites in invite:
-            amount = await cursor.fetchrow("SELECT amount FROM invite WHERE guild = $1 and member = $2 and invite = $3",
-                                           guildid, invites.inviter.id, invites.code)
+            amount = await cursor.fetchrow("SELECT amount FROM invite WHERE guild = $1 and member = $2 and invite = $3", guildid, invites.inviter.id, invites.code)
             if amount is not None and invites.uses > amount[0]:
                 now = member.joined_at.timestamp()
-                await cursor.execute("UPDATE invite SET amount = $1 WHERE guild = $2 and member = $3 and invite = $4",
-                                     invites.uses, guildid, invites.inviter.id, invites.code)
-                await cursor.execute("INSERT INTO invite2(guild, member, invite, timestamp) VALUES($1, $2, $3, $4)",
-                                     guildid, member.id, invites.code, now)
-                sum = await cursor.fetch("SELECT amount FROM invite WHERE guild = $1 and member = $2",
-                                         guildid, invites.inviter.id)
+                await cursor.execute("UPDATE invite SET amount = $1 WHERE guild = $2 and member = $3 and invite = $4", invites.uses, guildid, invites.inviter.id, invites.code)
+                await cursor.execute("INSERT INTO invite2(guild, member, invite, timestamp) VALUES($1, $2, $3, $4)", guildid, member.id, invites.code, now)
+                sum = await cursor.fetch("SELECT amount FROM invite WHERE guild = $1 and member = $2", guildid, invites.inviter.id)
                 total = 0
                 for i in sum:
                     total += i[0]
-                for day in check:
-                    role = guild.get_role(role_id=day[1])
-                    if total == day[0]:
-                        user = guild.get_member(invites.inviter.id)
-                        if channel is not None and role.id not in [role.id for role in user.roles]:
-                            await channel.send(
-                                f"Congrats to {user.mention} for inviting {invites.uses} users to {guild}!")
-                        await user.add_roles(role)
+                    for day in check:
+                        role = guild.get_role(role_id=day[1])
+                        if total == day[0]:
+                            user = guild.get_member(invites.inviter.id)
+                            if channel is not None and role.id not in [role.id for role in user.roles]:
+                                await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
+                            await user.add_roles(role)
             elif amount is None:
-                await cursor.execute(
-                    "INSERT INTO invite(guild, member, invite, amount, amount2) VALUES($1, $2, $3, $4, $5)",
-                    guildid, invites.inviter.id, invites.code, invites.uses, 0)
+                await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2) VALUES($1, $2, $3, $4, $5)", guildid, invites.inviter.id, invites.code, invites.uses, 1)
 
         # code for channel overwrites recovery
         for channel in guild.channels:

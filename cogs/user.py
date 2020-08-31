@@ -20,6 +20,7 @@ def rccustom():
         guild = ctx.guild.id
         cursor = await ctx.bot.db.acquire()
         roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1 and system = $2", guild, 'role')
+        print(roleauth)
         missing = ctx.guild.get_role(roleauth)
         await ctx.bot.db.release(cursor)
         if roleauth in [role.id for role in ctx.author.roles]:
@@ -385,7 +386,7 @@ class User(commands.Cog, name='User Commands'):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def channelinfo(self, ctx, channel: typing.Union[discord.TextChannel, discord.VoiceChannel] = None):
+    async def channelinfo(self, ctx, *, channel: typing.Union[discord.TextChannel, discord.VoiceChannel] = None):
         """Shows info about a channel"""
         channel = ctx.channel if not channel else channel
         yes = " "
@@ -483,7 +484,7 @@ class User(commands.Cog, name='User Commands'):
             await ctx.send("I cannot find that guild!")
 
     @commands.command(aliases=["whois"])
-    async def userinfo(self, ctx, member: discord.Member = None):
+    async def userinfo(self, ctx, *, member: discord.Member = None):
         """Shows info about a user"""
         member = ctx.author if not member else member
         guild = ctx.guild
