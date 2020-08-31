@@ -1,16 +1,15 @@
 # \/ ----------------Priority's----------------- \/
-# TODO: Task: Content Creator Reward System Based on how many subs/videos/viwers/etc someone has (Need OAuth For This Sadly :/)
-# TODO: Task: Use Pal Pal's/Stripe's API to create an donate reward system (may not be possible due to identifying)
 # TODO: NSFW Commands (Maybe)
 # TODO: Automatic topic changer (Maybe)
 # TODO: Staff Applications Feature (Maybe)
 # TODO: Ticket system (Maybe)
 # TODO: Custom Embed Creator
+# TODO: Task: Content Creator Reward System Based on how many subs/videos/viwers/etc someone has (Need OAuth For This Sadly :/)
+# TODO: Task: Use Pal Pal's/Stripe's API to create an donate reward system (may not be possible due to identifying)
+# TODO: Improve reminder system by using an database and loop through in case the bot goes down use https://discordpy.readthedocs.io/en/latest/ext/tasks/#discord.ext.tasks.Loop for some ways to manage loop
 # TODO: add automatic invite deletion if the partner left the guild for partnerships
 # TODO: Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday
 # \/ ----------------Supper Less Important Stuff----------------- \/
-# TODO: Improve reminder system by using an database and loop through in case the bot goes down use https://discordpy.readthedocs.io/en/latest/ext/tasks/#discord.ext.tasks.Loop for some ways to manage loop
-# TODO: Add an bot config command that shows all the current active settings for that guild
 
 import asyncio
 
@@ -27,7 +26,7 @@ async def __init__(self, bot):
     self.bot = bot
 
 # sets bots command prefix and bot variables
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('&'))
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'))
 bot.active = []
 bot.emoji = []
 bot.version = '5.16.7'
