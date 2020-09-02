@@ -27,7 +27,7 @@ class Tasks(commands.Cog):
                         if check is None:
                             await cursor.fetchrow(f"INSERT INTO owner(guild, member)VALUES($1, $2)", guild.id, boost.id)
                         role = guild.get_role(role_id=day[1])
-                        if (datetime.now()-boost.premium_since).days == int(day[0]):
+                        if (datetime.now()-boost.premium_since).days >= int(day[0]):
                             if channel is not None and role.id not in [role.id for role in boost.roles]:
                                 await channel.send(f"Congrats to {boost.mention} for boosting {guild} for {(datetime.now()-boost.premium_since).days} Days!")
                             await boost.add_roles(role)

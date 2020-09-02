@@ -50,11 +50,8 @@ class Events(commands.Cog):
                 # checks if the guild has enabled ranking and user not in blacklist
                 for no in blacklist:
                     if no[0] != message.channel.id or no[0] not in [role.id for role in message.author.roles] and diff1 is not None:
-                        difficulty = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'difficulty')
-                        weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", message.author.guild.id, 'message')
-                        check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'keep')
-                        multiply = await cursor.fetch("SELECT role, difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'multiplier')
                         result = await cursor.fetchval(f"SELECT user_id FROM levels WHERE guild_id = $1 and user_id = $2", message.author.guild.id, message.author.id)
+                        difficulty = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'difficulty')
 
                         # checks if the member sending the message been ranked before, and if they haven't place them into the database
                         if result is None:
@@ -64,33 +61,34 @@ class Events(commands.Cog):
 
                             xp_start = result1[1]
                             lvl_start = result1[2]
-                            xp_end = round(result[1] * difficulty + result[1] * difficulty)
+                            xp_end = round(result1[2] * difficulty + result1[2] * difficulty)
                             # checks if we have leveled up then updates the member level
 
                             if xp_end < xp_start:
                                 lvl_start = lvl_start + 1
-                                embed = discord.Embed(title='Congratulations!',
-                                                      description=f'{message.author.mention} has leveled up to level {lvl_start}.',
-                                                      colour=discord.Colour.blue())
+                                embed = discord.Embed(title='Congratulations!', description=f'{message.author.mention} has leveled up to level {lvl_start}', colour=discord.Colour.blue())
                                 embed.set_thumbnail(url=message.author.avatar_url)
                                 await message.channel.send(embed=embed)
-                                levels = await cursor.fetch("SELECT level FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'rank')
                                 await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", lvl_start, 0, message.guild.id, message.author.id)
-                                for levels in levels:
-                                    if lvl_start >= levels[0] and check == 1:
+                                levels = await cursor.fetch("SELECT level FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'levels')
+                                check = await cursor.fetchval("SELECT COALESCE((SELECT type FROM leveling WHERE guild = $1 and system = $2), 1)", message.author.guild.id, 'keep')
+                                for level in levels:
+                                    if lvl_start >= level[0] and check == 1:
                                         lvl_roles = await cursor.fetchrow("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", message.author.guild.id, lvl_start, 'levels')
                                         lvl_role = message.guild.get_role(lvl_roles[0])
                                         await message.author.add_roles(lvl_role, reason='User leveled up')
-                                    elif lvl_start >= levels[0] and check == 0:
+                                    elif lvl_start >= level[0] and check == 0:
                                         lvl_roles = await cursor.fetchrow("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", message.author.guild.id, lvl_start, 'levels')
                                         lvl_role = message.guild.get_role(lvl_roles[0])
                                         await message.author.add_roles(lvl_role, reason='User leveled up')
-                                        roles = await cursor.fetch("SELECT role FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'rank')
+                                        roles = await cursor.fetch("SELECT role FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'levels')
                                         for role in roles:
-                                            if role in [role.id for role in message.author.roles] and role != lvl_role.id:
-                                                roles = message.guild.get_role(role_id=int(role))
+                                            if role[0] in [role.id for role in message.author.roles] and role[0] != lvl_role.id:
+                                                roles = message.guild.get_role(role_id=role[0])
                                                 await message.author.remove_roles(roles, reason='Leveling Role Replace')
                             else:
+                                multiply = await cursor.fetch("SELECT role, difficulty FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'multiplier')
+                                weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", message.author.guild.id, 'message')
                                 for multi in multiply:
                                     if multi[0] == message.channel.id or multi[0] in [role.id for role in message.author.roles]:
                                         weight += multi[1]
@@ -115,7 +113,7 @@ class Events(commands.Cog):
                             await cursor.execute("INSERT INTO partner(guild, member, number) VALUES($1, $2, $3)", message.guild.id, message.author.id, 1)
                         else:
                             amount = amount[0] + 1
-                            if amount == partner[2]:
+                            if amount >= partner[2]:
                                 reward = message.guild.get_role(partner[3])
                                 # if enabled congratulates the pm if they meet the set threshold
                                 if chan is not None and reward.id not in [role.id for role in message.author.roles]:
@@ -370,7 +368,7 @@ class Events(commands.Cog):
         cursor = await self.bot.db.acquire()
         # if enabled deletes the user from leveling if they left the guild
         clear = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", member.guild.id, 'clear')
-        if clear is not None:
+        if clear == 1:
             await cursor.execute("DELETE FROM levels WHERE guild_id = $1 and user_id = $2", member.guild.id, member.id)
 
         # updates users invite leaves if the joiner left the guild
@@ -421,7 +419,7 @@ class Events(commands.Cog):
                     total += i[0]
                     for day in check:
                         role = guild.get_role(role_id=day[1])
-                        if total == day[0]:
+                        if total >= day[0]:
                             user = guild.get_member(invites.inviter.id)
                             if channel is not None and role.id not in [role.id for role in user.roles]:
                                 await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
@@ -452,55 +450,48 @@ class Events(commands.Cog):
                 if not retry_after:
                     # ranking for vc's
                     difficulty = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", user.author.guild.id, 'difficulty')
-                    weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", user.guild.id, 'voice')
-                    check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", user.author.guild.id, 'keep')
-                    multiply = await cursor.fetch("SELECT role, difficulty FROM leveling WHERE guild = $1 and system = $2", user.author.guild.id, 'multiplier')
                     result = await cursor.fetchval("SELECT user_id FROM levels WHERE guild_id = $1 and user_id = $2", user.guild.id, user.id)
                     if result is None:
                         await cursor.execute("INSERT INTO levels(guild_id, user_id, exp, lvl) VALUES($1,$2,$3,$4)",
                                        user.guild.id, user.id, 0, 0)
                     else:
                         result1 = await cursor.fetchrow("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2", user.guild.id, user.id)
-
                         xp_start = int(result1[1])
                         lvl_start = int(result1[2])
                         xp_end = round(difficulty * result1[1] // 2 + difficulty * 8)
                         if xp_end < xp_start:
-                            announcement = await cursor.fetchrow("SELECT channel_id FROM levels WHERE guild_id = $1 and user_id = $2",
-                                           user.guild.id, user.id)
+                            announcement = await cursor.fetchrow("SELECT channel_id FROM levels WHERE guild_id = $1 and user_id = $2", user.guild.id, user.id)
                             channel = user.guild.get_channel(announcement[0])
                             lvl_start += 1
                             if channel is not None:
-                                embed = discord.Embed(title='Congratulations!',
-                                                      description=f'{user.mention} has leveled up to level {lvl_start}.',
-                                                      colour=discord.Colour.blue())
+                                embed = discord.Embed(title='Congratulations!', description=f'{user.mention} has leveled up to level {lvl_start}', colour=discord.Colour.blue())
                                 embed.set_thumbnail(url=user.avatar_url)
                                 await channel.send(embed=embed)
-                            levels = await cursor.fetchrow("SELECT level FROM leveling WHERE guild = $1 and system = $2",
-                                           user.guild.id, 'levels')
                             await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4",
                                            lvl_start, 0, user.guild.id, user.id)
-                            for levels in levels:
-                                if lvl_start >= levels[0] and check == 1:
-                                    await cursor.execute(
-                                        "SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3",
-                                        user.guild.id, lvl_start, 'levels')
+                            levels = await cursor.fetchrow("SELECT level FROM leveling WHERE guild = $1 and system = $2", user.guild.id, 'levels')
+                            check = await cursor.fetchval("SELECT COALESCE((SELECT type FROM leveling WHERE guild = $1 and system = $2), 1)", user.guild.id, 'keep')
+                            for level in levels:
+                                if lvl_start >= level[0] and check == 1:
+                                    await cursor.execute("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", user.guild.id, lvl_start, 'levels')
                                     lvl_roles = cursor.fetchone()
                                     lvl_role = user.guild.get_role(lvl_roles)
                                     await user.add_roles(lvl_role, reason='User leveled up')
-                                elif lvl_start >= levels[0] and check == 0:
+                                elif lvl_start >= level[0] and check == 0:
                                     lvl_roles = await cursor.fetchrow("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", user.guild.id, lvl_start, 'levels')
                                     lvl_role = user.guild.get_role(lvl_roles[0])
                                     await user.add_roles(lvl_role, reason='User leveled up')
                                     roles = await cursor.fetch("SELECT role FROM leveling WHERE guild = $1 and system = $2", user.guild.id, 'levels')
                                     for role in roles:
-                                        if int(role) in [role.id for role in user.author.roles] and int(role) != lvl_role.id:
-                                            roles = user.guild.get_role(role_id=int(role))
+                                        if role[0] in [role.id for role in user.author.roles] and role[0] != lvl_role.id:
+                                            roles = user.guild.get_role(role_id=role[0])
                                             await user.remove_roles(roles)
                         else:
+                            multiply = await cursor.fetch("SELECT role, difficulty FROM leveling WHERE guild = $1 and system = $2", user.author.guild.id, 'multiplier')
+                            weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", user.guild.id, 'voice')
                             for multi in multiply:
                                 if multi[0] == user.channel.id or multi[0] in [role.id for role in user.roles]:
-                                    weight += multi[1] ^ multi[1]
+                                    weight += multi[1]
                             await cursor.execute('UPDATE levels SET exp = $1 WHERE guild_id = $2 and user_id = $3', result1[1] + random.randint(0, weight), user.guild.id, user.id)
                 await self.bot.db.release(cursor)
         except Exception:

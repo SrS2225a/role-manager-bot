@@ -242,7 +242,7 @@ class Settings(commands.Cog, name='Settings Commands'):
             await ctx.send("Partner Requirement Set Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command(description="Define 'type' as blacklist to set which role/channel cannot level, multiplier for what channel/role gains an xp bounus, or weight for how hard it is level up per voice/message/default or behavoir to change the behavoir")
+    @commands.command(description="Define 'type' as blacklist to set which role/channel cannot level, multiplier for what channel/role gains an xp bounus, or weight for how hard it is level up per voice/message/default or behavoir to change the behavoir, or ranking for what role to give upon the user reaching the level")
     @commands.has_permissions(manage_guild=True)
     async def leveling(self, ctx, type, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel, str], number: typing.Union[int, bool]=None):
         """Allows you to set ignored channels/roles, multipliers, or behavior"""
@@ -251,7 +251,7 @@ class Settings(commands.Cog, name='Settings Commands'):
             if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
                 check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3", ctx.guild.id, 'blacklist', main.id)
                 if check is not None:
-                    await cursor.execute("DELETE FROM LEVELING WHERE guild = $1 and system = $2 and role = $3",  ctx.guild.id, 'blacklist', main.id)
+                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3",  ctx.guild.id, 'blacklist', main.id)
                     await ctx.send(f"Blacklist Deleted Successfully!")
                 else:
                     await cursor.execute("INSERT INTO leveling(guild, system, role) VALUES($1, $2, $3)", ctx.guild.id, 'blacklist', main.id)
@@ -259,13 +259,13 @@ class Settings(commands.Cog, name='Settings Commands'):
             else:
                 await ctx.send("'main' must be defined as an role or channel")
         elif type == "multiplier":
-            if isinstance(main, discord.TextChannel) or isinstance(main, discord.TextChannel) or isinstance(main, discord.Role):
-                check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main, number)
+            if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
+                check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main.id, number)
                 if check is not None:
-                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main, number)
+                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main.id, number)
                     await ctx.send(f"Multiplier Deleted Successfully!")
                 else:
-                    await cursor.execute("INSERT INTO leveling(guild, system, role, dificulty) VALUES($1, $2, $3, $4)", ctx.guild.id, 'multiplier', main, number)
+                    await cursor.execute("INSERT INTO leveling(guild, system, role, difficulty) VALUES($1, $2, $3, $4)", ctx.guild.id, 'multiplier', main.id, number)
                     await ctx.send(f"Multiplier Set Successfully!")
             else:
                 ctx.send("'main' must be defined as an role or channel")
@@ -294,18 +294,17 @@ class Settings(commands.Cog, name='Settings Commands'):
         elif type == "ranking":
             cursor = await self.bot.db.acquire()
             if isinstance(main, discord.Role):
-                diff = "levels"
                 check = await cursor.fetchval(
                     "SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4",
-                    ctx.guild.id, diff, main.id, number)
+                    ctx.guild.id, 'levels', main.id, number)
                 if check is not None:
                     await cursor.execute(
                         "DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4",
-                        ctx.guild.id, diff, main.id, number)
-                    await ctx.send(f"{diff} Deleted Successfully!")
+                        ctx.guild.id, 'levels', main.id, number)
+                    await ctx.send("Levels Deleted Successfully!")
                 else:
-                    await cursor.execute("INSERT INTO leveling(guild, system, role, level) VALUES($1, $2, $3, $4)", ctx.guild.id, diff, main.id, number)
-                    await ctx.send(f"{diff} Set Successfully!")
+                    await cursor.execute("INSERT INTO leveling(guild, system, role, level) VALUES($1, $2, $3, $4)", ctx.guild.id, 'levels', main.id, number)
+                    await ctx.send("Levels Set Successfully!")
         else:
             await ctx.send("The 'type' must be defined as blacklist, weight, multiplier, or behavior")
         await self.bot.db.release(cursor)
