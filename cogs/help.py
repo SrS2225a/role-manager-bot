@@ -82,10 +82,8 @@ class Help(commands.Cog, name='Help Commands'):
         p = psutil.Process()
         up = time.strftime("%Y-%m-%d %H:%M " + "UTC", time.gmtime(p.create_time()))
         number = 0
-        for members in self.bot.get_all_members():
-            number += 1
         usage = f"CPU: {[x / psutil.cpu_count() * 100 for x in psutil.getloadavg()]} \nRAM: {str(psutil.virtual_memory()[2])}% \nNetwork: Recived {round(math.floor(psutil.net_io_counters().bytes_recv / 1073742000), 2)} GB, Sent {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB"
-        stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {uses}"
+        stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {len(self.bot.get_all_members())} \nShards: None \nCommands Ran: {uses}"
         embed = discord.Embed(title="About Dionysus", color=0x0001fe)
         embed.add_field(name='By', value='Created By Nyx#8614\nSpecial Thanks to Nik#9393 For Help With Databases')
         embed.add_field(name='Version', value=self.bot.version)

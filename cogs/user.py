@@ -190,8 +190,8 @@ class User(commands.Cog, name='User Commands'):
 
                 await ctx.send(embed=embed)
             else:
-                xp_end = round(difficulty * result[1] / 2 + difficulty * result[1])
-                bar = tqdm(total=xp_end, ncols=24, miniters=1, ascii='□◧■', bar_format='{l_bar}{bar}')
+                xp_end = round(result[1] * difficulty + result[1] * difficulty)
+                bar = tqdm(total=xp_end, ncols=20, miniters=1, ascii='□◧■', bar_format='{l_bar}{bar}')
                 bar.update(result[0])
 
                 embed = discord.Embed(
@@ -732,9 +732,9 @@ class User(commands.Cog, name='User Commands'):
         guild = ctx.guild
         guildid = ctx.guild.id
         number = await cursor.fetchval("SELECT amount FROM settings WHERE guild = $1", guildid)
-        result = await cursor.fetchrow("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'custom')
+        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'custom')
         if result is not None:
-            role = await cursor.fetchrow("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'custom')
+            role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'custom')
             crole = guild.get_role(role_id=role)
             if type not in ("add", "remove"):
                 await ctx.send("The 'type' argument must be defined as add or remove")

@@ -64,7 +64,7 @@ class Events(commands.Cog):
 
                             xp_start = result1[1]
                             lvl_start = result1[2]
-                            xp_end = round(difficulty * result1[2] / 2 + difficulty * result1[2])
+                            xp_end = round(result[1] * difficulty + result[1] * difficulty)
                             # checks if we have leveled up then updates the member level
 
                             if xp_end < xp_start:
@@ -93,40 +93,35 @@ class Events(commands.Cog):
                             else:
                                 for multi in multiply:
                                     if multi[0] == message.channel.id or multi[0] in [role.id for role in message.author.roles]:
-                                        weight += multi[1] ^ multi[1]
+                                        weight += multi[1]
                                 # if the above condition did not meet, just give the member exp instead
                                 await cursor.fetchrow("UPDATE levels SET exp = $1, channel_id = $2 WHERE guild_id = $3 and user_id = $4", result1[1] + random.randint(0, weight), message.channel.id, message.guild.id, message.author.id)
 
             # PARTNERS
             channel = message.channel
-            partner = await cursor.fetchrow(
-                "SELECT type, role, level, difficulty FROM leveling WHERE guild = $1 and system = $2",
-                message.guild.id, 'partners')
-            result = await cursor.fetchrow("SELECT announce FROM settings WHERE announce = $1 and guild = $2",
-                                           channel.id, message.guild.id)
-            # checks if partnerships tracking been enabled
-            chan = message.guild.get_channel(result[0]) if result is not None else None
+            require = await cursor.fetch("SELECT type, role, level, difficulty FROM leveling WHERE guild = $1 and system = $2", message.guild.id, 'partners')
+            result = await cursor.fetchval("SELECT announce FROM settings WHERE announce = $1 and guild = $2", channel.id, message.guild.id)
 
-            # checks if the pm has completed an partnership, then give them one point
-            role = message.guild.get_role(partner[1])
-            if message.channel.id == partner[0] and role.id in [role.id for role in message.author.roles]:
-                if re.search(r".*[https://]?discord(.*(gg))\S?\w{6}.*\n?", message.content):
-                    user = await cursor.fetchrow("SELECT number FROM partner WHERE guild = $1 and member = $2",
-                                                 message.guild.id, message.author.id)
-                    if user is None:
-                        await cursor.execute("INSERT INTO partner(guild, member, number) VALUES($1, $2, $3)",
-                                             message.guild.id, message.author.id, 1)
-                    else:
-                        # if enabled congratulates the pm if they meet the set threshold
-                        user = user[0] + 1
-                        if user == partner[2]:
-                            reward = message.guild.get_role(partner[3])
-                            if chan is not None and reward.id not in [role.id for role in message.author.roles]:
-                                await chan.send(
-                                    f"Congrats to {message.author.mention} for completing {user} partnerships for {message.guild}!")
-                            await message.author.add_roles(reward)
-                        await cursor.execute("UPDATE partner SET number = $1 WHERE guild = $2 and member = $3",
-                                             user, message.guild.id, message.author.id)
+            chan = message.guild.get_channel(result)
+
+            # checks if partnerships tracking been enabled
+            for partner in require:
+                role = message.guild.get_role(partner[1])
+                if message.channel.id == partner[0] and role.id in [role.id for role in message.author.roles]:
+                    # checks if the pm has completed an partnership, then give them one point
+                    if re.search(r".*[https://]?discord(.*(gg))\S?\w{6}.*\n?", message.content):
+                        amount = await cursor.fetchrow("SELECT number FROM partner WHERE guild = $1 and member = $2", message.guild.id, message.author.id)
+                        if amount is None:
+                            await cursor.execute("INSERT INTO partner(guild, member, number) VALUES($1, $2, $3)", message.guild.id, message.author.id, 1)
+                        else:
+                            amount = amount[0] + 1
+                            if amount == partner[2]:
+                                reward = message.guild.get_role(partner[3])
+                                # if enabled congratulates the pm if they meet the set threshold
+                                if chan is not None and reward.id not in [role.id for role in message.author.roles]:
+                                    await chan.send(f"Congrats to {message.author.mention} for completing {amount} partnerships for {message.guild}!")
+                                await message.author.add_roles(reward)
+                            await cursor.execute("UPDATE partner SET number = $1 WHERE guild = $2 and member = $3", amount, message.guild.id, message.author.id)
 
             # AFK
             afk = await cursor.fetch("SELECT member, message FROM afk WHERE guild = $1", message.guild.id)

@@ -19,24 +19,12 @@ class Settings(commands.Cog, name='Settings Commands'):
         guild = ctx.guild.id
         role = role.id
         position = position.id
-        result = await cursor.fetchval(
-            "SELECT authrole FROM settings WHERE authrole = $1 and position = $2 and amount = $3 and tag = $4 and guild = $5",
-            role, position, amount, tag, guild)
-        search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
+        result = await cursor.fetchval("SELECT role FROM custom WHERE system = $1 and guild = $2", 'role', guild)
         if result is not None:
-            await cursor.execute(
-                "UPDATE settings SET authrole = NULL, position = NULL, amount = NULL, tag = NULL WHERE guild = $1",
-                guild)
+            await cursor.execute("DELETE FROM custom WHERE role = $1 and position = $2 and amount = $3 and tag = $4 and guild = $5 and system = $6", role, position, amount, tag, guild, 'custom')
             await ctx.send("Custom Removed Successfully!")
-        elif search is None:
-            await cursor.execute(
-                "INSERT INTO settings(guild, authrole, position, amount, tag) VALUES($1, $2, $3, $4, $5)", guild, role,
-                position, tag)
-            await ctx.send("Custom Set Successfully!")
         else:
-            await cursor.execute(
-                "UPDATE settings SET authrole = $1, position = $2, amount = $3, tag = $4 WHERE guild = $5", role,
-                position, amount, tag, guild)
+            await cursor.execute("INSERT INTO custom(guild, role, position, amount, tag, system) VALUES($1, $2, $3, $4, $5, $6)", guild, role, position, amount, tag, 'role')
             await ctx.send("Custom Set Successfully!")
         await self.bot.db.release(cursor)
 
@@ -254,7 +242,7 @@ class Settings(commands.Cog, name='Settings Commands'):
             await ctx.send("Partner Requirement Set Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command(description="Define 'type' as blacklist to set which role/channel cannot level, multiplier for what channel/role gains an xp bounus, or weight for how hard it is level up per voice/message/default")
+    @commands.command(description="Define 'type' as blacklist to set which role/channel cannot level, multiplier for what channel/role gains an xp bounus, or weight for how hard it is level up per voice/message/default or behavoir to change the behavoir")
     @commands.has_permissions(manage_guild=True)
     async def leveling(self, ctx, type, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel, str], number: typing.Union[int, bool]=None):
         """Allows you to set ignored channels/roles, multipliers, or behavior"""
