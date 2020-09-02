@@ -419,7 +419,7 @@ class Events(commands.Cog):
                     total += i[0]
                     for day in check:
                         role = guild.get_role(role_id=day[1])
-                        if total >= day[0]:
+                        if total == day[0]:
                             user = guild.get_member(invites.inviter.id)
                             if channel is not None and role.id not in [role.id for role in user.roles]:
                                 await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")

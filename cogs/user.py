@@ -731,7 +731,7 @@ class User(commands.Cog, name='User Commands'):
         memID = ctx.author.id
         guild = ctx.guild
         guildid = ctx.guild.id
-        number = await cursor.fetchval("SELECT amount FROM settings WHERE guild = $1", guildid)
+        number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1", guildid)
         result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'custom')
         if result is not None:
             role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'custom')
@@ -744,7 +744,6 @@ class User(commands.Cog, name='User Commands'):
                 return
             if not member.bot and crole.id not in [role.id for role in member.roles] and type in "add":
                 if len(crole.members) > number:
-                    await ctx.send(f"You can only give this custom role to an max of {number} members")
                     await ctx.send(f"You can only give this custom role to an max of {number} members")
                     return
                 await member.add_roles(crole)
