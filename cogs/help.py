@@ -33,7 +33,7 @@ class Help(commands.Cog, name='Help Commands'):
             cog_list = ''
             cogs = ''
             for cog in self.bot.cogs:
-                if cog not in "Events" and cog not in "Jishaku" and cog not in "Tasks":
+                if cog not in "Events" and cog not in "Jishaku" and cog not in "Tasks" and cog not in "Handler":
                     commands_list = ''
                     for command in self.bot.get_cog(cog).get_commands():
                         commands_list += f'`{command.name}` '
@@ -95,7 +95,7 @@ class Help(commands.Cog, name='Help Commands'):
         embed.add_field(name="What's New", value="Improved code and leveling feature")
         embed.add_field(name='Usage', value=usage)
         embed.add_field(name='Stats', value=stats)
-        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=268484848&scope=bot)")
+        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)")
         await ctx.send(embed=embed)
 
 

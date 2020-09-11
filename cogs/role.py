@@ -18,7 +18,7 @@ class Role(commands.Cog, name="Role Commands"):
         if type not in ("add", "remove"):
             await ctx.send("The first argument must be defined as add or remove")
             return
-        loading = await ctx.send(f"{type}ing role for {to}")
+        loading = await ctx.send(f"{type} role for {to}")
         if to in "everyone":
             for member in ctx.guild.members:
                 if role.id not in [role.id for role in member.roles] and type in "add":
@@ -39,14 +39,12 @@ class Role(commands.Cog, name="Role Commands"):
                     await member.remove_roles(role)
         else:
             member = await commands.MemberConverter().convert(ctx, to)
-            print('member')
             if role.id not in [role.id for role in member.roles] and type in "add":
-                print('add')
                 await member.add_roles(role)
             elif role.id in [role.id for role in member.roles] and type in "remove":
                 await member.remove_roles(role)
             to = member.name
-        await loading.edit(content=f"Successfully {type}ed role {role.name} for {to}")
+        await loading.edit(content=f"Successfully {type} role {role.name} for {to}")
 
     @commands.command(description="Supply type with color to edit a roles color, name to edit an roles name, position to edit a role position, create to create a role or delete to delete a role")
     @commands.has_permissions(manage_roles=True)

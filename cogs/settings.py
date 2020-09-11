@@ -13,19 +13,22 @@ class Settings(commands.Cog, name='Settings Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def custom(self, ctx, type, role: discord.Role, position: discord.Role, amount: int, tag=None):
+    async def custom(self, ctx, type, role: discord.Role, position: typing.Union[discord.Role, discord.CategoryChannel], amount: int, removal: bool, *, tag=None):
         """Sets who can create an custom role upon getting the defined role"""
         cursor = await self.bot.db.acquire()
-        guild = ctx.guild.id
-        role = role.id
-        position = position.id
-        result = await cursor.fetchval("SELECT role FROM custom WHERE system = $1 and guild = $2", 'role', guild)
-        if result is not None:
-            await cursor.execute("DELETE FROM custom WHERE role = $1 and position = $2 and amount = $3 and tag = $4 and guild = $5 and system = $6", role, position, amount, tag, guild, 'custom')
-            await ctx.send("Custom Removed Successfully!")
+        if type == 'role' and isinstance(position, discord.Role) or type == 'voice' and isinstance(position, discord.CategoryChannel) or type == 'text' and isinstance(position, discord.CategoryChannel):
+            guild = ctx.guild.id
+            role = role.id
+            position = position.id
+            result = await cursor.fetchval("SELECT role FROM custom WHERE system = $1 and guild = $2", type, guild)
+            if result is not None:
+                await cursor.execute("DELETE FROM custom WHERE system = $1 and guild = $2", type, guild)
+                await ctx.send("Custom Removed Successfully!")
+            else:
+                await cursor.execute("INSERT INTO custom(guild, role, position, amount, tag, system, remove) VALUES($1, $2, $3, $4, $5, $6, $7)", guild, role, position, amount, tag, type, removal)
+                await ctx.send("Custom Set Successfully!")
         else:
-            await cursor.execute("INSERT INTO custom(guild, role, position, amount, tag, system) VALUES($1, $2, $3, $4, $5, $6)", guild, role, position, amount, tag, 'role')
-            await ctx.send("Custom Set Successfully!")
+            await ctx.send("The 'type' must be defined as role, text, or voice or 'position' is not defined correctly for the 'type'")
         await self.bot.db.release(cursor)
 
     @commands.command()
@@ -165,25 +168,6 @@ class Settings(commands.Cog, name='Settings Commands'):
         else:
             await cursor.execute("UPDATE settings SET announce = $1 WHERE guild = $2", channel.id, guild)
             await ctx.send("Announcement Channel Enabled Successfully!")
-        await self.bot.db.release(cursor)
-
-    @commands.command()
-    @commands.has_permissions(manage_guild=True)
-    async def removal(self, ctx):
-        """Sets if an custom roles, text channels, and voice should be automatically removed once the set required role gets removed from the user"""
-        cursor = await self.bot.db.acquire()
-        guild = ctx.guild.id
-        result = await cursor.fetchval("SELECT remove FROM settings WHERE remove = $1 and guild = $2", 'customrole', guild)
-        search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
-        if result is not None:
-            await cursor.execute("UPDATE settings SET remove = NULL and guild = $1", guild)
-            await ctx.send("Role Removal Disabled Successfully!")
-        elif search is None:
-            await cursor.execute("INSERT INTO settings(guild, remove) VALUES($1, $2)", guild, 'customrole')
-            await ctx.send("Role Removal Enabled Successfully!")
-        else:
-            await cursor.execute("UPDATE settings SET remove = $1 WHERE guild = $2", 'customrole', guild)
-            await ctx.send("Role Removal Enabled Successfully!")
         await self.bot.db.release(cursor)
 
     @commands.command()

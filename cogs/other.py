@@ -72,6 +72,8 @@ class Other(commands.Cog, name='Other Commands'):
             menu = [value.emoji for value in message.reactions]
             await role.edit(name=name)
             await new.edit(name=name, topic=description)
+            for owner in owners:
+                await owner.add_roles(role)
             embed = discord.Embed(title=f'{name} club',
                                   description=f"{description} \n\n**Representatives:** {mention} \n\n**Weekly Events:** {time} UTC \n\nReact With {menu[0]} To Join")
             embed.set_image(url=graphic)

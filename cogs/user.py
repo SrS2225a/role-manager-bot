@@ -13,41 +13,6 @@ from tqdm import tqdm
 
 client = discord.Client()
 
-
-# user commands
-def rccustom():
-    async def predicate(ctx):
-        guild = ctx.guild.id
-        cursor = await ctx.bot.db.acquire()
-        roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1 and system = $2", guild, 'role')
-        print(roleauth)
-        missing = ctx.guild.get_role(roleauth)
-        await ctx.bot.db.release(cursor)
-        if roleauth in [role.id for role in ctx.author.roles]:
-            return True
-        else:
-            raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(
-                'Creating custom roles are currently disabled for this bot!')
-
-    return commands.check(predicate)
-
-
-def ccustom(type):
-    async def predicate(ctx):
-        guild = ctx.guild.id
-        cursor = await ctx.bot.db.acquire()
-        roleauth = await cursor.fetchrow("SELECT role FROM custom WHERE guild = $1 and not system = $2", guild, type)
-        missing = ctx.guild.get_channel(roleauth)
-        await ctx.bot.db.release(cursor)
-        if roleauth in [role.id for role in ctx.author.roles]:
-            return True
-        else:
-            raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(
-                'Creating custom roles are currently disabled for this bot!')
-
-    return commands.check(predicate)
-
-
 class User(commands.Cog, name='User Commands'):
     def __init__(self, bot):
         self.bot = bot
@@ -172,8 +137,6 @@ class User(commands.Cog, name='User Commands'):
         if difficulty is not None:
             result = await cursor.fetchrow("SELECT exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2", ctx.guild.id, member.id)
             ranking = await cursor.fetch("SELECT user_id FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC", ctx.guild.id)
-            print(difficulty)
-            print(result)
 
             i = 0
             for row in ranking:
@@ -285,7 +248,6 @@ class User(commands.Cog, name='User Commands'):
     async def afk(self, ctx, *, reason = None):
         """Marks you as AFK"""
         cursor = await self.bot.db.acquire()
-        cursor.row_factory = lambda cursor, row: row[0]
         reason = 'AFK' if not reason else reason
         member = ctx.author
         afk = await cursor.fetchval("SELECT member FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
@@ -634,124 +596,259 @@ class User(commands.Cog, name='User Commands'):
                 await sent.add_reaction(reaction)
         self.bot.db.release(cursor)
 
-    @commands.command()
-    @rccustom()
-    async def createcustom(self, ctx, color, *, name):
+    @commands.command(description="Supply type with role/text/voice to edit that custom and argument with a hex color for roles, user limit for voice channels, or topic for text channels")
+    async def createcustom(self, ctx, type, argument, *, name):
         """Allows you to create your own custom role with an color and name"""
         cursor = await self.bot.db.acquire()
         author = ctx.message.author
         memID = ctx.message.author.id
         guild = ctx.guild
         guildid = ctx.guild.id
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'custom')
-        if result is None:
-            default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
-            custom = f"{name} ({default[1]})" if default[1] is not None else name
-            if not re.search("#([0-9a-fA-F]{6})", color):
-                await ctx.send(f"Role Color Must Be A Hex")
-                return
-            elif len(custom) > 50:
-                await ctx.send(f"Role Name Is Over 50 Characters!")
-                return
+
+        async def check(argument):
+            roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1 and system = $2", guildid, argument)
+            missing = ctx.guild.get_role(roleauth)
+            if roleauth in [role.id for role in ctx.author.roles]:
+                return True
             else:
-                role = await guild.create_role(reason='User created an custom role', name=custom, color=discord.Colour(int(color[1:], 16)))
-                pos = guild.get_role(role_id=default[0])
-                await role.edit(position=pos.position)
-                await author.add_roles(role)
-                await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, memID, role.id, 'custom')
-                await ctx.send("Custom Role created successfully!")
+                raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(f'Creating this custom role/channel is currently disabled for this bot!')
+
+        if type == 'role':
+            await check(type)
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'role')
+            if result is None:
+                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
+                custom = f"{name} ({default[1]})" if default[1] is not None else name
+                if not re.search("#([0-9a-fA-F]{6})", argument):
+                    await ctx.send(f"Argument Must Be A Hex")
+                    return
+                elif len(custom) > 50:
+                    await ctx.send(f"Role Name Is Over 50 Characters!")
+                    return
+                else:
+                    role = await guild.create_role(reason='User created an custom role', name=custom, color=discord.Colour(int(argument[1:], 16)))
+                    pos = guild.get_role(role_id=default[0])
+                    await role.edit(position=pos.position)
+                    await author.add_roles(role)
+                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, memID, role.id, 'role')
+                    await ctx.send("Custom Role created successfully!")
+            else:
+                await ctx.send(f"You already have a custom role!")
+        elif type == 'text':
+            await check(type)
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
+            if result is None:
+                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, 'text')
+                custom = f"{argument} __**({default[1]})**__" if default[1] is not None else argument
+                if len(custom) > 1024:
+                    await ctx.send("Channel Topic Is over 1024 Characters!")
+                    return
+                elif len(name) > 100:
+                    await ctx.send("Channel Name Is Over 100 Characters!")
+                else:
+                    category = guild.get_channel(default[0])
+                    permissions = {guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False), author: discord.PermissionOverwrite(read_messages=True, send_messages=True)}
+                    channel = await guild.create_text_channel(argument, topic=custom, overwrites=permissions, category=category, reason='User Created Custom Text Channel')
+                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, memID, channel.id, 'text')
+                    await ctx.send("Custom Text Channel Created Successfully!")
+            else:
+                await ctx.send("You already have a custom text channel!")
+        elif type == 'voice':
+            await check(type)
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
+            if result is None:
+                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
+                print(default)
+                custom = f"{name} ({default[1]})" if default[1] is not None else name
+                if len(name) > 100:
+                    await ctx.send("Channel Name Is Over 100 Characters!")
+                    return
+                else:
+                    category = guild.get_channel(default[0])
+                    permissions = {guild.default_role: discord.PermissionOverwrite(view_channel=False, connect=False), author: discord.PermissionOverwrite(view_channel=True, connect=True)}
+                    channel = await guild.create_voice_channel(custom, user_limit=argument, overwrites=permissions, category=category, reason='User Created Custom Voice Channel')
+                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, memID, channel.id, 'voice')
+                    await ctx.send("Custom Voice Channel Created Successfully!")
+            else:
+                await ctx.send("You already have a custom voice channel!")
         else:
-            await ctx.send(f"You already have a custom role!")
+            await ctx.send("The 'type' argument should be defined as role, text, or voice")
         await self.bot.db.release(cursor)
 
-    # @commands.command()
-    # @rcustom()
-    # async def customchannel(self, ctx, type, name, topic=None):
-    #     """Allows you to create your own custom channel with an name and optional topic"""
-    #     cursor = await self.bot.db.acquire()
-    #     if type in ('text', 'voice'):
-    #         author = ctx.message.author
-    #         memID = ctx.message.author.id
-    #         guild = ctx.guild
-    #         guildid = ctx.guild.id
-    #         result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'custom')
-    #         if result is not None:
-    #             default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, type)
-    #             channel = await guild.cre
-
-    @commands.command()
-    async def editcustom(self, ctx, color, *, name):
+    @commands.command(description="Supply type with role/text/voice to edit that custom and argument with a hex color for roles, user limit for voice channels, or topic for text channels")
+    async def editcustom(self, ctx, type, argument, *, name):
         """Allows you to edit the color and name of your custom role"""
         cursor = await self.bot.db.acquire()
         memID = ctx.message.author.id
         guild = ctx.guild
         guildid = ctx.guild.id
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'custom')
-        if result is not None:
-            role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'custom')
-            default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1", guildid)
-            custom = f"{name} ({default})" if default is not None else name
-            crole = guild.get_role(role_id=role)
-            if not re.search(r"#([0-9a-fA-F]{6})", color):
-                await ctx.send(f"Role Color Must Be A Hex")
-                return
-            elif len(custom) > 50:
-                await ctx.send(f"Role Name Is Over 50 Characters!")
-                return
+        if type == 'role':
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'role')
+            if result is not None:
+                role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'role')
+                default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
+                custom = f"{name} ({default})" if default is not None else name
+                if not re.search(r"#([0-9a-fA-F]{6})", argument):
+                    await ctx.send(f"Role Color Must Be A Hex")
+                    return
+                elif len(custom) > 50:
+                    await ctx.send(f"Role Name Is Over 50 Characters!")
+                    return
+                else:
+                    crole = guild.get_role(role_id=role)
+                    await crole.edit(reason=None, name=custom, color=discord.Colour(int(argument[1:], 16)))
+                    await ctx.send("Custom Role Edited Successfully!")
             else:
-                await crole.edit(reason=None, name=custom, color=discord.Colour(int(color[1:], 16)))
-                await ctx.send("Custom Role Edited Successfully!")
-
+                await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createrole` to create one!")
+        elif type == 'text':
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
+            if result is not None:
+                channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'text')
+                default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'text')
+                custom = f"{argument} __**({default})**__" if default is not None else argument
+                if len(argument) > 1024:
+                    await ctx.send("Channel Topic Is over 1024 Characters!")
+                    return
+                elif len(name) > 100:
+                    await ctx.send("Channel Name Is Over 100 Characters!")
+                else:
+                    cchannel = guild.get_channel(channel)
+                    await cchannel.edit(name=argument, topic=custom)
+                    await ctx.send("Custom Text Channel Edited Successfully!")
+        elif type == 'voice':
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
+            if result is not None:
+                channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'voice')
+                default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
+                custom = f"{name} ({default})" if default is not None else name
+                if len(custom) > 100:
+                    await ctx.send("Channel Name Is Over 100 Characters!")
+                    return
+                elif argument > 99:
+                    await ctx.send("The User Limit For Channel Is Over 99!")
+                else:
+                    cchannel = guild.get_channel(channel)
+                    await cchannel.edit(name=custom, user_limit=argument)
+                    await ctx.send("Custom Voice Channel Edited Successfully!")
         else:
-            await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createrole` to create one!")
+            await ctx.send("The 'type' argument should be defined as role, text, or voice")
+
         await self.bot.db.release(cursor)
 
-    @commands.command()
-    async def deletecustom(self, ctx):
+    @commands.command(description="Supply type with role/text/voice to delete that custom")
+    async def deletecustom(self, ctx, type):
         """Deletes your custom role that you have created"""
         cursor = await self.bot.db.acquire()
         memID = ctx.author.id
         guild = ctx.guild
         guildid = ctx.guild.id
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'custom')
-        if result is not None:
-            role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'custom')
-            crole = guild.get_role(role_id=role)
-            await crole.delete()
-            await cursor.execute("DELETE FROM roles WHERE guild = ? and role = $1 and member = $2 and type = $3", guildid, role, memID, 'custom')
-            await ctx.send(f"Custom Role Deleted Successfully!")
+        if type == 'role':
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'role')
+            if result is not None:
+                role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'role')
+                crole = guild.get_role(role)
+                await crole.delete()
+                await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guildid, role, memID, 'role')
+                await ctx.send(f"Custom Role Deleted Successfully!")
+            else:
+                await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createcustom` to create one!")
+        elif type == 'text':
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
+            if result is not None:
+                channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'text')
+                cchannel = guild.get_channel(channel)
+                await cchannel.delete()
+                await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guildid, channel, memID, 'text')
+                await ctx.send(f"Custom Text Channel Deleted Successfully!")
+            else:
+                await ctx.send(f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
+        elif type == 'voice':
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
+            if result is not None:
+                channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'voice')
+                cchannel = guild.get_channel(channel)
+                await cchannel.delete()
+                await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guildid, channel, memID, 'voice')
+                await ctx.send(f"Custom Text Channel Deleted Successfully!")
+            else:
+                await ctx.send(f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
         else:
-            await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createrole` to create one!")
+            await ctx.send("The 'type' argument should be defined as role, text, or voice")
         await self.bot.db.release(cursor)
 
-    @commands.command(description='Supply type with add/remove to add or remove an custom role')
-    async def givecustom(self, ctx, type, member: discord.Member):
-        """Allows you to add or remove your custom role to someone"""
+    @commands.command(description='Supply action with role/text/voice to give that custom and type with add/remove to add or remove an custom role')
+    async def givecustom(self, ctx, action, type, member: discord.Member):
+        # for channel givecustom use the checking of members and add them as overwrite if applicable
+        """Allows you to add or remove your custom role or channe to someone"""
         cursor = await self.bot.db.acquire()
         memID = ctx.author.id
         guild = ctx.guild
         guildid = ctx.guild.id
-        number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1", guildid)
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'custom')
-        if result is not None:
-            role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'custom')
-            crole = guild.get_role(role_id=role)
-            if type not in ("add", "remove"):
-                await ctx.send("The 'type' argument must be defined as add or remove")
-                return
-            if memID == member.id:
-                await ctx.send("You cannot Add or Remove custom roles you already own to yourself")
-                return
-            if not member.bot and crole.id not in [role.id for role in member.roles] and type in "add":
-                if len(crole.members) > number:
-                    await ctx.send(f"You can only give this custom role to an max of {number} members")
+        if action == 'role':
+            number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
+            result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'role')
+            if result is not None:
+                crole = guild.get_role(result)
+                if type not in ("add", "remove"):
+                    await ctx.send("The 'type' argument must be defined as add or remove")
                     return
-                await member.add_roles(crole)
-            elif not member.bot and crole.id in [role.id for role in member.roles] and type in "remove":
-                await member.remove_roles(crole)
-            await ctx.send(content=f"Successfully {type}ed custom role to {member.name}")
+                if memID == member.id:
+                    await ctx.send("You cannot Add or Remove custom roles you already own to yourself")
+                    return
+                if not member.bot and crole.id not in [role.id for role in member.roles] and type in "add":
+                    if len(crole.members) > number:
+                        await ctx.send(f"You can only give this custom role to an max of {number} members")
+                    else:
+                        await member.add_roles(crole)
+                elif not member.bot and crole.id in [role.id for role in member.roles] and type in "remove":
+                    await member.remove_roles(crole)
+                await ctx.send(content=f"Successfully {type} custom role to {member.name}")
+            else:
+                await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createcustom` to create one!")
+        elif action == 'text':
+            number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'text')
+            result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
+            if result is not None:
+                cchannel = guild.get_channel(result)
+                if type not in ("add", "remove"):
+                    await ctx.send("The 'type' argument must be defined as add or remove")
+                    return
+                if memID == member.id:
+                    await ctx.send("You cannot Add or Remove custom text channels you already own to yourself")
+                    return
+                if not member.bot and not cchannel.permissions_for(member).read_messages and type == "add":
+                    if len(cchannel.members) > number:
+                        await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
+                    else:
+                        await cchannel.set_permissions(member, read_messages=True, send_messages=True)
+                elif not member.bot and cchannel.permissions_for(member).read_messages and type in "remove":
+                    await cchannel.set_permissions(member, overwrite=None)
+                await ctx.send(content=f"Successfully {type} custom text channel access to {member.name}")
+            else:
+                await ctx.send(f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
+        elif action == 'voice':
+            number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
+            result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
+            if result is not None:
+                cchannel = guild.get_channel(result)
+                if type not in ("add", "remove"):
+                    await ctx.send("The 'type' argument must be defined as add or remove")
+                    return
+                if memID == member.id:
+                    await ctx.send("You cannot Add or Remove custom text channels you already own to yourself")
+                    return
+                if not member.bot and not cchannel.permissions_for(member).view_channel and type == "add":
+                    if len(cchannel.members) > number:
+                        await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
+                    else:
+                        await cchannel.set_permissions(member, view_channel=True, connect=True)
+                elif not member.bot and cchannel.permissions_for(member).view_channel and type in "remove":
+                    await cchannel.set_permissions(member, overwrite=None)
+                await ctx.send(content=f"Successfully {type} custom voice channel access to {member.name}")
+            else:
+                await ctx.send(f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
         else:
-            await ctx.send(f"You need to have a custom role! Use `{ctx.prefix}createrole` to create one!")
+            await ctx.send("The 'type' argument should be defined as role, text, or voice")
         await self.bot.db.release(cursor)
 
 
