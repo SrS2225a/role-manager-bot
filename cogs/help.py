@@ -86,16 +86,16 @@ class Help(commands.Cog, name='Help Commands'):
             number += 1
         usage = f"CPU: {[x / psutil.cpu_count() * 100 for x in psutil.getloadavg()]} \nRAM: {str(psutil.virtual_memory()[2])}% \nNetwork: Recived {round(math.floor(psutil.net_io_counters().bytes_recv / 1073742000), 2)} GB, Sent {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB"
         stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {uses}"
-        embed = discord.Embed(title="About Dionysus", color=0x0001fe)
-        embed.add_field(name='By', value='Created By Nyx#8614\nSpecial Thanks to Nik#9393 For Help With Databases')
+        embed = discord.Embed(title="About Dionysus", description="`Note: This public bot is part of the private bot Derivi built for the server known as New Line and affiliates`", color=0x0001fe)
+        embed.add_field(name='By', value='Created By Nyx#8614\nSpecial Thanks to Nik#9393 For Help With Databases and Sugden#0562 for the extra help with code')
         embed.add_field(name='Version', value=self.bot.version)
         embed.add_field(name='Running On', value=ver)
         embed.add_field(name='Host', value=os)
         embed.add_field(name='Uptime', value="Since " + str(up))
-        embed.add_field(name="What's New", value="Improved code and leveling feature")
+        embed.add_field(name="What's New", value="Added support for single poll types, counting channel, and applications. Plus imporved the stability of the bot")
         embed.add_field(name='Usage', value=usage)
         embed.add_field(name='Stats', value=stats)
-        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)")
+        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nSupport: [Click Here](https://discord.gg/Ax2upvf) (Part Of Derivi Development)")
         await ctx.send(embed=embed)
 
 

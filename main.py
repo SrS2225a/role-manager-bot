@@ -1,20 +1,22 @@
 # \/ ----------------Priority's----------------- \/
-# TODO: NSFW Commands (Maybe)
-# TODO: Automatic topic changer (Maybe)
 # TODO: Task: Content Creator Reward System Based on how many subs/videos/viwers/etc someone has (Need OAuth For This Sadly :/)
 # TODO: Task: Use Pal Pal's/Stripe's API to create an donate reward system (may not be possible due to identifying)
 # TODO: Create a web site for oauth with listed tasks and dashboard for configuring, plus documentation, the website will be called dionysus.nyx.io
 # TODO: Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday
+# TODO: Update system
 # TODO: Custom Embed Creator
+# TODO: Counting Channel Support
 # TODO: Ticket system
+# TODO: Voting System
 # TODO: Staff Applications Feature
-# TODO: Delete custom role automatically once the custom role owner leaves the guild (configurable) and add the ability to create custom voice channels + text
+# TODO: Blacklist users command
 # \/ ----------------Supper Less Important Stuff----------------- \/
 # TODO: Improve reminder system by using an database and loop through in case the bot goes down use https://discordpy.readthedocs.io/en/latest/ext/tasks/#discord.ext.tasks.Loop for some ways to manage loop
 
 import asyncio
 
 import asyncpg
+import discord
 
 from discord.ext import commands
 import logging
@@ -27,16 +29,25 @@ async def __init__(self, bot):
     self.bot = bot
 
 # sets bots command prefix and bot variables
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('&'))
+intents = discord.Intents.default()
+intents.members = True
+intents.presences = True
+intents.invites = False
+intents.webhooks = False
+intents.integrations = False
+intents.emojis = False
+intents.bans = False
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'), intents=intents)
+bot.owner_ids = [592434092814106662, 381694604187009025, 270848136006729728]
 bot.active = []
 bot.emoji = []
-bot.version = '5.17.7'
+bot.version = '5.19.0'
 bot.remove_command('help')
 
 
 # loads token and emojis from file
 with open("token.json", "r") as set:
-    settings = json.load(set)
+    bot.settings = json.load(set)
 
 with open("emojis.json", "r") as unicode:
     emojis = json.load(unicode)
@@ -44,11 +55,11 @@ with open("emojis.json", "r") as unicode:
         bot.emoji.append(value['emoji'])
 
 
-# connects to database
 async def connect():
-    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=settings['user'], password=settings['password'], database='database')
+    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=bot.settings['user'], password=bot.settings['password'], database='database', command_timeout=12)
 
 asyncio.get_event_loop().run_until_complete(connect())
+
 
 # log all actions happening with bot
 logger = logging.getLogger('discord')
@@ -73,6 +84,6 @@ for cogs in os.listdir('./cogs'):
     if cogs.endswith('.py'):
         bot.load_extension(f'cogs.{cogs[:-3]}')
 
-bot.token = settings['token']
+bot.token = bot.settings['token']
 
 bot.run(bot.token)  # runs bot

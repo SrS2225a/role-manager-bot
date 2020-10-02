@@ -11,7 +11,6 @@ from discord.ext import commands, menus
 from tabulate import tabulate
 from tqdm import tqdm
 
-client = discord.Client()
 
 class User(commands.Cog, name='User Commands'):
     def __init__(self, bot):
@@ -104,14 +103,14 @@ class User(commands.Cog, name='User Commands'):
                 await ctx.send("Rankings is currently disabled for this bot!")
                 return
         elif type == 'invites':
-            result = await cursor.fetch("SELECT member, SUM(amount), SUM(amount2) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC LIMIT $2", ctx.guild.id, rank)
+            result = await cursor.fetch(f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC LIMIT {rank}", ctx.guild.id)
             table = []
             for row in result:
                 user = self.bot.get_user(id=int(row[0]))
                 if user is not None:
-                    table.append([row[1], row[2], user.name + "#" + user.discriminator])
+                    table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
 
-            await ctx.send(f"``` Invites - {rank} \n\n{tabulate(table, headers=['JOINS', 'LEAVES', 'USER'], tablefmt='github')}```")
+            await ctx.send(f"``` Invites - {rank} \n\n{tabulate(table, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='github')}```")
         elif type == 'partnerships':
             diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'partners')
             if diff1 is not None:
@@ -219,10 +218,8 @@ class User(commands.Cog, name='User Commands'):
 
                 for name, count in intervals:
                     value = duration // count
-
                     if value:
                         duration -= value * count
-
                         result.append(f'{round(value)} {name}')
 
                 return ' '.join(result)
@@ -233,7 +230,7 @@ class User(commands.Cog, name='User Commands'):
                 return
             delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
             stamp = delta.timestamp()
-            rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+            rand = ['A', 'B', 'C', 'D', 'EF', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
             remind_id = random.choices(rand, k=7)
             await cursor.execute("INSERT INTO remind(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.author.id, ''.join(remind_id), stamp, description, user.id)
             await ctx.send(f"Reminding you in {display_time(time)} about {description}")
@@ -261,64 +258,20 @@ class User(commands.Cog, name='User Commands'):
             await member.edit(nick=nick)
             await cursor.execute("INSERT INTO afk(guild, member, message) VALUES($1, $2, $3)", ctx.guild.id, member.id, reason)
             await ctx.send(f"{member.mention} I marked you as AFK!")
-        await self.bot.db.release(cursor)
+        await self.bot.dbrelease(cursor)
 
     @commands.command()
     async def invites(self, ctx, *, member: discord.Member = None):
         """Shows info about how many members you invited, or someone else"""
-        global total, total2, deficit, percent
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
-        invite = await guild.invites()
         member = ctx.author if not member else member
-        full = await cursor.fetch("SELECT amount, amount2 FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
-        url = " "
-        uses = " "
-        max_uses = " "
-        channel = " "
-        created_at = " "
-        temporary = " "
-        if not invite:
-            await ctx.send("There are no invites currently active in this guild. For this command to work correctly, create an invite.")
-            return
-        for invites in invite:
-            total = 0
-            total2 = 0
-            for i in full:
-                if i[0] is None:
-                    total += invites.uses + i[0]
-                else:
-                    total += i[0]
-                if i[1] is None:
-                    total2 += 0
-                else:
-                    total2 += i[1]
-            deficit = total - total2
-            percent = round(total2 * 100 / total, 2) if total != 0 else 0
-            if invites.inviter.id == member.id:
-                if invites.max_uses == 0:
-                    max_uses += 'Unlimited' + "\n"
-                else:
-                    max_uses += str(invites.max_uses) + "\n"
-                uses += str(invites.uses) + "\n"
-                url += invites.url + "\n"
-                channel += str(invites.channel) + "\n"
-                created_at += invites.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC') + "\n"
-                temporary += str(invites.temporary) + "\n"
-        if created_at != " ":
-            embed = discord.Embed(title=f"{member} Invites", color=member.color)
-            embed.add_field(name="Invite Code", value=url)
-            embed.add_field(name="Uses", value=uses)
-            embed.add_field(name="Max Uses", value=max_uses)
-            embed.add_field(name="Invite Channel", value=channel)
-            embed.add_field(name="Created At", value=created_at)
-            embed.add_field(name="Temporary", value=temporary)
-            embed.add_field(name="All Time Invites", value=f"{total} joins with {total2} leaves and a deficit of {deficit} ({percent}%)")
-            await ctx.send(embed=embed)
-        else:
-            embed = discord.Embed(title=f"{member} Invites", color=member.color, description=f"{member} currently has no active invites!")
-            embed.add_field(name="All Time Invites", value=f"{total} joins with {total2} leaves and a deficit of {deficit} ({percent}%)")
-            await ctx.send(embed=embed)
+        full = await cursor.fetchrow("SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
+        total = full[0] + full[1] + full[2]
+        leave = full[1] + full[2]
+        percent = round(leave * 100 / full[0], 2) if full[0] != 0 else 0.0
+        embed = discord.Embed(title=f"{member} Invites", description=f"{full[0]} joins, {full[1]} leaves, {full[2]} fakes \n with a total of {total} and a deficit of {leave} ({percent}%)", color=member.color)
+        await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
     @commands.command()
@@ -326,14 +279,16 @@ class User(commands.Cog, name='User Commands'):
         """Shows info about a role"""
         has = len(role.members)
         dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
-                "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker",
-                "send_tts_messages", "view_guild_insights", "change_nickname"]
+                "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker", "change_nickname"]
         array = " "
         for perm, value in role.permissions:
             if perm not in dont and value is True:
-                array += perm + ", "
-            elif array == " ":
-                array = "None"
+                array += perm + " "
+            if perm == "administrator" and value is True:
+                array = "administrator"
+                break
+        if array == " ":
+            array = "None"
         embed = discord.Embed(title='Role Info', color=role.color)
         embed.add_field(name="Role Name", value=f"```{role}```")
         embed.add_field(name="Role ID", value=f"```{role.id}```")
@@ -456,8 +411,7 @@ class User(commands.Cog, name='User Commands'):
         booster = member.premium_since.__format__('%A %d %B %Y @ %H:%M:%S UTC') if member.premium_since is not None else 'False'
         status = str(member.status)
         dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
-                "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker",
-                "send_tts_messages", "view_guild_insights", "change_nickname"]
+                "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker", "change_nickname"]
         array = " "
         for perm, value in member.guild_permissions:
             if perm not in dont and value is True:
