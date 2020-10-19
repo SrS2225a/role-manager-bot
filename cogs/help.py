@@ -92,7 +92,7 @@ class Help(commands.Cog, name='Help Commands'):
         embed.add_field(name='Running On', value=ver)
         embed.add_field(name='Host', value=os)
         embed.add_field(name='Uptime', value="Since " + str(up))
-        embed.add_field(name="What's New", value="Added support for single poll types, counting channel, and applications. Plus imporved the stability of the bot")
+        embed.add_field(name="What's New", value="Fixed multiple issues for applications, and added delay support to remove counting channel role")
         embed.add_field(name='Usage', value=usage)
         embed.add_field(name='Stats', value=stats)
         embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nSupport: [Click Here](https://discord.gg/Ax2upvf) (Part Of Derivi Development)")

@@ -22,7 +22,6 @@ class User(commands.Cog, name='User Commands'):
     async def ping(self, ctx):
         """Responds with the bots ping between the client and discord"""
         await ctx.send(f"The ping is: {round(self.bot.latency * 1000)} ms!")
-        return
 
     @commands.command(description="You can supply arg with 'None' to list members without a specified role")
     async def listmembers(self, ctx, role, arg=None):
@@ -85,45 +84,44 @@ class User(commands.Cog, name='User Commands'):
         cursor = await self.bot.db.acquire()
         if rank is None:
             rank = 10
-        elif rank > 100:
+        if rank < 100:
+            if type == 'rankings':
+                diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'difficulty')
+                if diff1 is not None:
+                    result = await cursor.fetch("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC LIMIT $2", ctx.guild.id, rank)
+                    table = []
+                    for row in result:
+                        user = self.bot.get_user(id=int(row[0]))
+                        if user is not None:
+                            table.append([row[1], row[2], user.name + "#" + user.discriminator])
+
+                    await ctx.send(f"``` Ranking - {rank} \n\n{tabulate(table, headers=['XP', 'LV', 'USER'], tablefmt='github')}```")
+                elif diff1 is None:
+                    await ctx.send("Rankings is currently disabled for this bot!")
+            elif type == 'invites':
+                result = await cursor.fetch(f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC LIMIT {rank}", ctx.guild.id)
+                table = []
+                for row in result:
+                    user = self.bot.get_user(id=int(row[0]))
+                    if user is not None:
+                        table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
+
+                await ctx.send(f"``` Invites - {rank} \n\n{tabulate(table, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='github')}```")
+            elif type == 'partnerships':
+                diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'partners')
+                if diff1 is not None:
+                    result = await cursor.fetch("SELECT member, number FROM partner WHERE guild = $1 ORDER BY number DESC LIMIT $2", ctx.guild.id, rank)
+                    table = []
+                    for row in result:
+                        user = self.bot.get_user(id=int(row[0]))
+                        if user is not None:
+                            table.append([row[1], user.name + "#" + user.discriminator])
+
+                    await ctx.send(f"``` Partnerships - {rank} \n\n{tabulate(table, headers=['PARTNERS', 'USER'], tablefmt='github')}```")
+                elif diff1 is None:
+                    await ctx.send("Partnerships is currently disabled for this bot!")
+        else:
             await ctx.send("Top Rankings Cannot Be Above 100!")
-            return
-        if type == 'rankings':
-            diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'difficulty')
-            if diff1 is not None:
-                result = await cursor.fetch("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC LIMIT $2", ctx.guild.id, rank)
-                table = []
-                for row in result:
-                    user = self.bot.get_user(id=int(row[0]))
-                    if user is not None:
-                        table.append([row[1], row[2], user.name + "#" + user.discriminator])
-
-                await ctx.send(f"``` Ranking - {rank} \n\n{tabulate(table, headers=['XP', 'LV', 'USER'], tablefmt='github')}```")
-            elif diff1 is None:
-                await ctx.send("Rankings is currently disabled for this bot!")
-                return
-        elif type == 'invites':
-            result = await cursor.fetch(f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC LIMIT {rank}", ctx.guild.id)
-            table = []
-            for row in result:
-                user = self.bot.get_user(id=int(row[0]))
-                if user is not None:
-                    table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
-
-            await ctx.send(f"``` Invites - {rank} \n\n{tabulate(table, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='github')}```")
-        elif type == 'partnerships':
-            diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'partners')
-            if diff1 is not None:
-                result = await cursor.fetch("SELECT member, number FROM partner WHERE guild = $1 ORDER BY number DESC LIMIT $2", ctx.guild.id, rank)
-                table = []
-                for row in result:
-                    user = self.bot.get_user(id=int(row[0]))
-                    if user is not None:
-                        table.append([row[1], user.name + "#" + user.discriminator])
-
-                await ctx.send(f"``` Partnerships - {rank} \n\n{tabulate(table, headers=['PARTNERS', 'USER'], tablefmt='github')}```")
-            elif diff1 is None:
-                await ctx.send("Partnerships is currently disabled for this bot!")
         await self.bot.db.release(cursor)
 
     @commands.command(aliases=['level'])
@@ -137,27 +135,26 @@ class User(commands.Cog, name='User Commands'):
             result = await cursor.fetchrow("SELECT exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2", ctx.guild.id, member.id)
             ranking = await cursor.fetch("SELECT user_id FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC", ctx.guild.id)
 
-            i = 0
-            for row in ranking:
-                i += 1
-                if row[0] == member.id:
-                    break
-
             if result is None:
                 embed = discord.Embed(
                     title='Level Ranking - Undefined Rank',
-                    description='The user you have mentioned is not yet ranked.',
+                    description='The user is not yet ranked.',
                     colour=discord.Colour.red()
                 )
 
                 await ctx.send(embed=embed)
             else:
+                i = 0
+                for row in ranking:
+                    i += 1
+                    if row[0] == member.id:
+                        break
                 xp_end = round(result[1] * difficulty + result[1] * difficulty)
                 bar = tqdm(total=xp_end, ncols=20, miniters=1, ascii='□◧■', bar_format='{l_bar}{bar}')
                 bar.update(result[0])
 
                 embed = discord.Embed(
-                    title=f'Level Ranking - {member.name}',
+                    title=f'Level Ranking - {member}',
                     colour=discord.Colour.blue()
                 )
 
@@ -187,58 +184,52 @@ class User(commands.Cog, name='User Commands'):
                     date = datetime.datetime.utcfromtimestamp(remind[2]).strftime('%A %d %B %Y @ %H:%M:%S UTC')
                     embed.add_field(name=f"Reminder [`{remind[1]}`]", value=f"```Time: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
             await ctx.send(embed=embed)
-            return
 
         elif type == 'delete':
             await cursor.execute('DELETE FROM remind WHERE guild = $1 and message = $2', ctx.author.id, duration)
             await ctx.send(f"Reminder Deleted Successfully!")
-            return
-
         else:
-            if type == 'me':
-                user = ctx.author
-            elif type == 'here':
-                user = ctx.channel
+            if type in ('me', 'here'):
+                user = ctx.author if type == 'me' else ctx.channel
+
+                units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
+
+                def convert_to_seconds(s):
+                    return int(datetime.timedelta(**{
+                        units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
+                        for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
+                    }).total_seconds())
+
+                def display_time(duration):
+                    intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
+
+                    result = []
+
+                    for name, count in intervals:
+                        value = duration // count
+                        if value:
+                            duration -= value * count
+                            result.append(f'{round(value)} {name}')
+
+                    return ' '.join(result)
+
+                time = convert_to_seconds(duration)
+                if time is None:
+                    await ctx.send("I do not recognise that time!")
+                else:
+                    delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
+                    stamp = delta.timestamp()
+                    rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+                    remind_id = random.choices(rand, k=7)
+                    await cursor.execute("INSERT INTO remind(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.author.id, ''.join(remind_id), stamp, description, user.id)
+                    await ctx.send(f"Reminding you in {display_time(time)} about {description}")
+                    await asyncio.sleep(time)
+                    reminders = await cursor.fetchrow("SELECT * FROM remind WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
+                    if reminders is not None:
+                        await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about {description}")
+                        await cursor.execute("DELETE FROM remind WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
             else:
                 await ctx.send('Argument 1 should be me or here')
-                return
-
-            units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
-
-            def convert_to_seconds(s):
-                return int(datetime.timedelta(**{
-                    units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
-                    for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
-                }).total_seconds())
-
-            def display_time(duration):
-                intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
-
-                result = []
-
-                for name, count in intervals:
-                    value = duration // count
-                    if value:
-                        duration -= value * count
-                        result.append(f'{round(value)} {name}')
-
-                return ' '.join(result)
-
-            time = convert_to_seconds(duration)
-            if time is None:
-                await ctx.send("I do not recognise that time!")
-                return
-            delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
-            stamp = delta.timestamp()
-            rand = ['A', 'B', 'C', 'D', 'EF', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-            remind_id = random.choices(rand, k=7)
-            await cursor.execute("INSERT INTO remind(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.author.id, ''.join(remind_id), stamp, description, user.id)
-            await ctx.send(f"Reminding you in {display_time(time)} about {description}")
-            await asyncio.sleep(time)
-            reminders = await cursor.fetchrow("SELECT * FROM remind WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
-            if reminders is not None:
-                await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about {description}")
-                await cursor.execute("DELETE FROM remind WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
             await self.bot.db.release(cursor)
 
     @commands.command()
@@ -258,7 +249,7 @@ class User(commands.Cog, name='User Commands'):
             await member.edit(nick=nick)
             await cursor.execute("INSERT INTO afk(guild, member, message) VALUES($1, $2, $3)", ctx.guild.id, member.id, reason)
             await ctx.send(f"{member.mention} I marked you as AFK!")
-        await self.bot.dbrelease(cursor)
+        await self.bot.db.release(cursor)
 
     @commands.command()
     async def invites(self, ctx, *, member: discord.Member = None):
@@ -267,6 +258,7 @@ class User(commands.Cog, name='User Commands'):
         guild = ctx.guild
         member = ctx.author if not member else member
         full = await cursor.fetchrow("SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
+        full = full if full[0] is not None else [0, 0, 0]
         total = full[0] + full[1] + full[2]
         leave = full[1] + full[2]
         percent = round(leave * 100 / full[0], 2) if full[0] != 0 else 0.0
@@ -575,10 +567,8 @@ class User(commands.Cog, name='User Commands'):
                 custom = f"{name} ({default[1]})" if default[1] is not None else name
                 if not re.search("#([0-9a-fA-F]{6})", argument):
                     await ctx.send(f"Argument Must Be A Hex")
-                    return
                 elif len(custom) > 50:
                     await ctx.send(f"Role Name Is Over 50 Characters!")
-                    return
                 else:
                     role = await guild.create_role(reason='User created an custom role', name=custom, color=discord.Colour(int(argument[1:], 16)))
                     pos = guild.get_role(role_id=default[0])
@@ -596,7 +586,6 @@ class User(commands.Cog, name='User Commands'):
                 custom = f"{argument} __**({default[1]})**__" if default[1] is not None else argument
                 if len(custom) > 1024:
                     await ctx.send("Channel Topic Is over 1024 Characters!")
-                    return
                 elif len(name) > 100:
                     await ctx.send("Channel Name Is Over 100 Characters!")
                 else:
@@ -612,14 +601,14 @@ class User(commands.Cog, name='User Commands'):
             result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
             if result is None:
                 default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
-                print(default)
                 custom = f"{name} ({default[1]})" if default[1] is not None else name
                 if len(name) > 100:
                     await ctx.send("Channel Name Is Over 100 Characters!")
-                    return
+                elif int(argument) > 99:
+                    await ctx.send("User Limit Cannot Be Over 99")
                 else:
                     category = guild.get_channel(default[0])
-                    permissions = {guild.default_role: discord.PermissionOverwrite(view_channel=False, connect=False), author: discord.PermissionOverwrite(view_channel=True, connect=True)}
+                    permissions = {guild.default_role: discord.PermissionOverwrite(view_channel=False, connect=False), author: discord.PermissionOverwrite(view_channel=True, connect=True, move_members=True)}
                     channel = await guild.create_voice_channel(custom, user_limit=argument, overwrites=permissions, category=category, reason='User Created Custom Voice Channel')
                     await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, memID, channel.id, 'voice')
                     await ctx.send("Custom Voice Channel Created Successfully!")
@@ -644,16 +633,14 @@ class User(commands.Cog, name='User Commands'):
                 custom = f"{name} ({default})" if default is not None else name
                 if not re.search(r"#([0-9a-fA-F]{6})", argument):
                     await ctx.send(f"Role Color Must Be A Hex")
-                    return
                 elif len(custom) > 50:
                     await ctx.send(f"Role Name Is Over 50 Characters!")
-                    return
                 else:
                     crole = guild.get_role(role_id=role)
                     await crole.edit(reason=None, name=custom, color=discord.Colour(int(argument[1:], 16)))
                     await ctx.send("Custom Role Edited Successfully!")
             else:
-                await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createrole` to create one!")
+                await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createcustom` to create one!")
         elif type == 'text':
             result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
             if result is not None:
@@ -662,13 +649,14 @@ class User(commands.Cog, name='User Commands'):
                 custom = f"{argument} __**({default})**__" if default is not None else argument
                 if len(argument) > 1024:
                     await ctx.send("Channel Topic Is over 1024 Characters!")
-                    return
                 elif len(name) > 100:
                     await ctx.send("Channel Name Is Over 100 Characters!")
                 else:
                     cchannel = guild.get_channel(channel)
                     await cchannel.edit(name=argument, topic=custom)
                     await ctx.send("Custom Text Channel Edited Successfully!")
+            else:
+                await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createcustom` to create one!")
         elif type == 'voice':
             result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
             if result is not None:
@@ -677,13 +665,14 @@ class User(commands.Cog, name='User Commands'):
                 custom = f"{name} ({default})" if default is not None else name
                 if len(custom) > 100:
                     await ctx.send("Channel Name Is Over 100 Characters!")
-                    return
-                elif argument > 99:
+                elif int(argument) > 99:
                     await ctx.send("The User Limit For Channel Is Over 99!")
                 else:
                     cchannel = guild.get_channel(channel)
                     await cchannel.edit(name=custom, user_limit=argument)
                     await ctx.send("Custom Voice Channel Edited Successfully!")
+            else:
+                await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createcustom` to create one!")
         else:
             await ctx.send("The 'type' argument should be defined as role, text, or voice")
 
@@ -745,18 +734,17 @@ class User(commands.Cog, name='User Commands'):
                 crole = guild.get_role(result)
                 if type not in ("add", "remove"):
                     await ctx.send("The 'type' argument must be defined as add or remove")
-                    return
-                if memID == member.id:
+                elif memID == member.id:
                     await ctx.send("You cannot Add or Remove custom roles you already own to yourself")
-                    return
-                if not member.bot and crole.id not in [role.id for role in member.roles] and type in "add":
-                    if len(crole.members) > number:
-                        await ctx.send(f"You can only give this custom role to an max of {number} members")
-                    else:
-                        await member.add_roles(crole)
-                elif not member.bot and crole.id in [role.id for role in member.roles] and type in "remove":
-                    await member.remove_roles(crole)
-                await ctx.send(content=f"Successfully {type} custom role to {member.name}")
+                else:
+                    if not member.bot and crole.id not in [role.id for role in member.roles] and type in "add":
+                        if len(crole.members) > number:
+                            await ctx.send(f"You can only give this custom role to an max of {number} members")
+                        else:
+                            await member.add_roles(crole)
+                    elif not member.bot and crole.id in [role.id for role in member.roles] and type in "remove":
+                        await member.remove_roles(crole)
+                    await ctx.send(content=f"Successfully {type} custom role to {member.name}")
             else:
                 await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createcustom` to create one!")
         elif action == 'text':
@@ -766,18 +754,17 @@ class User(commands.Cog, name='User Commands'):
                 cchannel = guild.get_channel(result)
                 if type not in ("add", "remove"):
                     await ctx.send("The 'type' argument must be defined as add or remove")
-                    return
-                if memID == member.id:
+                elif memID == member.id:
                     await ctx.send("You cannot Add or Remove custom text channels you already own to yourself")
-                    return
-                if not member.bot and not cchannel.permissions_for(member).read_messages and type == "add":
-                    if len(cchannel.members) > number:
-                        await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
-                    else:
-                        await cchannel.set_permissions(member, read_messages=True, send_messages=True)
-                elif not member.bot and cchannel.permissions_for(member).read_messages and type in "remove":
-                    await cchannel.set_permissions(member, overwrite=None)
-                await ctx.send(content=f"Successfully {type} custom text channel access to {member.name}")
+                else:
+                    if not member.bot and not cchannel.permissions_for(member).read_messages and type == "add":
+                        if len(cchannel.members) > number:
+                            await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
+                        else:
+                            await cchannel.set_permissions(member, read_messages=True, send_messages=True)
+                    elif not member.bot and cchannel.permissions_for(member).read_messages and type in "remove":
+                        await cchannel.set_permissions(member, overwrite=None)
+                    await ctx.send(content=f"Successfully {type} custom text channel access to {member.name}")
             else:
                 await ctx.send(f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
         elif action == 'voice':
@@ -787,18 +774,17 @@ class User(commands.Cog, name='User Commands'):
                 cchannel = guild.get_channel(result)
                 if type not in ("add", "remove"):
                     await ctx.send("The 'type' argument must be defined as add or remove")
-                    return
-                if memID == member.id:
+                elif memID == member.id:
                     await ctx.send("You cannot Add or Remove custom text channels you already own to yourself")
-                    return
-                if not member.bot and not cchannel.permissions_for(member).view_channel and type == "add":
-                    if len(cchannel.members) > number:
-                        await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
-                    else:
-                        await cchannel.set_permissions(member, view_channel=True, connect=True)
-                elif not member.bot and cchannel.permissions_for(member).view_channel and type in "remove":
-                    await cchannel.set_permissions(member, overwrite=None)
-                await ctx.send(content=f"Successfully {type} custom voice channel access to {member.name}")
+                else:
+                    if not member.bot and not cchannel.permissions_for(member).view_channel and type == "add":
+                        if len(cchannel.members) > number:
+                            await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
+                        else:
+                            await cchannel.set_permissions(member, view_channel=True, connect=True)
+                    elif not member.bot and cchannel.permissions_for(member).view_channel and type in "remove":
+                        await cchannel.set_permissions(member, overwrite=None)
+                    await ctx.send(content=f"Successfully {type} custom voice channel access to {member.name}")
             else:
                 await ctx.send(f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
         else:

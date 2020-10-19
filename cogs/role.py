@@ -12,7 +12,7 @@ class Role(commands.Cog, name="Role Commands"):
 
     @commands.command(
         description='Supply type with add/remove to add or remove that role and to with everyone to execute for everyone in the guild, members to execute for all members, bots to execute for all bots, or an user')
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(manage_roles=True)
     async def giverole(self, ctx, type, role: discord.Role, to):
         """Allows you to add or remove an role from members, bots, or everyone"""
         if type not in ("add", "remove"):

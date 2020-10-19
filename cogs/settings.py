@@ -1,8 +1,9 @@
+import datetime
+import re
 import typing
 
-import asyncpg
 import discord
-from discord.ext import commands, menus
+from discord.ext import commands
 
 client = discord.Client()
 
@@ -49,23 +50,34 @@ class Settings(commands.Cog, name='Settings Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role = None):
+    async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role=None, delay=None):
         """Allows you to set an counting channel"""
         cursor = await self.bot.db.acquire()
+        units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
+        def convert_to_seconds(s):
+            return int(datetime.timedelta(**{
+                units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
+                for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
+            }).total_seconds())
+
         result = await cursor.fetchval("SELECT channel FROM count WHERE guild = $1 and channel = $2 and role = $3 and count = $4", ctx.guild.id, channel.id, role.id, count)
         if result is not None:
             await cursor.execute("DELETE FROM count WHERE guild = $1 and channel = $2 and role = $3 and count = $4", ctx.guild.id, channel.id, role.id, count)
             await channel.set_permissions(role, overwrite=None)
             await ctx.send("Counting Channel Deleted Successfully!")
         else:
-            await cursor.execute("INSERT INTO count(guild, channel, role, count) VALUES($1, $2, $3, $4)", ctx.guild.id, channel.id, role.id, count)
+            time = convert_to_seconds(delay) if delay is not None else 0
+            print(time)
+            await cursor.execute("INSERT INTO count(guild, channel, role, count, delay) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, role.id, count, time)
             await channel.set_permissions(role, read_messages=True, send_messages=False)
             await ctx.send("Counting Channel Set Successfully!")
+        await self.bot.db.release(cursor)
 
-    @commands.command()
+    @commands.command(description="To disable applications, remove the channel applications will be set to")
     @commands.has_permissions(manage_guild=True)
     async def applications(self, ctx, type, *, text: typing.Union[discord.Role, discord.TextChannel, str]):
         cursor = await self.bot.db.acquire()
+        # feature to close and open applications
         if type == "question":
             result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
             if not result == text:
@@ -176,15 +188,15 @@ class Settings(commands.Cog, name='Settings Commands'):
     @commands.has_permissions(manage_guild=True)
     async def boosterreward(self, ctx, day: int, *, role: discord.Role):
         """Allows you to set an booster reward based on how long a booster boosted for"""
-        cursor = await self.bot.db.acquire
+        cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
         rolemaster = role.id
-        result = await cursor.fetchval("SELECT role FROM boost WHERE date = $1 and role = $2 and guild = $3 and type = $4", day, rolemaster, guild, 'boost')
+        result = await cursor.fetchval("SELECT role FROM boost WHERE date::int8 = $1 and role = $2 and guild = $3 and type = $4", day, rolemaster, guild, 'boost')
         if result is None:
-            await cursor.execute(f"INSERT INTO boost(guild, date, role, type) VALUES($1, $2, $3, $4)", guild, day, rolemaster, 'boost')
+            await cursor.execute(f"INSERT INTO boost(guild, date, role, type) VALUES($1, $2::int8, $3, $4)", guild, day, rolemaster, 'boost')
             await ctx.send("Booster Reward Set Successfully!")
         else:
-            await cursor.execute(f"DELETE FROM boost WHERE role = $1 and date = $2 and guild = $3 and type = $4", day, rolemaster, guild, 'boost')
+            await cursor.execute(f"DELETE FROM boost WHERE role = $1 and date::int8 = $2 and guild = $3 and type = $4", day, rolemaster, guild, 'boost')
             await ctx.send("Booster Reward Deleted Successfully!")
         await self.bot.db.release(cursor)
 

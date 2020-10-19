@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import io
 import random
 import re
 
@@ -18,42 +19,39 @@ class Other(commands.Cog, name='Other Commands'):
         cursor = await self.bot.db.acquire()
         if len(owners) > 3:
             await ctx.send('You can only set up to 3 Representatives!')
-            return
-        guild = ctx.guild
-        club = await cursor.fetchrow("SELECT level, role, type, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
-        chan = guild.get_channel(club[0])
-        category = guild.get_channel(club[1])
-        role = guild.get_role(club[2])
-        give = guild.get_role(club[3])
-        mention = ' '.join([owner.mention for owner in owners])
-        mention1 = chan.mention
-        default = ctx.guild.default_role
-        if club[2] in [role.id for role in ctx.author.roles]:
-            loading = await ctx.send(f"Creating The Club With The Name {name}")
-            emote = '☑'
-            color = 'fffdd0'
-            embed = discord.Embed(title=f"{name} club",
-                                  description=f"{description} \n\n**Representatives:** {mention} \n\n**Weekly Events:** {time} UTC \n\nReact With {emote} To Join")
-            embed.set_image(url=graphic)
-            created = await guild.create_role(name=name, colour=discord.Colour(int(color, 16)),
-                                              reason="Newly Created Club")
-            overwrites = {created: discord.PermissionOverwrite(read_messages=True, send_messages=True), default: discord.PermissionOverwrite(read_messages=False, send_messages=False), owners: discord.PermissionOverwrite(mention_everyone=True)}
-            channel = await guild.create_text_channel(name, category=category, overwrites=overwrites, topic=description,
-                                                      reason="Newly Created Club")
-            sent = await chan.send(embed=embed)
-            message = sent.channel.id + sent.id
-            await sent.add_reaction(emote)
-            master = "r" + str(created.id)
-            for owner in owners:
-                await owner.add_roles(created)
-                await owner.add_roles(give)
-            await cursor.execute("INSERT INTO points(guild_id, channel, exp, lvl) VALUES($1, $2, $3, $4)", guild.id, channel.id, sent.id, created.id)
-            await cursor.execute("INSERT INTO reaction(guild, role, master, type, blacklist) VALUES($1, $2, $3, $4, $5)", guild.id, master, message, emote, 0)
-            started = await channel.send(f"Welcome to your club {mention}! To get started please read the instructions in {mention1}. Have fun!")
-            await started.pin()
-            await loading.edit(content=f"Club {name} created successfully!")
         else:
-            raise commands.MissingRole(role.name)
+            guild = ctx.guild
+            club = await cursor.fetchrow("SELECT level, role, type, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
+            chan = guild.get_channel(club[0])
+            category = guild.get_channel(club[1])
+            role = guild.get_role(club[2])
+            give = guild.get_role(club[3])
+            mention = ' '.join([owner.mention for owner in owners])
+            mention1 = chan.mention
+            if club[2] in [role.id for role in ctx.author.roles]:
+                loading = await ctx.send(f"Creating The Club With The Name {name}")
+                emote = '☑'
+                embed = discord.Embed(title=f"{name} club", description=f"{description} \n\n**Representatives:** {mention} \n\n**Weekly Events:** {time} UTC \n\nReact With {emote} To Join")
+                embed.set_image(url=graphic)
+                default = ctx.guild.default_role
+                created = await guild.create_role(name=name, colour=discord.Colour(int('fffdd0', 16)), reason="Newly Created Club")
+                overwrites = {created: discord.PermissionOverwrite(read_messages=True, send_messages=True), default: discord.PermissionOverwrite(read_messages=False, send_messages=False)}
+                for owner in owners:
+                    await owner.add_roles(created)
+                    await owner.add_roles(give)
+                    overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True)})
+                channel = await guild.create_text_channel(name, category=category, overwrites=overwrites, topic=description, reason="Newly Created Club")
+                sent = await chan.send(embed=embed)
+                await sent.add_reaction(emote)
+                message = sent.channel.id + sent.id
+                master = "r" + str(created.id)
+                await cursor.execute("INSERT INTO points(guild_id, channel, exp, lvl) VALUES($1, $2, $3, $4)", guild.id, channel.id, sent.id, created.id)
+                await cursor.execute("INSERT INTO reaction(guild, role, master, type, blacklist) VALUES($1, $2, $3, $4, $5)", guild.id, master, message, emote, 0)
+                started = await channel.send(f"Welcome to your club {mention}! To get started please read the instructions in {mention1}. Have fun!")
+                await started.pin()
+                await loading.edit(content=f"Club {name} created successfully!")
+            else:
+                raise commands.MissingRole(role.name)
         await self.bot.db.release(cursor)
 
     @commands.command(description="Note: The graphic must be a link to an image")
@@ -116,12 +114,13 @@ class Other(commands.Cog, name='Other Commands'):
             await category.delete()
             await menu.delete()
             await message.delete()
+            master = "r" + str(menu.id)
             await cursor.execute("DELETE FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id, channel.id)
-            await cursor.execute("DELETE FROM reaction WHERE role = $1 and master = $2 and guild = $3", menu.id, main, ctx.guild.id)
+            await cursor.execute("DELETE FROM reaction WHERE role = $1 and master = $2 and guild = $3", master, main, ctx.guild.id)
             await loading.edit(content=f"Club {category.name} deleted successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command(description="Supply type with 'r' to signify default reaction roles, 'o' for one time only reaction roles, or 'n' for toggle reaction roles in an reaction role catagorey")
+    @commands.command(aliases=['rr'], description="Supply type with 'r' to signify default reaction roles, 'o' for one time only reaction roles, or 'n' for toggle reaction roles in an reaction role catagorey")
     @commands.has_permissions(manage_guild=True)
     async def reactionrole(self, ctx, message: discord.Message, emoji, role: discord.Role, type, blacklist: discord.Role = None):
         """Sets a reaction role with an defined message and emoji"""
@@ -130,8 +129,8 @@ class Other(commands.Cog, name='Other Commands'):
         guild = ctx.guild.id
         role = role.id
         main = message.id + ctx.channel.id
-        emote = re.findall(r'(\d+)\s*', emoji)
         roles = blacklist.id if blacklist is not None else 0
+        emote = re.findall(r'(\d+)\s*', emoji)
         mark = True if emote and int(emote[0]) in [emojis.id for emojis in await ctx.guild.fetch_emojis()] else False
         unicode = True if emoji in self.bot.emoji else False
         result = await cursor.fetchval("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild)
@@ -183,21 +182,81 @@ class Other(commands.Cog, name='Other Commands'):
 
         else:
             member = ctx.author
-            role = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'require')
-            if int(role) in [role.id for role in member.roles]:
-                questions = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
-                await cursor.execute("INSERT INTO owner(guild, member, type) VALUES($1, $2, $3)", ctx.guild.id, member.id, 'app')
+            guild = ctx.guild
+            check = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'require')
+            channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'channel')
+            role = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'role')
+            if channel is None or role is None:
+                await ctx.send("Applications Are Currently Disabled For This Bot!")
+            elif int(check) not in [role.id for role in member.roles]:
+                await ctx.send("You are not allowed to create Applications!")
+            else:
+                questions = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2",
+                                               ctx.guild.id, 'question')
                 questions = [questions[0] for questions in questions]
                 q = '\n'.join(f'{i}. **{v}**' for i, v in enumerate(questions, start=1))
-                embed = discord.Embed(title=f"{ctx.guild} Current Questions", description=f"{q} \n\nRespond with `start` to start the application! This will expire in 60 seconds")
+                embed = discord.Embed(title=f"{ctx.guild} Current Questions", description=q)
+                embed.set_footer(text="Respond with 'start' to start the application! This will expire in 60 seconds")
                 try:
                     await member.send(embed=embed)
                     await ctx.send("The Application is ready to be started in your dm's")
                 except discord.Forbidden:
                     await ctx.send("The Application could not be sent in your dm's! Ensure Dionysus can send you dm's then try again")
-                await self.bot.db.release(cursor)
-            else:
-                await ctx.send("You are not allowed to create Applications!")
+                else:
+                    responses = []
+                    send = True
+                    def check(m):
+                        return m.guild is None and m.author.id == member.id
+                    try:
+                        confirm = await self.bot.wait_for('message', check=check, timeout=60)
+                        if confirm.content == 'start':
+                            for i, v in enumerate(questions, start=1):
+                                await member.send(f"Question {i}. {v}")
+                                response = await self.bot.wait_for('message', check=check)
+                                responses.append((v, response.content))
+                        else:
+                            await member.send("Canceled")
+                            send = False
+                    except asyncio.TimeoutError:
+                        await member.send("You took too long to confirm this current application. Canceled!")
+                        send = False
+                    if send:
+                        yes = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'accept')
+                        no = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'deny')
+                        channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'channel')
+                        complete = guild.get_channel(int(channel))
+                        await member.send("Your response has been recorded! You will receive a response soon letting you know if you have been accepted or not")
+
+                        class Menu(menus.Menu):
+                            def __init__(self, data):
+                                super().__init__(delete_message_after=True)
+                                self.data = data
+
+                            async def send_initial_message(self, ctx, channel):
+                                joined = '\n'.join(f"**{v[0]}**\n{i}. {v[1]}\n\n" for i, v in enumerate(self.data, start=1))
+                                file = io.StringIO(joined)
+                                return await channel.send(f"New Applicant From {member} [{member.id}]", file=discord.File(file, filename=f"{member}-applicant.txt"))
+
+                            @menus.button('\N{WHITE HEAVY CHECK MARK}')
+                            async def on_confirm(self, _):
+                                staff = guild.get_role(int(role))
+                                await member.add_roles(staff)
+                                embed = discord.Embed(title=f"Your application been accepted from {guild}!", description=yes if yes is not None else "Congrats! You been accepted", color=discord.Colour.green())
+                                await member.send(embed=embed)
+                                await ctx.send("This Response Has Been Sent!", delete_after=3.4)
+                                self.stop()
+
+                            @menus.button('\N{CROSS MARK}')
+                            async def on_deny(self, _):
+                                embed = discord.Embed(title=f"Your application been denied from {guild}!", description=no if no is not None else "Oh no! You been denied", color=discord.Colour.red())
+                                await member.send(embed=embed)
+                                await ctx.send("This Response Has Been Sent!", delete_after=3.4)
+                                self.stop()
+
+                        pages = Menu(responses)
+                        await pages.start(ctx, channel=complete)
+
+        await self.bot.db.release(cursor)
 
     @commands.command(aliases=["makevote"])
     @commands.has_permissions(manage_messages=True)
@@ -207,50 +266,49 @@ class Other(commands.Cog, name='Other Commands'):
         await ctx.message.delete()
         if len(questions) > 20:
             await ctx.send("You can only have a maximum of 20 questions!")
-            return
+        else:
+            units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 
-        units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
+            def convert_to_seconds(s):
+                return int(datetime.timedelta(**{
+                    units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
+                    for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
+                }).total_seconds())
 
-        def convert_to_seconds(s):
-            return int(datetime.timedelta(**{
-                units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
-                for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
-            }).total_seconds())
-
-        time = convert_to_seconds(duration)
-        delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
-        ends = datetime.datetime.strftime(delta, '%A %d %B %Y @ %H:%M:%S UTC')
-        type = "Multiple Options" if multiple is True else "Single Option"
-        embed = discord.Embed(title=topic)
-        embed.set_footer(text=f"Ends At {ends} - {type}")
-        indicators = self.bot.emoji[1648:1668][::-1]
-        item = 0
-        for feilds in questions:
-            embed.add_field(name=indicators[item], value=feilds)
-            item += 1
-        sent = await ctx.send(embed=embed)
-        for button in range(item):
-            await sent.add_reaction(indicators[button])
-        voting = sent.id + sent.channel.id
-        await cursor.execute("INSERT INTO vote(guild, message, win, date, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, voting, multiple, item, "poll")
-        await asyncio.sleep(time)
-        execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
-        if execute is not None:
-            sent = await ctx.channel.fetch_message(sent.id)
-            data = sent.embeds[0]
-            name = [value.name for value in data.fields]
-            questions = [value.value for value in data.fields]
-            votes = sum([reaction.count - 1 for reaction in sent.reactions if reaction.emoji in name])
-            embed = discord.Embed(title="Poll Results", description=topic)
-            result = 0
-            for reaction in sent.reactions:
-                if reaction.emoji in name:
-                    embed.add_field(name=questions[result], value=f"{reaction.count - 1} - {round((reaction.count - 1) * 100 / votes, 2) if votes != 0 else 0.0}%")
-                    result += 1
-            await sent.edit(embed=embed)
-            await sent.clear_reactions()
-        await cursor.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
-        await self.bot.db.release(cursor)
+            time = convert_to_seconds(duration)
+            delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
+            ends = datetime.datetime.strftime(delta, '%A %d %B %Y @ %H:%M:%S UTC')
+            type = "Multiple Options" if multiple is True else "Single Option"
+            embed = discord.Embed(title=topic)
+            embed.set_footer(text=f"Ends At {ends} - {type}")
+            indicators = self.bot.emoji[1648:1668][::-1]
+            item = 0
+            for feilds in questions:
+                embed.add_field(name=indicators[item], value=feilds)
+                item += 1
+            sent = await ctx.send(embed=embed)
+            for button in range(item):
+                await sent.add_reaction(indicators[button])
+            voting = sent.id + sent.channel.id
+            await cursor.execute("INSERT INTO vote(guild, message, win, date, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, voting, multiple, item, "poll")
+            await asyncio.sleep(time)
+            execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
+            if execute is not None:
+                sent = await ctx.channel.fetch_message(sent.id)
+                data = sent.embeds[0]
+                name = [value.name for value in data.fields]
+                questions = [value.value for value in data.fields]
+                votes = sum([reaction.count - 1 for reaction in sent.reactions if reaction.emoji in name])
+                embed = discord.Embed(title="Poll Results", description=topic)
+                result = 0
+                for reaction in sent.reactions:
+                    if reaction.emoji in name:
+                        embed.add_field(name=questions[result], value=f"{reaction.count - 1} - {round((reaction.count - 1) * 100 / votes, 2) if votes != 0 else 0.0}%")
+                        result += 1
+                await sent.edit(embed=embed)
+                await sent.clear_reactions()
+            await cursor.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
+            await self.bot.db.release(cursor)
 
     @commands.command(aliases=["endvote"])
     @commands.has_permissions(manage_messages=True)
@@ -417,20 +475,6 @@ class Other(commands.Cog, name='Other Commands'):
     #     db.commit()
     #     cursor.close()
 
-    #
-    # @embed.error
-    # async def embed_error(self, ctx, error):
-    #     if isinstance(error, commands.CommandInvokeError):
-    #         embed = discord.Embed(title="An Exception Occurred",
-    #                               description=f"Durning handling of this command, an unexpected error has occured \n This error has been sent to the bot dev and will get to it ASAP \n\n `{error}`")
-    #         await ctx.send(embed=embed)
-    #         for me in owner:
-    #             user = self.bot.get_user(me)
-    #             await user.send(await error_return("EMBED", error))
-    #         return
-    #     else:
-    #         await ctx.send(await error_return("EMBED", error))
-    #         return
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
@@ -440,8 +484,7 @@ class Other(commands.Cog, name='Other Commands'):
         guild = ctx.guild.id
         if rank < 0:
             await ctx.send("Integer Cannot Be Less Than 0!")
-            return
-        if member is not None:
+        elif member is not None:
             mem = member.id
             check = await cursor.fetchval("SELECT guild_id FROM levels WHERE guild_id = $1 and user_id = $2", ctx.guild.id, mem)
             if check is not None:
@@ -467,10 +510,10 @@ class Other(commands.Cog, name='Other Commands'):
         loading = await ctx.send(f"Messaging users for {to}")
         try:
             if isinstance(to, discord.Member):
-                await to.send(message)
+                await to.send(f"`New message from {ctx.author} from guild {ctx.guild}\n`{message}")
             elif isinstance(to, discord.Role):
                 for member in to.members:
-                    await member.send(message)
+                    await member.send(f"`New message from {ctx.author} from guild {ctx.guild}\n`{message}")
         except discord.Forbidden:
             pass
 

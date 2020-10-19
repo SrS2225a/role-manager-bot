@@ -103,7 +103,7 @@ class Events(commands.Cog):
                                 await cursor.fetchrow("UPDATE levels SET exp = $1, channel_id = $2 WHERE guild_id = $3 and user_id = $4", result1[1] + random.randint(0, weight), message.channel.id, message.guild.id, message.author.id)
 
             # COUNTER
-            count = await cursor.prepare("SELECT channel, role, member, number, count FROM count WHERE guild = $1")
+            count = await cursor.prepare("SELECT channel, role, member, number, count, delay FROM count WHERE guild = $1")
             current = await count.fetchrow(message.guild.id)
             if current is not None and current[0] == message.channel.id:
                 channel = message.guild.get_channel(current[0])
@@ -118,11 +118,14 @@ class Events(commands.Cog):
                             await channel.edit(topic=topic, reason='New Counter Number')
                     else:
                         await message.delete()
-                        if role is not None: await message.author.add_roles(role)
-                        await channel.send(f"{message.author.mention} just forgot how to count!", delete_after=6.2)
+                        await channel.send(f"{message.author.mention} just forgot how to count!", delete_after=4.7)
+                        if role is not None and current[5] != 0:
+                            await message.author.add_roles(role)
+                            await asyncio.sleep(current[5])
+                            await message.author.remove_roles(role)
                 else:
                     await message.delete()
-                    await channel.send(f"{message.author.mention} is lonely and needs someone to count with!", delete_after=6.2)
+                    await channel.send(f"{message.author.mention} is lonely and needs someone to count with!", delete_after=4.7)
 
 
             # PARTNERS
@@ -165,46 +168,6 @@ class Events(commands.Cog):
                     await channel.send(f"{message.author.mention} {him} is currently AFK with the reason {user[1]}!")
 
             await self.bot.db.release(cursor)
-
-        # # applications
-        # if message.guild is None:
-        #     cursor = await self.bot.db.acquire()
-        #     applicant = await cursor.fetchrow("SELECT guild, member FROM owner WHERE type = $1 and member = $2", 'app', message.author.id)
-        #     print(applicant)
-        #     if applicant is not None:
-        #         questions = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", applicant[0], 'question')
-        #         guild = self.bot.get_guild(applicant[0])
-        #         responses = []
-        #         send = True
-        #         try:
-        #             if message.content.startswith('start') and applicant[1] == message.author.id:
-        #                 questions = [questions[0] for questions in questions]
-        #                 print(questions)
-        #
-        #                 def check(m):
-        #                     return m.guild is None and m.author.id == applicant[1]
-        #                 for i, v in enumerate(questions, start=1):
-        #                     await message.author.send(f"Question {i}. {v}")
-        #                     response = await self.bot.wait_for('message', check=check)
-        #                     print(response.content)
-        #                     responses.append(response.content)
-        #         except asyncio.TimeoutError:
-        #             await message.author.send("You took too long to confirm this current application. Canceled")
-        #             send = False
-        #         await cursor.execute("DELETE FROM owner WHERE type = $1 and member = $2", 'app', message.author.id)
-        #         if send:
-        #             vote = ['✔', '❌']
-        #             channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'channel')
-        #             complete = guild.get_channel(int(channel))
-        #             embed = discord.Embed(title=f"New Application From {message.author} [{message.author.id}]", description='\n'.join(f"**{questions}**\n`{responses}`"))
-        #             sent = await complete.send(embed=embed)
-        #             main = sent.id + complete.id
-        #             await cursor.execute("INSERT INTO vote(guild, message, date, type) VALUES($1, $2, $3, $4)", guild.id, main, message.author.id, 'app')
-        #             for reaction in vote:
-        #                 await sent.add_reaction(reaction)
-        #             await message.author.send("Your response has been recorded! You will receive a response soon letting you know if you have been accepted or not")
-        #
-        #     await self.bot.db.release(cursor)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
@@ -360,7 +323,6 @@ class Events(commands.Cog):
                         for role2 in [role.id for role in member.roles]:
                             if role == str(role2):
                                 await member.send("You cannot change your roles after reacting from this reaction role category!")
-                                return
                     await member.add_roles(mroles, reason='User reacted to reaction role')
 
                 elif "r" in role:
@@ -393,29 +355,6 @@ class Events(commands.Cog):
                     count += 1
                     if count > 1:
                         await message.remove_reaction(payload.emoji, payload.member)
-
-        # # check if applicant response and send message if user was accepted or denied
-        # app = await cursor.prepare("SELECT date FROM vote WHERE guild = $1 and message = $2 and type = $3")
-        # if await app.fetchval(guild_id, main, 'app') is not None:
-        #     role = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild_id, 'role')
-        #     guild = self.bot.get_guild(guild_id)
-        #     staff = guild.get_role(role)
-        #     user = guild.get_member(app)
-        #     channel = guild.get_channel(channel_id)
-        #     message = await channel.fetch_message(message_id)
-        #     if emoji == '✔':
-        #         result = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild_id, 'accept')
-        #         await user.give_roles(staff)
-        #         embed = discord.Embed(title=f"You been accepted for {guild}!", description=result if result is not None else "Congrats! You been accepted")
-        #         await user.send(embed=embed)
-        #         await message.delete()
-        #         await channel.send("This Response Has Been Sent!", delete_after=4.0)
-        #     elif emoji == '❌':
-        #         result = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild_id, 'deny')
-        #         embed = discord.Embed(title=f"You been denied for {guild}!", description=result if result is not None else "Oh no! You been denied")
-        #         await user.send(embed=embed)
-        #         await message.delete()
-        #         await channel.send("This Response Has Been Sent!", delete_after=4.0)
 
         await self.bot.db.release(cursor)
 
