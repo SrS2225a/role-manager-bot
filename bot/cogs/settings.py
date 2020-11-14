@@ -5,18 +5,17 @@ import typing
 import discord
 from discord.ext import commands
 
-client = discord.Client()
-
 
 # administrator commands
 class Settings(commands.Cog, name='Settings Commands'):
+    """Commands that adjusts various settings of the bot."""
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def custom(self, ctx, type, role: discord.Role, position: typing.Union[discord.Role, discord.CategoryChannel], amount: int, removal: bool, *, tag=None):
-        """Sets who can create an custom role upon getting the defined role"""
+        """Sets who can create an custom role or channel upon getting the defined role"""
         cursor = await self.bot.db.acquire()
         if type == 'role' and isinstance(position, discord.Role) or type == 'voice' and isinstance(position, discord.CategoryChannel) or type == 'text' and isinstance(position, discord.CategoryChannel):
             guild = ctx.guild.id
@@ -67,7 +66,6 @@ class Settings(commands.Cog, name='Settings Commands'):
             await ctx.send("Counting Channel Deleted Successfully!")
         else:
             time = convert_to_seconds(delay) if delay is not None else 0
-            print(time)
             await cursor.execute("INSERT INTO count(guild, channel, role, count, delay) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, role.id, count, time)
             await channel.set_permissions(role, read_messages=True, send_messages=False)
             await ctx.send("Counting Channel Set Successfully!")
@@ -76,12 +74,16 @@ class Settings(commands.Cog, name='Settings Commands'):
     @commands.command(description="To disable applications, remove the channel applications will be set to")
     @commands.has_permissions(manage_guild=True)
     async def applications(self, ctx, type, *, text: typing.Union[discord.Role, discord.TextChannel, str]):
+        """Lets you set up applications"""
         cursor = await self.bot.db.acquire()
         # feature to close and open applications
         if type == "question":
-            result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
-            if not result == text:
-                await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'question', text)
+            result = cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
+            if re.search("--edit=", text):
+                cursor.execute("UPDATE questions SET text = $1 WHERE guild = $1, type = $2, number = $3", ctx.guild.id, 'question', '')
+                await ctx.send("Question edited successfully!")
+            elif text not in [fetch['text'] for fetch in result]:
+                await cursor.execute("INSERT INTO questions(guild, type, text, number) VALUES($1, $2, $3, $4)", ctx.guild.id, 'question', text, len(result)+1)
                 await ctx.send("Question set successfully!")
             else:
                 await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'question', text)
@@ -115,7 +117,7 @@ class Settings(commands.Cog, name='Settings Commands'):
                 await ctx.send("Channel removed successfully!")
         elif type == "accept":
             result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'accept')
-            if not result == text.id:
+            if not result == text:
                 await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'accept', text)
                 await ctx.send("Acceptance text set successfully!")
             else:
@@ -123,7 +125,7 @@ class Settings(commands.Cog, name='Settings Commands'):
                 await ctx.send("Acceptance text removed successfully!")
         elif type == "deny":
             result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'deny')
-            if not result == text.id:
+            if not result == text:
                 await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'deny', text)
                 await ctx.send("Denied text set successfully!")
             else:
@@ -155,13 +157,13 @@ class Settings(commands.Cog, name='Settings Commands'):
         result = await cursor.fetchval("SELECT suggest FROM settings WHERE suggest = $1 and guild = $2", channel.id, guild)
         search = await cursor.fetchval("SELECT guild FROM settings WHERE suggest = $1 and guild = $2", channel.id, guild)
         if result is not None:
-            await cursor.execute("UPDATE settings SET suggest = NULL WHERE guild = ?", guild)
+            await cursor.execute("UPDATE settings SET suggest = NULL WHERE guild = $1", guild)
             await ctx.send("Suggestions Channel Successfully Removed!")
         elif search is None:
-            await cursor.execute("INSERT INTO settings(guild, suggest) VALUES(?, ?)", guild, channel.id)
+            await cursor.execute("INSERT INTO settings(guild, suggest) VALUES($1, $2)", guild, channel.id)
             await ctx.send("Suggestions Channel Set Successfully!")
         else:
-            await cursor.execute("UPDATE settings SET suggest = ? WHERE guild = ?", guild, channel.id)
+            await cursor.execute("UPDATE settings SET suggest = $1 WHERE guild = $2", guild, channel.id)
             await ctx.send("Suggestions Channel Set Successfully!")
         await self.bot.db.release(cursor)
 

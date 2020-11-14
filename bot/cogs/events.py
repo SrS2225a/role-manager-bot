@@ -11,17 +11,11 @@ import discord
 from discord.ext import commands, tasks
 
 
-client = discord.Client()
-
-
-
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self._cd = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.member)
         self.__cd = commands.CooldownMapping.from_cooldown(1.0, 80.0, commands.BucketType.default)
-
-
 
     # set the bots custom status
     @commands.Cog.listener()
@@ -29,7 +23,6 @@ class Events(commands.Cog):
         game = discord.Game(f"*help | Version {self.bot.version}")
         await self.bot.change_presence(activity=game, status=discord.Status.online, afk=None)
         print('#-------------------------------#', Fore.WHITE)
-        print('| ', Fore.RED + time.strftime("%#H:%M:%S") + Fore.WHITE + '  |  ', '➤ Dionysus Status -', Fore.GREEN, 'Online', Fore.WHITE)
         print('| ', Fore.RED + time.strftime("%#H:%M:%S") + Fore.WHITE + '  |  ', '➤ Logged in as:', Back.MAGENTA + Fore.BLACK, '[', self.bot.user, ']', Back.RESET + Fore.WHITE)
         print('#-------------------------------#', Fore.WHITE)
         print('| ', Fore.RED + time.strftime("%#H:%M:%S") + Fore.WHITE + '  |  ', '➤ ID:', Fore.CYAN, '[', self.bot.user.id, ']', Fore.WHITE)
@@ -170,7 +163,7 @@ class Events(commands.Cog):
             await self.bot.db.release(cursor)
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member, before, after):
+    async def on_voice_state_update(self, member, _, after):
         # VOICE ROLES
         global dark
         cursor = await self.bot.db.acquire()
@@ -283,9 +276,6 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         cursor = await self.bot.db.acquire()
-
-        # for custom embeds
-
         # gives roles to an member once they react to an set emoji
         global word
         guild_id = payload.guild_id
@@ -340,6 +330,19 @@ class Events(commands.Cog):
                     mroles = guild.get_role(role_id=int(role))
                     await member.add_roles(mroles, reason='User reacted to reaction role')
 
+                elif "c" in role:
+                    role = role.replace("c", "")
+                    mroles = guild.get_role(role_id=int(role))
+                    cblacklist = await cursor.fetchval("SELECT message FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild_id, user_id, message_id, 'club')
+                    isClub = await cursor.fetchval("SELECT level FROM leveling WHERE guild = $1 and system = $2", guild_id, 'points')
+                    if cblacklist is not None and isClub == channel_id:
+                        channel = guild.get_channel(channel_id)
+                        message = await channel.fetch_message(message_id)
+                        await message.remove_reaction(payload.emoji, payload.member)
+                    else:
+                        await member.add_roles(mroles, reason='User reacted to reaction role')
+
+
         # if set to single voting automatically removes the voters reaction role if they try to vote for more than one thing
         multi = await cursor.prepare("SELECT date, win FROM vote WHERE guild = $1 and message = $2 and type = $3")
         multi = await multi.fetchrow(guild_id, main, 'poll')
@@ -380,7 +383,7 @@ class Events(commands.Cog):
             # splits reaction role types into code readable format anmd checks if we can remove role
             guild = self.bot.get_guild(guild_id)
             member = await guild.fetch_member(user_id)
-            if 'r' in role or 'n' in role:
+            if 'r' in role or 'n' in role or 'c' in role:
                 role = re.findall(r'\d*', role)[1]
                 mrole = guild.get_role(role_id=int(role))
                 await member.remove_roles(mrole, reason='User unreacted to reaction role')
@@ -438,8 +441,7 @@ class Events(commands.Cog):
                 await member.add_roles(srole, reason='User had sticky roles when leaving')
 
         # code for invite rewards
-        invite = await guild.invites()
-        for invites in invite:
+        for invites in await guild.invites():
             if invites.inviter.id != member.id:
                 amount = await cursor.prepare("SELECT amount FROM invite WHERE guild = $1 and member = $2 and invite = $3")
                 amount = await amount.fetchval(guildid, invites.inviter.id, invites.code)
@@ -457,8 +459,8 @@ class Events(commands.Cog):
                             user = guild.get_member(invites.inviter.id)
                             if channel is not None and role.id not in [role.id for role in user.roles]:
                                 await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
-                            await user.add_roles(role)
-                elif amount is None:
+                                await user.add_roles(role)
+                elif amount is None and invites.uses != 0:
                     await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guildid, invites.inviter.id, invites.code, invites.uses, 0, 0)
 
         # code for channel overwrites recovery
@@ -469,8 +471,7 @@ class Events(commands.Cog):
                 yes = discord.Permissions(permissions=override[0])
                 no = discord.Permissions(permissions=override[1])
                 overrides = discord.PermissionOverwrite().from_pair(yes, no)
-                await channel.set_permissions(member, overwrite=overrides,
-                                              reason='user joined back with previous channel overwrites')
+                await channel.set_permissions(member, overwrite=overrides, reason='user joined back with previous channel overwrites')
         await self.bot.db.release(cursor)
 
     @tasks.loop()

@@ -3,15 +3,11 @@
 # TODO: Task: Use Pal Pal's/Stripe's API to create an donate reward system (may not be possible due to identifying)
 # TODO: Create a web site for oauth with listed tasks and dashboard for configuring, plus documentation, the website will be called dionysus.nyx.io
 # TODO: Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday
-# TODO: Update system
-# TODO: Custom Embed Creator
-# TODO: Counting Channel Support
-# TODO: Ticket system
-# TODO: Voting System
-# TODO: Staff Applications Feature
-# TODO: Blacklist users command
+# TODO: Update system on different problems the bot is currently experiencing
+# TODO: Server voting reward system
 # \/ ----------------Supper Less Important Stuff----------------- \/
 # TODO: Improve reminder system by using an database and loop through in case the bot goes down use https://discordpy.readthedocs.io/en/latest/ext/tasks/#discord.ext.tasks.Loop for some ways to manage loop
+# TODO: Add a command to quickly update to an new counting number
 
 import asyncio
 
@@ -38,18 +34,17 @@ intents.integrations = False
 intents.emojis = False
 intents.bans = False
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'), intents=intents)
-bot.owner_ids = [592434092814106662, 381694604187009025, 270848136006729728]
+bot.owner_ids = [508455796783317002, 381694604187009025, 270848136006729728, 222492698236420099, 372923892865433600, 468854398806654976]
 bot.active = []
 bot.emoji = []
-bot.version = '5.19.0'
-bot.remove_command('help')
+bot.version = '5.20.0'
 
 
 # loads token and emojis from file
-with open("token.json", "r") as set:
+with open("bot/token.json", "r") as set:
     bot.settings = json.load(set)
 
-with open("emojis.json", "r") as unicode:
+with open("bot/emojis.json", "r") as unicode:
     emojis = json.load(unicode)
     for key, value in emojis.items():
         bot.emoji.append(value['emoji'])
@@ -63,7 +58,6 @@ asyncio.get_event_loop().run_until_complete(connect())
 
 # log all actions happening with bot
 logger = logging.getLogger('discord')
-
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(message)s'))
@@ -80,7 +74,7 @@ async def predicate(ctx):
 
 # loads cogs
 bot.load_extension("jishaku")
-for cogs in os.listdir('./cogs'):
+for cogs in os.listdir('bot/./cogs'):
     if cogs.endswith('.py'):
         bot.load_extension(f'cogs.{cogs[:-3]}')
 

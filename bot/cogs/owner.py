@@ -1,13 +1,30 @@
 import aiohttp
 import discord
+
 from discord.ext import commands
+from jishaku.cog import JishakuBase, jsk
+from jishaku.flags import JISHAKU_HIDE
+from jishaku.metacog import GroupCogMeta
 
 
-client = discord.Client()
+class Debugging(JishakuBase, metaclass=GroupCogMeta, command_parent=jsk):
+    @commands.group(name="dev", hidden=JISHAKU_HIDE, invoke_without_command=True, ignore_extra=False)
+    async def jsk(self, ctx: commands.Context):
+        """
+        This overwrites the `jsk debug` command!
+        """
 
+        await ctx.send(f"Average websocket latency: {round(self.bot.latency * 1000, 2)}ms")
+
+    # Or add other, new commands
+    # Every @commands.command() in here will be parented to the command_parent,
+    # in this case the default jsk Group.
+    # You can also make your own Group and use it as the command_parent instead.
+    ...
 
 # owner commands
 class Owner(commands.Cog, name="Owner Commands"):
+    """Commands for bot owners."""
     def __init__(self, bot):
         self.bot = bot
 

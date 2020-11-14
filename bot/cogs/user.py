@@ -1,18 +1,14 @@
 import asyncio
-import datetime
-import random
+import io
 import re
-import typing
 
 import discord
-import aiohttp
-from bs4 import BeautifulSoup
 from discord.ext import commands, menus
 from tabulate import tabulate
 from tqdm import tqdm
 
-
 class User(commands.Cog, name='User Commands'):
+    """Basic commands anyone can run relating to Discord or the Bot itself"""
     def __init__(self, bot):
         self.bot = bot
 
@@ -23,59 +19,111 @@ class User(commands.Cog, name='User Commands'):
         """Responds with the bots ping between the client and discord"""
         await ctx.send(f"The ping is: {round(self.bot.latency * 1000)} ms!")
 
-    @commands.command(description="You can supply arg with 'None' to list members without a specified role")
-    async def listmembers(self, ctx, role, arg=None):
-        """List members by a role or no role"""
-        if role in "no-roles":
-            members = []
-            for member in ctx.guild.members:
-                if len(member.roles) == 1:
-                    members.append(member.name + "#" + member.discriminator)
-        elif arg in ("None",):
-            role = await commands.RoleConverter().convert(ctx, role)
-            members = []
-            for member in ctx.guild.members:
-                if role.id not in [role.id for role in member.roles]:
-                    members.append(member.name + "#" + member.discriminator)
-        else:
-            role = await commands.RoleConverter().convert(ctx, role)
-            members = []
-            for member in ctx.guild.members:
-                if role.id in [role.id for role in member.roles]:
-                    members.append(member.name + "#" + member.discriminator)
+    @commands.command()
+    async def apply(self, ctx, view=None):
+        """Allows you to create an application or view current questions"""
+        cursor = await self.bot.db.acquire()
+        if view == "view" or view == "questions" or view == "list":
+            view = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
 
-        class Source(menus.ListPageSource):
-            def __init__(self, data):
-                super().__init__(data, per_page=20)
+            class Source(menus.ListPageSource):
+                def __init__(self, data):
+                    super().__init__(data, per_page=10)
 
-            async def format_page(self, menu, entry):
-                offset = menu.current_page * self.per_page
-                joined = '\n'.join(f'{i}. {v}' for i, v in enumerate(entry, start=1 + offset))
-                return f'```{joined}```\nPage {menu.current_page + 1}/{self.get_max_pages()}'
-        if not members:
-            await ctx.send('No members')
-        else:
-            pages = menus.MenuPages(source=Source(members), clear_reactions_after=True)
+                async def format_page(self, menu, entry):
+                    offset = menu.current_page * self.per_page
+                    joined = '\n'.join(f'{i}. {v}' for i, v in enumerate(entry, start=1 + offset))
+                    return f'```{joined}```\nPage {menu.current_page + 1}/{self.get_max_pages()}'
+
+            pages = menus.MenuPages(source=Source([view[0] for view in view]), clear_reactions_after=True)
             await pages.start(ctx)
 
-    @commands.command()
-    async def roles(self, ctx):
-        """Shows a list of all roles in the server"""
-        roles = []
-        for role in ctx.guild.roles[::-1]:
-            roles.append(role.name + ' | ' + str(role.id))
+        else:
+            member = ctx.author
+            guild = ctx.guild
+            check = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'require')
+            channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'channel')
+            role = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'role')
+            if channel is None:
+                await ctx.send("Applications Are Currently Disabled For This Bot!")
+            elif int(check) not in [role.id for role in member.roles]:
+                await ctx.send("You are not allowed to create Applications!")
+            else:
+                questions = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2",
+                                               ctx.guild.id, 'question')
+                questions = [questions[0] for questions in questions]
+                q = '\n'.join(f'{i}. **{v}**' for i, v in enumerate(questions, start=1))
+                embed = discord.Embed(title=f"{ctx.guild} Current Questions", description=q)
+                embed.set_footer(text="Respond with 'start' to start the application! This will expire in 60 seconds")
+                try:
+                    await member.send(embed=embed)
+                    await ctx.send("The Application is ready to be started in your dm's")
+                except discord.Forbidden:
+                    await ctx.send("The Application could not be sent in your dm's! Ensure Dionysus can send you dm's then try again")
+                else:
+                    responses = []
+                    send = True
+                    def check(m):
+                        return m.guild is None and m.author.id == member.id
+                    try:
+                        confirm = await self.bot.wait_for('message', check=check, timeout=60)
+                        if confirm.content == 'start':
+                            for i, v in enumerate(questions, start=1):
+                                await member.send(f"Question {i}. {v}")
+                                response = await self.bot.wait_for('message', check=check)
+                                responses.append((v, response.content))
+                        else:
+                            await member.send("Canceled")
+                            send = False
+                    except asyncio.TimeoutError:
+                        await member.send("You took too long to confirm this current application. Canceled!")
+                        send = False
+                    if send:
+                        yes = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'accept')
+                        no = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'deny')
+                        channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'channel')
+                        complete = guild.get_channel(int(channel))
+                        await member.send("Your response has been recorded! You will receive a response soon letting you know if you have been accepted or not")
 
-        class Source(menus.ListPageSource):
-            def __init__(self, data):
-                super().__init__(data, per_page=20)
+                        class Menu(menus.Menu):
+                            def __init__(self, data):
+                                super().__init__(delete_message_after=True)
+                                self.data = data
 
-            async def format_page(self, menu, entry):
-                offset = menu.current_page * self.per_page
-                joined = '\n'.join(f'{i}. {v}' for i, v in enumerate(entry, start=1 + offset))
-                return f'```{joined}```\nPage {menu.current_page + 1}/{self.get_max_pages()}'
+                            def reaction_check(self, payload):
+                                if payload.message_id != self.message.id:
+                                    return False
+                                if payload.user_id == self.bot.user.id:
+                                    return False
+                                return payload.emoji in self.buttons
 
-        pages = menus.MenuPages(source=Source(roles), clear_reactions_after=True)
-        await pages.start(ctx)
+                            async def send_initial_message(self, ctx, channel):
+                                joined = '\n'.join(f"**{v[0]}**\n{i}. {v[1]}\n\n" for i, v in enumerate(self.data, start=1))
+                                file = io.StringIO(joined)
+                                return await channel.send(f"New Applicant From {member} [{member.id}]", file=discord.File(file, filename=f"{member}-applicant.txt"))
+
+                            @menus.button('\N{WHITE HEAVY CHECK MARK}')
+                            async def on_confirm(self, _):
+                                if role is not None:
+                                    staff = guild.get_role(int(role))
+                                    await member.add_roles(staff)
+                                embed = discord.Embed(title=f"Your application been accepted from {guild}!", description=yes if yes is not None else "Congrats! You been accepted", color=discord.Colour.green())
+                                await member.send(embed=embed)
+                                await complete.send("This Response Has Been Sent!", delete_after=3.4)
+                                self.stop()
+
+                            @menus.button('\N{CROSS MARK}')
+                            async def on_deny(self, _):
+                                embed = discord.Embed(title=f"Your application been denied from {guild}!", description=no if no is not None else "Oh no! You been denied", color=discord.Colour.red())
+                                await member.send(embed=embed)
+                                await complete.send("This Response Has Been Sent!", delete_after=3.4)
+                                self.stop()
+
+                        pages = Menu(responses)
+                        await pages.start(ctx, channel=complete)
+
+        await self.bot.db.release(cursor)
+
 
     @commands.command(aliases=['top'], description='Supply type with rankings/invites/partnerships to view that particular leaderboard')
     async def leaderboard(self, ctx, type, rank: int = None):
@@ -95,9 +143,21 @@ class User(commands.Cog, name='User Commands'):
                         if user is not None:
                             table.append([row[1], row[2], user.name + "#" + user.discriminator])
 
-                    await ctx.send(f"``` Ranking - {rank} \n\n{tabulate(table, headers=['XP', 'LV', 'USER'], tablefmt='github')}```")
+                    class Source(menus.ListPageSource):
+                        def __init__(self, data):
+                            super().__init__(data, per_page=20)
+
+                        async def format_page(self, menu, entry):
+                            offset = menu.current_page * self.per_page
+                            embed = discord.Embed(title=f"Dionysus Rankings (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                                                  description=f"```{tabulate(entry, headers=['XP', 'LV', 'USER'], tablefmt='github')}```")
+                            embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(entry)}")
+                            return embed
+
+                    pages = menus.MenuPages(source=Source(table), delete_message_after=True)
+                    await pages.start(ctx)
                 elif diff1 is None:
-                    await ctx.send("Rankings is currently disabled for this bot!")
+                    await ctx.send("Rankings is currently disabled for this server!")
             elif type == 'invites':
                 result = await cursor.fetch(f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC LIMIT {rank}", ctx.guild.id)
                 table = []
@@ -106,7 +166,21 @@ class User(commands.Cog, name='User Commands'):
                     if user is not None:
                         table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
 
-                await ctx.send(f"``` Invites - {rank} \n\n{tabulate(table, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='github')}```")
+                class Source(menus.ListPageSource):
+                    def __init__(self, data):
+                        super().__init__(data, per_page=20)
+
+                    async def format_page(self, menu, entry):
+                        offset = menu.current_page * self.per_page
+                        embed = discord.Embed(
+                            title=f"Dionysus Invites (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                            description=f"```{tabulate(entry, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='github')}```")
+                        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(entry)}")
+                        return embed
+
+                pages = menus.MenuPages(source=Source(table), delete_message_after=True)
+                await pages.start(ctx)
+
             elif type == 'partnerships':
                 diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'partners')
                 if diff1 is not None:
@@ -117,9 +191,24 @@ class User(commands.Cog, name='User Commands'):
                         if user is not None:
                             table.append([row[1], user.name + "#" + user.discriminator])
 
-                    await ctx.send(f"``` Partnerships - {rank} \n\n{tabulate(table, headers=['PARTNERS', 'USER'], tablefmt='github')}```")
+                    class Source(menus.ListPageSource):
+                        def __init__(self, data):
+                            super().__init__(data, per_page=20)
+
+                        async def format_page(self, menu, entry):
+                            offset = menu.current_page * self.per_page
+                            embed = discord.Embed(
+                                title=f"Dionysus Partners (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                                description=f"```{tabulate(entry, headers=['PARTNERS', 'USER'], tablefmt='github')}```")
+                            embed.set_footer(
+                                text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(entry)}")
+                            return embed
+
+                    pages = menus.MenuPages(source=Source(table), delete_message_after=True)
+                    await pages.start(ctx)
+
                 elif diff1 is None:
-                    await ctx.send("Partnerships is currently disabled for this bot!")
+                    await ctx.send("Partnerships is currently disabled for this server!")
         else:
             await ctx.send("Top Rankings Cannot Be Above 100!")
         await self.bot.db.release(cursor)
@@ -169,69 +258,6 @@ class User(commands.Cog, name='User Commands'):
             await ctx.send("This leveling feature is currently disabled for this bot!")
         await self.bot.db.release(cursor)
 
-    @commands.command(description='Supply type with list to list your reminders, delete to delete and reminder, or me/here to set the destination of the reminder')
-    async def remind(self, ctx, type, duration=None, *, description=None):
-        """Sets a reminder with an given time"""
-        cursor = await self.bot.db.acquire()
-        if type == 'list':
-            reminders = await cursor.fetch("SELECT * FROM remind WHERE guild = $1", ctx.author.id)
-            embed = discord.Embed(title=f"{ctx.author} Reminders")
-            if reminders is None:
-                embed.description = 'You Have No Reminders!'
-            elif reminders is not None:
-                for remind in reminders:
-                    chan = self.bot.get_channel(remind[4]) if self.bot.get_channel(remind[4]) is not None else 'dm'
-                    date = datetime.datetime.utcfromtimestamp(remind[2]).strftime('%A %d %B %Y @ %H:%M:%S UTC')
-                    embed.add_field(name=f"Reminder [`{remind[1]}`]", value=f"```Time: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
-            await ctx.send(embed=embed)
-
-        elif type == 'delete':
-            await cursor.execute('DELETE FROM remind WHERE guild = $1 and message = $2', ctx.author.id, duration)
-            await ctx.send(f"Reminder Deleted Successfully!")
-        else:
-            if type in ('me', 'here'):
-                user = ctx.author if type == 'me' else ctx.channel
-
-                units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
-
-                def convert_to_seconds(s):
-                    return int(datetime.timedelta(**{
-                        units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
-                        for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
-                    }).total_seconds())
-
-                def display_time(duration):
-                    intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
-
-                    result = []
-
-                    for name, count in intervals:
-                        value = duration // count
-                        if value:
-                            duration -= value * count
-                            result.append(f'{round(value)} {name}')
-
-                    return ' '.join(result)
-
-                time = convert_to_seconds(duration)
-                if time is None:
-                    await ctx.send("I do not recognise that time!")
-                else:
-                    delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
-                    stamp = delta.timestamp()
-                    rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-                    remind_id = random.choices(rand, k=7)
-                    await cursor.execute("INSERT INTO remind(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.author.id, ''.join(remind_id), stamp, description, user.id)
-                    await ctx.send(f"Reminding you in {display_time(time)} about {description}")
-                    await asyncio.sleep(time)
-                    reminders = await cursor.fetchrow("SELECT * FROM remind WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
-                    if reminders is not None:
-                        await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about {description}")
-                        await cursor.execute("DELETE FROM remind WHERE guild = $1 and message = $2", ctx.author.id, ''.join(remind_id))
-            else:
-                await ctx.send('Argument 1 should be me or here')
-            await self.bot.db.release(cursor)
-
     @commands.command()
     async def afk(self, ctx, *, reason = None):
         """Marks you as AFK"""
@@ -240,13 +266,19 @@ class User(commands.Cog, name='User Commands'):
         member = ctx.author
         afk = await cursor.fetchval("SELECT member FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
         if afk is not None:
-            nick = member.nick.replace('[AFK]', '')
-            await member.edit(nick=nick)
+            try:
+                nick = member.nick.replace('[AFK]', '')
+                await member.edit(nick=nick)
+            except discord.Forbidden:
+                pass
             await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
             await ctx.send(f"{member.mention} I marked you as no longer AFK!")
         else:
-            nick = member.display_name + ' [AFK]'
-            await member.edit(nick=nick)
+            try:
+                nick = member.display_name + ' [AFK]'
+                await member.edit(nick=nick)
+            except discord.Forbidden:
+                pass
             await cursor.execute("INSERT INTO afk(guild, member, message) VALUES($1, $2, $3)", ctx.guild.id, member.id, reason)
             await ctx.send(f"{member.mention} I marked you as AFK!")
         await self.bot.db.release(cursor)
@@ -262,289 +294,32 @@ class User(commands.Cog, name='User Commands'):
         total = full[0] + full[1] + full[2]
         leave = full[1] + full[2]
         percent = round(leave * 100 / full[0], 2) if full[0] != 0 else 0.0
-        embed = discord.Embed(title=f"{member} Invites", description=f"{full[0]} joins, {full[1]} leaves, {full[2]} fakes \n with a total of {total} and a deficit of {leave} ({percent}%)", color=member.color)
+        embed = discord.Embed(title=f"{member} Invites",
+                              description=f"{full[0]} joins, {full[1]} leaves, {full[2]} fakes \n with a total of {total} and a deficit of {leave} ({percent}%)",
+                              color=member.color)
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
     @commands.command()
-    async def roleinfo(self, ctx, *, role: discord.Role):
-        """Shows info about a role"""
-        has = len(role.members)
-        dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
-                "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker", "change_nickname"]
-        array = " "
-        for perm, value in role.permissions:
-            if perm not in dont and value is True:
-                array += perm + " "
-            if perm == "administrator" and value is True:
-                array = "administrator"
-                break
-        if array == " ":
-            array = "None"
-        embed = discord.Embed(title='Role Info', color=role.color)
-        embed.add_field(name="Role Name", value=f"```{role}```")
-        embed.add_field(name="Role ID", value=f"```{role.id}```")
-        embed.add_field(name="Created At", value=f"```{role.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```", inline=False)
-        embed.add_field(name="Color", value=f"```{role.color}```")
-        embed.add_field(name="Position", value=f"```{role.position}```")
-        embed.add_field(name="Has Role", value=f"```{has}```")
-        embed.add_field(name="Hoisted", value=f"```{role.hoist}```")
-        embed.add_field(name="Integrated", value=f"```{role.managed}```")
-        embed.add_field(name="Mentionable", value=f"```{role.mentionable}```")
-        embed.add_field(name='Key Permissions', value=f"```{array}```")
-        await ctx.send(embed=embed)
-
-    @commands.command()
-    async def channelinfo(self, ctx, *, channel: typing.Union[discord.TextChannel, discord.VoiceChannel] = None):
-        """Shows info about a channel"""
-        channel = ctx.channel if not channel else channel
-        yes = " "
-        no = " "
-        for perm, value in channel.overwrites.items():
-            if isinstance(perm, discord.Role):
-                if channel.overwrites_for(perm).read_messages:
-                    yes += perm.mention
-                else:
-                    no += perm.mention
-        if isinstance(channel, discord.TextChannel):
-            pins = await channel.pins()
-            invites = await channel.invites()
-            webhooks = await channel.webhooks()
-            overwrites = f"**Permitted**\n{yes}\n**Denied**\n{no}"
-            embed = discord.Embed(title='Channel Info', color=ctx.author.color)
-            embed.add_field(name="Channel Name", value=f"```{channel}```")
-            embed.add_field(name="Category", value=f"```{channel.category}```")
-            embed.add_field(name="Channel ID", value=f"```{channel.id}```")
-            embed.add_field(name="Created At", value=f"```{channel.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```", inline=False)
-            embed.add_field(name="Topic", value=f"```{channel.topic}```", inline=False)
-            embed.add_field(name="Overwrites", value=overwrites, inline=False)
-            embed.add_field(name="Slowmode", value=f"```{channel.slowmode_delay}```")
-            embed.add_field(name="Pins", value=f"```{len(pins)}```")
-            embed.add_field(name="Invites", value=f"```{len(invites)}```")
-            embed.add_field(name="Webhooks", value=f"```{len(webhooks)}```")
-            embed.add_field(name="Position", value=f"```{channel.position + 1}```")
-            embed.add_field(name="Type", value=f"```{channel.type}```")
-            embed.add_field(name="News", value=f"```{channel.is_nsfw()}```")
-            embed.add_field(name="NSFW", value=f"```{channel.is_nsfw()}```")
-            embed.add_field(name="Permissions Synced", value=f"```{channel.permissions_synced}```")
-            await ctx.send(embed=embed)
-
-        elif isinstance(channel, discord.VoiceChannel):
-            overwrites = f"**Permitted**\n{yes}\n**Denied**\n{no}"
-            invites = await channel.invites()
-            embed = discord.Embed(title='Channel Info', value=ctx.author.color)
-            embed.add_field(name="Channel Name", value=f"```{channel}```")
-            embed.add_field(name="Category", value=f"```{channel.category}```")
-            embed.add_field(name="Channel ID", value=f"```{channel.id}```")
-            embed.add_field(name="Created At", value=f"```{channel.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```", inline=False)
-            embed.add_field(name="Overwrites", value=overwrites, inline=False)
-            embed.add_field(name="Position", value=f"```{channel.position + 1}```")
-            embed.add_field(name="Bitrate", value=f"```{channel.bitrate}```")
-            embed.add_field(name="User Limit", value=f"```{channel.user_limit}```")
-            embed.add_field(name="Invites", value=f"```{len(invites)}```")
-            embed.add_field(name="Type", value=f"```{channel.type}```")
-            await ctx.send(embed=embed)
-
-    @commands.command(aliases=["serverinfo"])
-    async def guildinfo(self, ctx, *, guild=None):
-        """Shows info about a guild"""
-        guild = ctx.guild if not guild else self.bot.get_guild(guild)
-        fa = 'Enabled' if guild.mfa_level == 1 else 'Disabled'
-        notifications = 'All Messages' if guild.default_notifications.value == 0 else 'Only @Mentions'
-        features = 'None' if not guild.features else ' '.join(guild.features)
-        if guild is not None:
-            splash = f"[```Click Here```]({str(guild.splash_url)})"
-            banner = f"[```Click Here```]({str(guild.banner_url)})"
-            if splash == "[```Click Here```]()":
-                splash = '```None```'
-            if banner == "[```Click Here```]()":
-                banner = '```None```'
-
-            channel_count = len([x for x in guild.channels if type(x) == discord.channel.TextChannel])
-            voice_count = len([x for x in guild.channels if type(x) == discord.channel.VoiceChannel])
-            category_count = len([x for x in guild.channels if type(x) == discord.channel.CategoryChannel])
-            role_count = len(guild.roles)
-            emoji_count = len(guild.emojis)
-
-            embed = discord.Embed(title='Guild Info', color=ctx.author.color)
-            embed.add_field(name='Owner', value=f"```{guild.owner}```")
-            embed.add_field(name='Guild Name', value=f"```{guild.name}```")
-            embed.add_field(name='Guild ID', value=f"```{guild.id}```", inline=False)
-            embed.add_field(name='Created At', value=f"```{guild.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```", inline=False)
-            embed.add_field(name='Boosts', value=f"```Level {guild.premium_tier} With {guild.premium_subscription_count} Boosts And {len(guild.premium_subscribers)} Actual```", inline=False)
-            embed.add_field(name='Features', value=f"```{features}```", inline=False)
-            embed.add_field(name='Members', value=f"```{guild.member_count}```")
-            embed.add_field(name='Text Channels', value=f"```{channel_count}```")
-            embed.add_field(name='Voice Channels', value=f"```{voice_count}```")
-            embed.add_field(name='Categories', value=f"```{category_count}```")
-            embed.add_field(name='Roles', value=f"```{role_count}```")
-            embed.add_field(name='Emotes', value=f"```{emoji_count}```")
-            embed.add_field(name='Region', value=f"```{guild.region}```")
-            embed.add_field(name='Verification', value=f"```{guild.verification_level}```")
-            embed.add_field(name='System Channel', value=f"```{guild.system_channel}```")
-            embed.add_field(name='2FA', value=f"```{fa}```")
-            embed.add_field(name='Explict Content', value=f"```{guild.explicit_content_filter}```")
-            embed.add_field(name='Notifications', value=f"```{notifications}```")
-            embed.add_field(name='Splash', value=splash)
-            embed.add_field(name='Banner', value=banner)
-            embed.set_thumbnail(url=guild.icon_url)
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("I cannot find that guild!")
-
-    @commands.command(aliases=["whois"])
-    async def userinfo(self, ctx, *, member: discord.Member = None):
-        """Shows info about a user"""
-        member = ctx.author if not member else member
-        guild = ctx.guild
-        roles = [role for role in member.roles]
-        amount = len(roles) - 1
-        join_position = sorted(guild.members, key=lambda m: m.joined_at).index(member) + 1
-        booster = member.premium_since.__format__('%A %d %B %Y @ %H:%M:%S UTC') if member.premium_since is not None else 'False'
-        status = str(member.status)
-        dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
-                "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker", "change_nickname"]
-        array = " "
-        for perm, value in member.guild_permissions:
-            if perm not in dont and value is True:
-                array += perm + " "
-            if perm == "administrator" and value is True:
-                array = "administrator"
-                break
-        if array == " ":
-            array = "None"
-
-        flags = " "
-        for flag, value in member.public_flags:
-            if value is True:
-                flags += flag + " "
-        if flags == " ":
-            flags = "None"
-
-        message = '\n'
-        if not member.activity or not member.activities:
-            message = "None"
-        for activity in member.activities:
-            if activity.type == discord.ActivityType.custom:
-                if activity.emoji is None:
-                    emoji = ''
-                else:
-                    emoji = activity.emoji
-                message += f'\n**Custom Status**\n{emoji} {activity.name}\n'
-            elif activity.type == discord.ActivityType.playing:
-                message += f"\n**Playing a Game**\n{activity.name}"
-                if not isinstance(activity, discord.Game):
-                    if activity.details:
-                        message += f"\n{activity.details}"
-                    if activity.state:
-                        message += f"\n{activity.state}"
-                    message += "\n"
-            elif activity.type == discord.ActivityType.streaming:
-                message += f"\n**Live on {activity.platform}**\nStreaming [{activity.name}]({activity.url})\n"
-            elif activity.type == discord.ActivityType.watching:
-                message += f"\n**Watching {activity.name}**\n"
-            elif activity.type == discord.ActivityType.listening:
-                if isinstance(activity, discord.Spotify):
-                    url = f"https://open.spotify.com/track/{activity.track_id}"
-                    message += f"\n**Listening to Spotify**\n[{activity.title}]({url})\nby {', '.join(activity.artists)}"
-                    if activity.album and not activity.album == activity.title:
-                        message += f"\non {activity.album}"
-                    message += "\n"
-                else:
-                    message += f"Listening to **{activity.name}**\n"
-
-        embed = discord.Embed(title='User Info', color=member.color)
-        embed.add_field(name='Name', value=f"```{member}```")
-        embed.add_field(name='Status', value=f"```{status}```")
-        embed.add_field(name='User ID', value=f"```{member.id}```", inline=False)
-        embed.add_field(name='Activity', value=message, inline=False)
-        embed.add_field(name='Booster', value=f"```{booster}```", inline=False)
-        embed.add_field(name='Created At', value=f"```{member.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```",
-                        inline=False)
-        embed.add_field(name='Joined At', value=f"```{member.joined_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```",
-                        inline=False)
-        embed.add_field(name='Public Flags', value=f"```{flags}```", inline=False)
-        embed.add_field(name="Join Position", value=f"```{join_position}```")
-        embed.add_field(name='Color', value=f"```{member.color}```")
-        embed.add_field(name='Bot', value=f"```{member.bot}```")
-        embed.add_field(name='Key Permissions', value=f"```{array}```", inline=False)
-        embed.add_field(name=f'Roles [{amount}]',
-                        value=" ".join([role.mention for role in roles if role.name != "@everyone"]), inline=False)
-        embed.set_thumbnail(url=member.avatar_url)
-        await ctx.send(embed=embed)
-
-    @commands.command()
-    async def vaporwave(self, ctx):
-        """Sends you an random vaporware image"""
-        rand = random.randint(1, 100)
-
-        async def fetch(session, url):
-            async with session.get(url) as response:
-                return await response.text()
-
-        async with aiohttp.ClientSession() as session:
-            page_html = await fetch(session,
-                "https://stock.adobe.com/search?filters%5Bcontent_type%3Aphoto%5D=1&filters%5Bcontent_type%3Aillustration%5D=1&filters%5Bcontent_type%3Azip_vector%5D=1&filters%5Bcontent_type%3Avideo%5D=1&filters%5Bcontent_type%3Atemplate%5D=1&filters%5Bcontent_type%3A3d%5D=1&filters%5Binclude_stock_enterprise%5D=0&filters%5Bis_editorial%5D=0&filters%5Bcontent_type%3Aimage%5D=1&k=vaporwave&order=relevance&safe_search=1&search_page=" + str(
-                    rand) + "&get_facets=0&search_type=pagination")
-            soup = BeautifulSoup(page_html, "html.parser")
-            data = soup.find(class_='list-thumbs-container')
-            img = []
-            for i in data.find_all('img'):
-                if i['src'] in "https://as.ftcdn.net/r/v1/pics/95353de2e4b764e140295fca0dc63f617bae76c1/placeholders/spacer.gif":
-                    img.append(i['data-lazy'])
-                else:
-                    img.append(i['src'])
-            img = random.choice(img)
-            embed = discord.Embed(color=ctx.author.color)
-            embed.set_image(url=img)
-            embed.set_footer(text="All Images Provided By Adobe Stock - stock.adobe.com")
-            await ctx.send(embed=embed)
-
-    @commands.command()
-    async def monkey(self, ctx):
-        """Sends you an random monkey image"""
-        rand = random.randint(1, 100)
-
-        async def fetch(session, url):
-            async with session.get(url) as response:
-                return await response.text()
-
-        async with aiohttp.ClientSession() as session:
-            page_html = await fetch(session, "https://stock.adobe.com/search?filters[content_type%3Aphoto]=1&filters[content_type%3Aillustration]=0&filters[content_type%3Azip_vector]=0&filters[content_type%3Avideo]=0&filters[content_type%3Atemplate]=0&filters[content_type%3A3d]=0&filters[content_type%3Aimage]=1&k=monkey&order=relevance&safe_search=1&search_page=" + str(
-            rand) + "&search_type=filter-select&limit=100&acp=&aco=monkey&get_facets=1")
-            soup = BeautifulSoup(page_html, "html.parser")
-            data = soup.find(class_='list-thumbs-container')
-            img = []
-            for i in data.find_all('img'):
-                if i['src'] in "https://as.ftcdn.net/r/v1/pics/95353de2e4b764e140295fca0dc63f617bae76c1/placeholders/spacer.gif":
-                    img.append(i['data-lazy'])
-                else:
-                    img.append(i['src'])
-            img = random.choice(img)
-            embed = discord.Embed(color=ctx.author.color)
-            embed.set_image(url=img)
-            embed.set_footer(text="All Images Provided By Adobe Stock - stock.adobe.com")
-            await ctx.send(embed=embed)
-
-    @commands.command()
     async def suggest(self, ctx, *, suggestion):
         """Allows you to make an suggestion for the guild"""
-        cursor = self.bot.db.acquire
+        cursor = await self.bot.db.acquire()
         guild = ctx.guild
         vote = ['✔', '❌']
-        cursor.row_factory = lambda cursor, row: row[0]
-        result = await cursor.fetchrow("SELECT suggest FROM settings WHERE guild = $1", guild.id)
+        result = await cursor.fetchval("SELECT suggest FROM settings WHERE guild = $1", guild.id)
         channel = guild.get_channel(result)
         if channel is not None:
             embed = discord.Embed(title=f"{ctx.author} Suggestion", description=suggestion)
             sent = await channel.send(embed=embed)
             for reaction in vote:
                 await sent.add_reaction(reaction)
-        self.bot.db.release(cursor)
+        else:
+            await ctx.send("Suggestions are currently not enabled for this guild!")
+        await self.bot.db.release(cursor)
 
     @commands.command(description="Supply type with role/text/voice to edit that custom and argument with a hex color for roles, user limit for voice channels, or topic for text channels")
     async def createcustom(self, ctx, type, argument, *, name):
-        """Allows you to create your own custom role with an color and name"""
+        """Allows you to create your own custom role or channel"""
         cursor = await self.bot.db.acquire()
         author = ctx.message.author
         memID = ctx.message.author.id
@@ -620,7 +395,7 @@ class User(commands.Cog, name='User Commands'):
 
     @commands.command(description="Supply type with role/text/voice to edit that custom and argument with a hex color for roles, user limit for voice channels, or topic for text channels")
     async def editcustom(self, ctx, type, argument, *, name):
-        """Allows you to edit the color and name of your custom role"""
+        """Allows you to edit your custom role or channel"""
         cursor = await self.bot.db.acquire()
         memID = ctx.message.author.id
         guild = ctx.guild
@@ -680,7 +455,7 @@ class User(commands.Cog, name='User Commands'):
 
     @commands.command(description="Supply type with role/text/voice to delete that custom")
     async def deletecustom(self, ctx, type):
-        """Deletes your custom role that you have created"""
+        """Deletes your custom role or channel that you have created"""
         cursor = await self.bot.db.acquire()
         memID = ctx.author.id
         guild = ctx.guild
@@ -740,6 +515,7 @@ class User(commands.Cog, name='User Commands'):
                     if not member.bot and crole.id not in [role.id for role in member.roles] and type in "add":
                         if len(crole.members) > number:
                             await ctx.send(f"You can only give this custom role to an max of {number} members")
+                            return
                         else:
                             await member.add_roles(crole)
                     elif not member.bot and crole.id in [role.id for role in member.roles] and type in "remove":
@@ -756,10 +532,12 @@ class User(commands.Cog, name='User Commands'):
                     await ctx.send("The 'type' argument must be defined as add or remove")
                 elif memID == member.id:
                     await ctx.send("You cannot Add or Remove custom text channels you already own to yourself")
+                    return
                 else:
                     if not member.bot and not cchannel.permissions_for(member).read_messages and type == "add":
                         if len(cchannel.members) > number:
                             await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
+                            return
                         else:
                             await cchannel.set_permissions(member, read_messages=True, send_messages=True)
                     elif not member.bot and cchannel.permissions_for(member).read_messages and type in "remove":
@@ -780,6 +558,7 @@ class User(commands.Cog, name='User Commands'):
                     if not member.bot and not cchannel.permissions_for(member).view_channel and type == "add":
                         if len(cchannel.members) > number:
                             await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
+                            return 
                         else:
                             await cchannel.set_permissions(member, view_channel=True, connect=True)
                     elif not member.bot and cchannel.permissions_for(member).view_channel and type in "remove":
