@@ -1,7 +1,8 @@
 import traceback
 import discord
 from discord.ext import commands
-client = discord.Client()
+
+
 class Handler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -22,7 +23,7 @@ class Handler(commands.Cog):
             await ctx.send(embed=embed)
             for me in teams:
                 user = self.bot.get_user(me.id)
-                await user.send(f"`New exception occurred in guild {ctx.guild} for command {ctx.command}`\n This error has been sent to the bot dev and will get to it ASAP \n\n `{error}`")
+                await user.send(f"`New exception occurred in guild {ctx.guild} for command {ctx.command}`\n```py\n{traceback_text}```")
             return
         elif not isinstance(error, commands.CommandNotFound):
             await ctx.send(error_return)
