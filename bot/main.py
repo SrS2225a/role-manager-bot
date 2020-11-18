@@ -31,17 +31,17 @@ bot.version = '5.20.1'
 
 
 # loads token and emojis from file
-with open("bot/token.json", "r") as set:
+with open("token.json", "r") as set:
     bot.settings = json.load(set)
 
-with open("bot/emojis.json", "r") as unicode:
+with open("emojis.json", "r") as unicode:
     emojis = json.load(unicode)
     for key, value in emojis.items():
         bot.emoji.append(value['emoji'])
 
 
 async def connect():
-    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=bot.settings['user'], password=bot.settings['password'], database='database', command_timeout=12)
+    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=bot.settings['user'], password=bot.settings['password'])
 
 asyncio.get_event_loop().run_until_complete(connect())
 
@@ -64,7 +64,7 @@ async def predicate(ctx):
 
 # loads cogs
 bot.load_extension("jishaku")
-for cogs in os.listdir('bot/./cogs'):
+for cogs in os.listdir('./cogs'):
     if cogs.endswith('.py'):
         bot.load_extension(f'cogs.{cogs[:-3]}')
 
