@@ -126,45 +126,67 @@ class User(commands.Cog, name='User Commands'):
 
 
     @commands.command(aliases=['top'], description='Supply type with rankings/invites/partnerships to view that particular leaderboard')
-    async def leaderboard(self, ctx, type, rank: int = None):
+    async def leaderboard(self, ctx, type):
         """Shows top rankings"""
         global result, check, user
         cursor = await self.bot.db.acquire()
-        if rank is None:
-            rank = 10
-        if rank < 100:
-            if type == 'rankings':
-                diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'difficulty')
-                if diff1 is not None:
-                    result = await cursor.fetch("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC LIMIT $2", ctx.guild.id, rank)
-                    table = []
-                    for row in result:
-                        user = self.bot.get_user(id=int(row[0]))
-                        if user is not None:
-                            table.append([row[1], row[2], user.name + "#" + user.discriminator])
-
-                    class Source(menus.ListPageSource):
-                        def __init__(self, data):
-                            super().__init__(data, per_page=20)
-
-                        async def format_page(self, menu, entry):
-                            offset = menu.current_page * self.per_page
-                            embed = discord.Embed(title=f"Dionysus Rankings (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
-                                                  description=f"```{tabulate(entry, headers=['XP', 'LV', 'USER'], tablefmt='github')}```")
-                            embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(entry)}")
-                            return embed
-
-                    pages = menus.MenuPages(source=Source(table), delete_message_after=True)
-                    await pages.start(ctx)
-                elif diff1 is None:
-                    await ctx.send("Rankings is currently disabled for this server!")
-            elif type == 'invites':
-                result = await cursor.fetch(f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC LIMIT {rank}", ctx.guild.id)
+        if type == 'rankings':
+            diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'difficulty')
+            if diff1 is not None:
+                result = await cursor.fetch("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC", ctx.guild.id)
                 table = []
                 for row in result:
                     user = self.bot.get_user(id=int(row[0]))
                     if user is not None:
-                        table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
+                        table.append([row[1], row[2], user.name + "#" + user.discriminator])
+
+                class Source(menus.ListPageSource):
+                    def __init__(self, data):
+                        super().__init__(data, per_page=20)
+
+                    async def format_page(self, menu, entry):
+                        offset = menu.current_page * self.per_page
+                        embed = discord.Embed(title=f"Dionysus Rankings (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                                              description=f"```{tabulate(entry, headers=['XP', 'LV', 'USER'], tablefmt='presto')}```")
+                        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
+                        return embed
+
+                pages = menus.MenuPages(source=Source(table), delete_message_after=True)
+                await pages.start(ctx)
+            elif diff1 is None:
+                await ctx.send("Rankings is currently disabled for this server!")
+        elif type == 'invites':
+            result = await cursor.fetch(f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC", ctx.guild.id)
+            table = []
+            for row in result:
+                user = self.bot.get_user(id=int(row[0]))
+                if user is not None:
+                    table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
+
+            class Source(menus.ListPageSource):
+                def __init__(self, data):
+                    super().__init__(data, per_page=20)
+
+                async def format_page(self, menu, entry):
+                    offset = menu.current_page * self.per_page
+                    embed = discord.Embed(
+                        title=f"Dionysus Invites (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                        description=f"```{tabulate(entry, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='presto')}```")
+                    embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
+                    return embed
+
+            pages = menus.MenuPages(source=Source(table), delete_message_after=True)
+            await pages.start(ctx)
+
+        elif type == 'partnerships':
+            diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'partners')
+            if diff1 is not None:
+                result = await cursor.fetch("SELECT member, number FROM partner WHERE guild = $1 ORDER BY number DESC", ctx.guild.id)
+                table = []
+                for row in result:
+                    user = self.bot.get_user(id=int(row[0]))
+                    if user is not None:
+                        table.append([row[1], user.name + "#" + user.discriminator])
 
                 class Source(menus.ListPageSource):
                     def __init__(self, data):
@@ -173,44 +195,16 @@ class User(commands.Cog, name='User Commands'):
                     async def format_page(self, menu, entry):
                         offset = menu.current_page * self.per_page
                         embed = discord.Embed(
-                            title=f"Dionysus Invites (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
-                            description=f"```{tabulate(entry, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='github')}```")
-                        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(entry)}")
+                            title=f"Dionysus Partners (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                            description=f"```{tabulate(entry, headers=['PARTNERS', 'USER'], tablefmt='presto')}```")
+                        embed.set_footer(
+                            text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                         return embed
 
                 pages = menus.MenuPages(source=Source(table), delete_message_after=True)
                 await pages.start(ctx)
-
-            elif type == 'partnerships':
-                diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'partners')
-                if diff1 is not None:
-                    result = await cursor.fetch("SELECT member, number FROM partner WHERE guild = $1 ORDER BY number DESC LIMIT $2", ctx.guild.id, rank)
-                    table = []
-                    for row in result:
-                        user = self.bot.get_user(id=int(row[0]))
-                        if user is not None:
-                            table.append([row[1], user.name + "#" + user.discriminator])
-
-                    class Source(menus.ListPageSource):
-                        def __init__(self, data):
-                            super().__init__(data, per_page=20)
-
-                        async def format_page(self, menu, entry):
-                            offset = menu.current_page * self.per_page
-                            embed = discord.Embed(
-                                title=f"Dionysus Partners (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
-                                description=f"```{tabulate(entry, headers=['PARTNERS', 'USER'], tablefmt='github')}```")
-                            embed.set_footer(
-                                text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(entry)}")
-                            return embed
-
-                    pages = menus.MenuPages(source=Source(table), delete_message_after=True)
-                    await pages.start(ctx)
-
-                elif diff1 is None:
-                    await ctx.send("Partnerships is currently disabled for this server!")
-        else:
-            await ctx.send("Top Rankings Cannot Be Above 100!")
+            elif diff1 is None:
+                await ctx.send("Partnerships is currently disabled for this server!")
         await self.bot.db.release(cursor)
 
     @commands.command(aliases=['level'])

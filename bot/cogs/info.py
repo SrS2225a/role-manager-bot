@@ -83,7 +83,7 @@ class Info(commands.Cog, name='Information Commands'):
         embed = discord.Embed(title='Role Info', color=role.color)
         embed.add_field(name="Role Name", value=f"```{role}```")
         embed.add_field(name="Role ID", value=f"```{role.id}```")
-        embed.add_field(name="Created At", value=f"```{role.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```", inline=False)
+        embed.add_field(name="Created At", value=f"```{role.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
         embed.add_field(name="Color", value=f"```{role.color}```")
         embed.add_field(name="Position", value=f"```{role.position}```")
         embed.add_field(name="Has Role", value=f"```{has}```")
@@ -115,7 +115,7 @@ class Info(commands.Cog, name='Information Commands'):
             embed.add_field(name="Channel Name", value=f"```{channel}```")
             embed.add_field(name="Category", value=f"```{channel.category}```")
             embed.add_field(name="Channel ID", value=f"```{channel.id}```", inline=False)
-            embed.add_field(name="Created At", value=f"```{channel.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```", inline=False)
+            embed.add_field(name="Created At", value=f"```{channel.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
             embed.add_field(name="Topic", value=f"```{channel.topic}```", inline=False)
             embed.add_field(name="Overwrites", value=overwrites, inline=False)
             embed.add_field(name="Slowmode", value=f"```{channel.slowmode_delay}```")
@@ -136,7 +136,7 @@ class Info(commands.Cog, name='Information Commands'):
             embed.add_field(name="Channel Name", value=f"```{channel}```")
             embed.add_field(name="Category", value=f"```{channel.category}```")
             embed.add_field(name="Channel ID", value=f"```{channel.id}```", inline=False)
-            embed.add_field(name="Created At", value=f"```{channel.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```", inline=False)
+            embed.add_field(name="Created At", value=f"```{channel.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
             embed.add_field(name="Overwrites", value=overwrites, inline=False)
             embed.add_field(name="Position", value=f"```{channel.position}```")
             embed.add_field(name="User Limit", value=f"```{channel.user_limit}```")
@@ -172,7 +172,7 @@ class Info(commands.Cog, name='Information Commands'):
             embed.add_field(name='Owner', value=f"```{guild.owner}```")
             embed.add_field(name='Guild Name', value=f"```{guild.name}```")
             embed.add_field(name='Guild ID', value=f"```{guild.id}```", inline=False)
-            embed.add_field(name='Created At', value=f"```{guild.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```",
+            embed.add_field(name='Created At', value=f"```{guild.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
                             inline=False)
             embed.add_field(name='Boosts',
                             value=f"```Level {guild.premium_tier} With {guild.premium_subscription_count} Boosts And {len(guild.premium_subscribers)} Actual```",
@@ -207,7 +207,7 @@ class Info(commands.Cog, name='Information Commands'):
         amount = len(roles) - 1
         join_position = sorted(guild.members, key=lambda m: m.joined_at).index(member) + 1
         booster = member.premium_since.__format__(
-            '%A %d %B %Y @ %H:%M:%S UTC') if member.premium_since is not None else 'False'
+            '%a %b %d %Y %I:%M:%S %p UTC') if member.premium_since is not None else 'False'
         status = str(member.status)
         dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
                 "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker",
@@ -267,9 +267,9 @@ class Info(commands.Cog, name='Information Commands'):
         embed.add_field(name='User ID', value=f"```{member.id}```", inline=False)
         embed.add_field(name='Activity', value=message, inline=False)
         embed.add_field(name='Booster', value=f"```{booster}```", inline=False)
-        embed.add_field(name='Created At', value=f"```{member.created_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```",
+        embed.add_field(name='Created At', value=f"```{member.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
                         inline=False)
-        embed.add_field(name='Joined At', value=f"```{member.joined_at.__format__('%A %d %B %Y @ %H:%M:%S UTC')}```",
+        embed.add_field(name='Joined At', value=f"```{member.joined_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
                         inline=False)
         embed.add_field(name='Public Flags', value=f"```{flags}```", inline=False)
         embed.add_field(name="Join Position", value=f"```{join_position}```")

@@ -460,7 +460,7 @@ class Events(commands.Cog):
                             if channel is not None and role.id not in [role.id for role in user.roles]:
                                 await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
                                 await user.add_roles(role)
-                elif amount is None and invites.uses != 0:
+                elif amount is None and invites.uses > 0:
                     await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guildid, invites.inviter.id, invites.code, invites.uses, 0, 0)
 
         # code for channel overwrites recovery

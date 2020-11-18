@@ -66,7 +66,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             else:
                 for remind in reminders:
                     chan = f"{self.bot.get_guild(remind[5])} — #{self.bot.get_channel(remind[4])}" if self.bot.get_channel(remind[4]) is not None else 'dm'
-                    date = datetime.datetime.utcfromtimestamp(remind[2]).strftime('%A %d %B %Y @ %H:%M:%S UTC')
+                    date = datetime.datetime.utcfromtimestamp(remind[2]).strftime('%a %b %d %Y %I:%M:%S %p UTC')
                     embed.add_field(name=f"Reminder [`{remind[1]}`]", value=f"```Time: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
             await ctx.send(embed=embed)
 
@@ -115,7 +115,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
                         await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about: {escaped}")
                         await cursor.execute("DELETE FROM remind WHERE account = $1 and message = $2", ctx.author.id, ''.join(remind_id))
             else:
-                await ctx.send('Argument 1 should be dm or here')
+                await ctx.send('Argument 1 should be dm or channel')
             await self.bot.db.release(cursor)
 
     @commands.command(aliases=["makevote"])
@@ -137,7 +137,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
 
             time = convert_to_seconds(duration)
             delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
-            ends = datetime.datetime.strftime(delta, '%A %d %B %Y @ %H:%M:%S UTC')
+            ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
             type = "Multiple Options" if multiple is True else "Single Option"
             embed = discord.Embed(title=topic)
             embed.set_footer(text=f"Ends At {ends} - {type}")
@@ -215,7 +215,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
         time = convert_to_seconds(duration)
         now = datetime.datetime.utcnow()
         delta = now + datetime.timedelta(seconds=time)
-        ends = datetime.datetime.strftime(delta, '%A %d %B %Y @ %H:%M:%S UTC')
+        ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
         stamp = delta.timestamp()
         embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Winners: {winners} \nRequirement: {requirement} \nGiveaway Ends At: {ends}")
         sent = await ctx.send(embed=embed)
@@ -259,7 +259,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
                     time = datetime.datetime.utcnow().timestamp()
                     if datetime.datetime.utcnow() < stamp:
                         now = datetime.datetime.utcnow()
-                        ends = datetime.datetime.strftime(now, '%A %d %B %Y @ %H:%M:%S UTC')
+                        ends = datetime.datetime.strftime(now, '%a %b %d %Y %I:%M:%S %p UTC')
                         users = await reaction.users().flatten()
                         winner = random.choices(users, k=execute[1])
                         winners = "\n".join([winner.mention for winner in winner if winner.id != 437447118127366154])
