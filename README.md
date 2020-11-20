@@ -12,7 +12,7 @@ It is part of the private bot Derivi built for the server known as New Line and 
 8. https://discord.gg/wuF85c7 - sleepyhead
 
 # Support
-If you are running into issues with Dionysus, please join the support server at discord.gg/Ax2upvf and state your issue.
+If you are running into issues with Dionysus, please join the support server at https://discord.gg/Ax2upvf and state your issue.
 You can also use this to report bug or suggestions, or use github's issue tracker.
 
 # Features
