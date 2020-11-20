@@ -27,7 +27,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'), intents=inten
 bot.owner_ids = [508455796783317002, 381694604187009025, 270848136006729728, 222492698236420099, 372923892865433600, 468854398806654976]
 bot.active = []
 bot.emoji = []
-bot.version = '5.20.2'
+bot.version = '5.20.3'
 
 
 # loads token and emojis from file

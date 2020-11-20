@@ -261,7 +261,7 @@ class User(commands.Cog, name='User Commands'):
         afk = await cursor.fetchval("SELECT member FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
         if afk is not None:
             try:
-                nick = member.nick.replace('[AFK]', '')
+                nick = member.display_name
                 await member.edit(nick=nick)
             except discord.Forbidden:
                 pass

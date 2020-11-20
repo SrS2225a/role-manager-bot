@@ -152,13 +152,16 @@ class Events(commands.Cog):
             for user in await afk.fetch(message.guild.id):
                 # checks the the member marked as AFK talked then removes them as AFK
                 if user[0] == member.id:
-                    nick = member.nick.replace('[AFK]', '')
-                    await member.edit(nick=nick)
+                    try:
+                        nick = member.display_name
+                        await member.edit(nick=nick)
+                    except discord.Forbidden:
+                        pass
                     await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", message.guild.id, message.author.id)
                     await channel.send(f"{message.author.mention} I marked you as no longer AFK!")
                 elif user[0] in [msg.id for msg in message.mentions]:
                     him = message.guild.get_member(user[0])
-                    await channel.send(f"{message.author.mention} {him} is currently AFK with the reason {user[1]}!")
+                    await channel.send(f"{message.author.mention} {him} is currently AFK with the reason: {user[1]}!")
 
             await self.bot.db.release(cursor)
 
