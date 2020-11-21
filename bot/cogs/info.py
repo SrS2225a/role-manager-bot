@@ -197,7 +197,6 @@ class Info(commands.Cog, name='Information Commands'):
         else:
             await ctx.send("I cannot find that guild!")
 
-
     @commands.command(aliases=["whois"])
     async def userinfo(self, ctx, *, member: discord.Member = None):
         """Shows info about a user"""
@@ -280,6 +279,15 @@ class Info(commands.Cog, name='Information Commands'):
                         value=" ".join([role.mention for role in roles if role.name != "@everyone"]), inline=False)
         embed.set_thumbnail(url=member.avatar_url)
         await ctx.send(embed=embed)
+
+    @commands.command(aliases=['av'])
+    async def avatar(self, ctx, *, member: discord.Member = None):
+        """Enlarges a members avatar"""
+        member = ctx.author if not member else member
+        embed = discord.Embed(title=f"{member} Avatar")
+        embed.set_image(url=member.avatar_url)
+        await ctx.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(Info(bot))
