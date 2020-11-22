@@ -46,7 +46,7 @@ class User(commands.Cog, name='User Commands'):
             role = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'role')
             if channel is None:
                 await ctx.send("Applications Are Currently Disabled For This Bot!")
-            elif int(check) not in [role.id for role in member.roles]:
+            elif check is not None and int(check) in [role.id for role in member.roles]:
                 await ctx.send("You are not allowed to create Applications!")
             else:
                 questions = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2",
