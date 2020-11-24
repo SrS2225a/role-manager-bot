@@ -15,8 +15,8 @@ It is part of the private bot Derivi built for the server known as New Line and 
 Dionysus was created by Nyx#8614 with special thanks to Nik#9393 for help with databases, Sugden#0562 for the extra help with code and Vendrom#9820 for the much needed suggestions.
 
 # Support
-If you are running into issues with Dionysus, please join the support server at https://discord.gg/Ax2upvf and state your issue.
-You can also use this to report bug or suggestions, or use github's issue tracker.
+If you are running into issues with Dionysus, want to report a bug, have a question about something, or make a suggestion please join the support server at https://discord.gg/Ax2upvf and state your issue.
+Or you can use github's issue tracker.
 
 # Features
 * Intuative information commands with tons of useful information
