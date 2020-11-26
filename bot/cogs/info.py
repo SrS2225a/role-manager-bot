@@ -281,7 +281,7 @@ class Info(commands.Cog, name='Information Commands'):
         await ctx.send(embed=embed)
 
     @commands.command(aliases=['av'])
-    async def avatar(self, ctx, *, member: discord.Member = None):
+    async def avatar(self, ctx, *, member: discord.User = None):
         """Enlarges a members avatar"""
         member = ctx.author if not member else member
         embed = discord.Embed(title=f"{member} Avatar")
