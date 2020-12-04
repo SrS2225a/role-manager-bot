@@ -197,7 +197,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             await ctx.send("This Poll Does Not Exist Or In The Current Channel")
         await self.bot.db.release(cursor)
 
-    @commands.command(aliases=["makegiveaway"])
+    @commands.command(aliases=["makegiveaway", "giveaway"])
     @commands.has_permissions(manage_messages=True)
     async def creategiveaway(self, ctx, name, winners: int, duration, requirement=None):
         """Allows you to create and host your own giveaway"""
@@ -243,7 +243,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             await ctx.send("This Giveaway Does Not Exist Or In The Current Channel")
         await self.bot.db.release(cursor)
 
-    @commands.command()
+    @commands.command(aliases=["cancelgiveaway"])
     @commands.has_permissions(manage_messages=True)
     async def endgiveaway(self, ctx, message: int):
         """Allows you to end a running giveaway"""

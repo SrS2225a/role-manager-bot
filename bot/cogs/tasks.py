@@ -1,5 +1,7 @@
+import ast
 from datetime import datetime
 
+import import_expression
 from discord.ext import tasks, commands
 
 
@@ -75,6 +77,14 @@ class Tasks(commands.Cog):
     async def before_printer(self):
         await self.bot.wait_until_ready()
 
+    update_frequency = 0
+
+    @tasks.loop(seconds=update_frequency)
+    async def custom_evaluation(self):
+        ""
+        # add code to add gateway intent then remove it for custom action events that are not needed
+        # @client.listener("on_ready")
+        # async def event_listener()
 
 def setup(bot):
     bot.add_cog(Tasks(bot))
