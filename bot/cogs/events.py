@@ -154,7 +154,7 @@ class Events(commands.Cog):
                 if user[0] == member.id:
                     try:
                         nick = member.display_name
-                        await member.edit(nick=nick)
+                        await member.edit(nick=nick.split('[AFK]')[0])
                     except discord.Forbidden:
                         pass
                     await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", message.guild.id, message.author.id)

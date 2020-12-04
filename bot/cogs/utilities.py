@@ -99,6 +99,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
                     return ' '.join(result)
 
                 time = convert_to_seconds(duration)
+
                 if time is None:
                     await ctx.send("I do not recognise that time!")
                 else:
@@ -115,7 +116,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
                         await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about: {escaped}")
                         await cursor.execute("DELETE FROM remind WHERE account = $1 and message = $2", ctx.author.id, ''.join(remind_id))
             else:
-                await ctx.send('Argument 1 should be dm or channel')
+                await ctx.send('Argument 1 should be a dm or channel')
             await self.bot.db.release(cursor)
 
     @commands.command(aliases=["makevote"])

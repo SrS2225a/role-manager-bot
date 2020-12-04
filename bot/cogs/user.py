@@ -255,6 +255,7 @@ class User(commands.Cog, name='User Commands'):
     @commands.command()
     async def afk(self, ctx, *, reason = None):
         """Marks you as AFK"""
+        print('ok')
         cursor = await self.bot.db.acquire()
         reason = 'AFK' if not reason else reason
         member = ctx.author
@@ -262,7 +263,7 @@ class User(commands.Cog, name='User Commands'):
         if afk is not None:
             try:
                 nick = member.display_name
-                await member.edit(nick=nick)
+                await member.edit(nick=nick.split('[AFK]')[0])
             except discord.Forbidden:
                 pass
             await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
