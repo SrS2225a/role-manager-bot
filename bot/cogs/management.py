@@ -133,38 +133,6 @@ class Management(commands.Cog, name="Management Commands"):
                 await ctx.send(f"User unblacklisted successfully from club {channel}")
         await self.bot.db.release(cursor)
 
-    # @commands.command(aliases=['caction'], description="Supply action with list for a list of your custom actions, edit to edit custom action, or delete to delete an custom action")
-    # @commands.has_permissions(administrator=True)
-    # async def customaction(self, ctx, action, duration = None, *, code: codeblock_converter = None):
-    #     """Allows you to create a custom action that the bot will execute every set time given or on a event"""
-    #     cursor = await self.bot.db.acquire()
-    #     if action == 'create':
-    #         last_result = None
-    #         arg_dict = get_var_dict(ctx)
-    #         arg_dict["_"] = last_result
-    #         embed = code_limiter(code)
-    #         if embed:
-    #             await ctx.send(embed=embed)
-    #         else:
-    #             rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    #             remind_id = random.choices(rand, k=6)
-    #
-    #             units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
-    #             def convert_to_seconds(s):
-    #                 return int(datetime.timedelta(**{
-    #                     units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
-    #                     for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
-    #                 }).total_seconds())
-    #
-    #             time = convert_to_seconds(duration)
-    #             if time is None:
-    #                 ""
-    #             cursor.execute("INSERT INTO executor(guild, event, code) VALUES ($1, $2, $3)", ctx.guild.id, duration, code)
-    #
-    #     await self.bot.db.release(cursor)
-    #
-    #
-
 
 def setup(bot):
     bot.add_cog(Management(bot))
