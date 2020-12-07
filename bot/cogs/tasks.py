@@ -1,7 +1,5 @@
-import ast
 from datetime import datetime
 
-import import_expression
 from discord.ext import tasks, commands
 
 
@@ -25,23 +23,24 @@ class Tasks(commands.Cog):
                 # checks how long someone has been boosting for and gives the booster an reward accordingly
                 for boost in booster:
                     member = await cursor.prepare(f"SELECT member FROM owner WHERE guild = $1 and member = $2 and type = $3")
+                    if await member.fetchval(guild.id, boost.id, 'boost') is None:
+                        await cursor.execute(f"INSERT INTO owner(guild, member, type)VALUES($1, $2, $3)", guild.id,  boost.id, 'boost')
                     for day in await boosting.fetch(guild.id, 'boost'):
-                        if await member.fetchval(guild.id, boost.id, 'boost') is None:
-                            await cursor.execute(f"INSERT INTO owner(guild, member, type)VALUES($1, $2, $3)", guild.id, boost.id, 'boost')
                         role = guild.get_role(role_id=day[1])
-                        if (datetime.now()-boost.premium_since).days == int(day[0]):
+                        if (datetime.now()-boost.premium_since).days >= int(day[0]):
                             if channel is not None and role.id not in [role.id for role in boost.roles]:
                                 await channel.send(f"Congrats to {boost.mention} for boosting {guild} for {(datetime.now()-boost.premium_since).days} Days!")
                             await boost.add_roles(role)
 
                 # checks if the booster has stopped boosting at all and remove all of their rewards
                 member = await cursor.prepare(f"SELECT member FROM owner WHERE guild = $1")
+                roles = await cursor.prepare(f"SELECT role FROM boost WHERE type = $1 and guild = $2")
+                role = await roles.fetch('boost', guild.id)
                 for user in await member.fetch(guild.id):
                     member = guild.get_member(int(user[0]))
                     if member is not None and member.premium_since is None:
-                        roles = await cursor.prepare(f"SELECT role FROM boost WHERE type = $1 and guild = $2")
                         await cursor.execute(f"DELETE FROM owner WHERE guild = $1 and member = $2 and type = $3", guild.id, member.id, 'boost')
-                        for role in await roles.fetch('boost', guild.id):
+                        for role in role:
                             role = guild.get_role(role_id=role[0])
                             await member.remove_roles(role)
             await self.bot.db.release(cursor)
@@ -77,14 +76,6 @@ class Tasks(commands.Cog):
     async def before_printer(self):
         await self.bot.wait_until_ready()
 
-    update_frequency = 0
-
-    @tasks.loop(seconds=update_frequency)
-    async def custom_evaluation(self):
-        ""
-        # add code to add gateway intent then remove it for custom action events that are not needed
-        # @client.listener("on_ready")
-        # async def event_listener()
 
 def setup(bot):
     bot.add_cog(Tasks(bot))
