@@ -9,7 +9,7 @@ class Tasks(commands.Cog):
         self.boosters.start()
         self.flags.start()
 
-    @tasks.loop(hours=24.0)
+    @tasks.loop(hours=16.0)
     async def boosters(self):
         # task for booster reward system
         try:
