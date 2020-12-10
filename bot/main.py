@@ -1,3 +1,14 @@
+# \/ ----------------Priority's----------------- \/
+# TODO: Task: Content Creator Reward System Based on how many subs/videos/viwers/etc someone has (Need OAuth For This Sadly :/)
+# TODO: Task: Use Pal Pal's/Stripe's API to create an donate reward system (may not be possible due to identifying)
+# TODO: Create a web site for oauth with listed tasks and dashboard for configuring, plus documentation, the website will be called dionysus.nyx.io
+# TODO: Update system on different problems the bot is currently experiencing
+# TODO: Server voting reward system
+# TODO: Add roles based on someons creation or server join date
+# TODO: Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday (Support for conditions?)
+# \/ ----------------Supper Less Important Stuff----------------- \/
+# TODO: Improve reminder system by using an database and loop through in case the bot goes down use https://discordpy.readthedocs.io/en/latest/ext/tasks/#discord.ext.tasks.Loop for some ways to manage loop
+# TODO: Add a command to quickly update to an new counting number
 
 import asyncio
 
@@ -27,6 +38,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'), intents=inten
 bot.owner_ids = [508455796783317002, 381694604187009025, 270848136006729728, 222492698236420099, 372923892865433600, 468854398806654976]
 bot.active = []
 bot.emoji = []
+bot.version = '5.20.4'
 
 
 # loads token and emojis from file
@@ -40,14 +52,14 @@ with open("emojis.json", "r") as unicode:
 
 
 async def connect():
-    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=bot.settings['user'], password=bot.settings['password'], max_size=100, max_queries=5000, max_inactive_connection_lifetime=200)
+    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=bot.settings['user'], password=bot.settings['password'], database='database', max_size=100, max_queries=5000, max_inactive_connection_lifetime=200)
 
 asyncio.get_event_loop().run_until_complete(connect())
 
 
 # log all actions happening with bot
 logger = logging.getLogger('discord')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(message)s'))
 logger.addHandler(handler)

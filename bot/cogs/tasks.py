@@ -35,12 +35,12 @@ class Tasks(commands.Cog):
                 # checks if the booster has stopped boosting at all and remove all of their rewards
                 member = await cursor.prepare(f"SELECT member FROM owner WHERE guild = $1")
                 roles = await cursor.prepare(f"SELECT role FROM boost WHERE type = $1 and guild = $2")
-                role = await roles.fetch('boost', guild.id)
+                roles = await roles.fetch('boost', guild.id)
                 for user in await member.fetch(guild.id):
                     member = guild.get_member(int(user[0]))
                     if member is not None and member.premium_since is None:
                         await cursor.execute(f"DELETE FROM owner WHERE guild = $1 and member = $2 and type = $3", guild.id, member.id, 'boost')
-                        for role in role:
+                        for role in roles:
                             role = guild.get_role(role_id=role[0])
                             await member.remove_roles(role)
             await self.bot.db.release(cursor)
