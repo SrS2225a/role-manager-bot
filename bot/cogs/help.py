@@ -9,6 +9,7 @@ import psutil
 from discord.ext import commands
 
 uses = 0
+bot.version = '5.20.3'
 
 class EmbedHelpCommand(commands.HelpCommand):
     COLOUR = 0x95a5a6
