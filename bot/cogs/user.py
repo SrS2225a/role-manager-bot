@@ -255,7 +255,6 @@ class User(commands.Cog, name='User Commands'):
     @commands.command()
     async def afk(self, ctx, *, reason = None):
         """Marks you as AFK"""
-        print('ok')
         cursor = await self.bot.db.acquire()
         reason = 'AFK' if not reason else reason
         member = ctx.author
