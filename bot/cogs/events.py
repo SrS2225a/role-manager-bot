@@ -460,7 +460,7 @@ class Events(commands.Cog):
                             announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guildid)
                             channel = guild.get_channel(announcement)
                             user = guild.get_member(invites.inviter.id)
-                            if channel is not None and role.id not in [role.id for role in user.roles]:
+                            if None not in (channel, user) and role.id not in [role.id for role in user.roles]:
                                 await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
                                 await user.add_roles(role)
                 elif amount is None and invites.uses > 0:
