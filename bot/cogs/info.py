@@ -275,8 +275,8 @@ class Info(commands.Cog, name='Information Commands'):
         embed.add_field(name='Color', value=f"```{member.color}```")
         embed.add_field(name='Bot', value=f"```{member.bot}```")
         embed.add_field(name='Key Permissions', value=f"```{array}```", inline=False)
-        embed.add_field(name=f'Roles [{amount}]',
-                        value=" ".join([role.mention for role in roles if role.name != "@everyone"]), inline=False)
+        if roles:
+            embed.add_field(name=f'Roles [{amount}]', value=" ".join([role.mention for role in roles if role.name != "@everyone"]), inline=False)
         embed.set_thumbnail(url=member.avatar_url)
         await ctx.send(embed=embed)
 
