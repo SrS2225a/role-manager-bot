@@ -172,11 +172,8 @@ class Info(commands.Cog, name='Information Commands'):
             embed.add_field(name='Owner', value=f"```{guild.owner}```")
             embed.add_field(name='Guild Name', value=f"```{guild.name}```")
             embed.add_field(name='Guild ID', value=f"```{guild.id}```", inline=False)
-            embed.add_field(name='Created At', value=f"```{guild.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
-                            inline=False)
-            embed.add_field(name='Boosts',
-                            value=f"```Level {guild.premium_tier} With {guild.premium_subscription_count} Boosts And {len(guild.premium_subscribers)} Actual```",
-                            inline=False)
+            embed.add_field(name='Created At', value=f"```{guild.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
+            embed.add_field(name='Boosts', value=f"```Level {guild.premium_tier} With {guild.premium_subscription_count} Boosts And {len(guild.premium_subscribers)} Actual```", inline=False)
             embed.add_field(name='Features', value=f"```{features}```", inline=False)
             embed.add_field(name='Members', value=f"```{guild.member_count}```")
             embed.add_field(name='Text Channels', value=f"```{channel_count}```")
