@@ -30,7 +30,8 @@ class EmbedHelpCommand(commands.HelpCommand):
 
         for cog, commands in mapping.items():
             name = 'No Category' if cog is None else cog.qualified_name
-            if commands and name != 'Jishaku':
+            filtered = await self.filter_commands(commands, sort=True)
+            if commands and name != 'Jishaku' and filtered:
                 value = '\u2002'.join(f"`{c.name}`" for c in commands)
                 embed.add_field(name=name, value=value, inline=False)
 
@@ -42,20 +43,23 @@ class EmbedHelpCommand(commands.HelpCommand):
         if cog.description:
             embed.description = cog.description
 
-        filtered = cog.get_commands()
+        filtered = await self.filter_commands(cog.get_commands(), sort=True)
         for command in filtered:
-            embed.add_field(name=self.get_command_signature(command), value=command.help or '...', inline=False)
+            var = self.get_command_signature(command)
+            if var != '&jishaku':
+                embed.add_field(name=var, value=command.help or '...', inline=False)
 
         embed.set_footer(text=self.get_ending_note())
-        if command.qualified_name != 'jishaku':
-            await self.get_destination().send(embed=embed)
+        await self.get_destination().send(embed=embed)
 
     async def send_command_help(self, command):
+        embed = discord.Embed(title=f'Dionysus Help - {command.name}', color=self.COLOUR)
         aliases = ''
+        filtered = await self.filter_commands([command], sort=True)
         for alias in command.aliases:
             aliases += '({})'.format(alias)
-        if command.name != 'jishaku':
-            embed = discord.Embed(title=f'Dionysus Help - {command.name}', color=self.COLOUR, description=f'{command.description}\n\n')
+        if command.name != 'jishaku' and filtered:
+            embed.description = command.description
             embed.add_field(name=f'{self.clean_prefix}{command.qualified_name} {command.signature}', value=command.help or '...')
             embed.set_footer(text="Aliases: " + aliases)
 

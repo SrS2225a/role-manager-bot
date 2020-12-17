@@ -150,6 +150,7 @@ class Settings(commands.Cog, name='Settings Commands'):
         await self.bot.db.release(cursor)
 
     @commands.command()
+    @commands.has_permissions(manage_guild=True)
     async def suggestions(self, ctx, *, channel: discord.TextChannel):
         """Sets what channel guild suggestions should be sent to"""
         cursor = await self.bot.db.acquire()
