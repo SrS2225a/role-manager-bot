@@ -112,7 +112,7 @@ class Events(commands.Cog):
                     else:
                         await message.delete()
                         await channel.send(f"{message.author.mention} just forgot how to count!", delete_after=4.7)
-                        if role is not None and current[5] != 0:
+                        if current[5] > 0:
                             await message.author.add_roles(role)
                             await asyncio.sleep(current[5])
                             await message.author.remove_roles(role)

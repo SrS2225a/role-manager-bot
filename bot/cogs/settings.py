@@ -49,7 +49,7 @@ class Settings(commands.Cog, name='Settings Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role=None, delay=None):
+    async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role, delay=None):
         """Allows you to set an counting channel"""
         cursor = await self.bot.db.acquire()
         units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
@@ -59,9 +59,9 @@ class Settings(commands.Cog, name='Settings Commands'):
                 for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
             }).total_seconds())
 
-        result = await cursor.fetchval("SELECT channel FROM count WHERE guild = $1 and channel = $2 and role = $3 and count = $4", ctx.guild.id, channel.id, role.id, count)
+        result = await cursor.fetchval("SELECT channel FROM count WHERE guild = $1 and channel = $2 and role = $3", ctx.guild.id, channel.id, role.id)
         if result is not None:
-            await cursor.execute("DELETE FROM count WHERE guild = $1 and channel = $2 and role = $3 and count = $4", ctx.guild.id, channel.id, role.id, count)
+            await cursor.execute("DELETE FROM count WHERE guild = $1 and channel = $2 and role = $3", ctx.guild.id, channel.id, role.id)
             await channel.set_permissions(role, overwrite=None)
             await ctx.send("Counting Channel Deleted Successfully!")
         else:

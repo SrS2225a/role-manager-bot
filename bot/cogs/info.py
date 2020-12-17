@@ -1,3 +1,5 @@
+import re
+
 import discord
 import typing
 from discord.ext import commands, menus
@@ -12,16 +14,18 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command(description="You can supply arg with 'None' to list members without a specified role")
     async def listmembers(self, ctx, *, role):
         """List members by a role or no role"""
-        if role in "no-roles":
+        if role.find("--=no-roles") > -1:
             members = []
             for member in ctx.guild.members:
                 if len(member.roles) == 1:
                     members.append(member.name + "#" + member.discriminator)
-        elif role in ("--none",):
-            role = await commands.RoleConverter().convert(ctx, role.split("--none")[1])
+        elif role.find("--=none") > -1:
+            role = await commands.RoleConverter().convert(ctx, role.split(" --=none")[0])
+            print(role.id)
             members = []
             for member in ctx.guild.members:
                 if role.id not in [role.id for role in member.roles]:
+                    print(member)
                     members.append(member.name + "#" + member.discriminator + " " + str(member.id))
         else:
             role = await commands.RoleConverter().convert(ctx, role)
@@ -219,6 +223,7 @@ class Info(commands.Cog, name='Information Commands'):
             array = "None"
 
         flags = " "
+        print(member.public_flags)
         for flag, value in member.public_flags:
             if value is True:
                 flags += flag + " "
@@ -272,7 +277,7 @@ class Info(commands.Cog, name='Information Commands'):
         embed.add_field(name='Color', value=f"```{member.color}```")
         embed.add_field(name='Bot', value=f"```{member.bot}```")
         embed.add_field(name='Key Permissions', value=f"```{array}```", inline=False)
-        if roles:
+        if amount > 0:
             embed.add_field(name=f'Roles [{amount}]', value=" ".join([role.mention for role in roles if role.name != "@everyone"]), inline=False)
         embed.set_thumbnail(url=member.avatar_url)
         await ctx.send(embed=embed)
