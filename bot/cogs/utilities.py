@@ -335,17 +335,24 @@ class Utilities(commands.Cog, name='Utilities Commands'):
     @commands.has_permissions(manage_messages=True)
     async def dm(self, ctx, to: typing.Union[discord.Member, discord.Role], *, message):
         """Sends a direct message to an user or people in a role as tho it was sent by the bot"""
+        global data
+        fails = []
         loading = await ctx.send(f"Messaging users for {to}")
         try:
             if isinstance(to, discord.Member):
+                data = to
                 await to.send(f"`New message from {ctx.author} from guild {ctx.guild}\n`{message}")
             elif isinstance(to, discord.Role):
                 for member in to.members:
                     await member.send(f"`New message from {ctx.author} from guild {ctx.guild}\n`{message}")
+                    data = member
         except discord.Forbidden:
-            pass
-
-        await loading.edit(content=f"Successfully sent message to users in {to}")
+            fails.append(data.name + '#' + data.discriminator)
+        if fails:
+            await loading.edit(content=f"One or more users could not be sent this message: {fails}\n"
+                                 f"This is normally because the user is not accepting messages from the bot, or does not share a server with it")
+        else:
+            await loading.edit(content=f"Successfully sent message to users in: {to}")
 
 
 def setup(bot):
