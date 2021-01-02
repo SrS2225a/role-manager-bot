@@ -298,7 +298,6 @@ class Events(commands.Cog):
             role = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", main, emoji, guild_id)
             role = random.choice(role)[0]
             whitelist = await cursor.fetchval("SELECT blacklist FROM reaction WHERE role = $1 and master = $2 and guild = $3 and type = $4", role, main, guild_id, emoji)
-            # splits reaction role types into code readable format
 
             guild = self.bot.get_guild(guild_id)
             member = await guild.fetch_member(user_id)
@@ -313,10 +312,11 @@ class Events(commands.Cog):
                     mroles = guild.get_role(role_id=int(role))
                     for role in roles:
                         role = role[0].replace("o", "")
-                        for role2 in [role.id for role in member.roles]:
-                            if role == str(role2):
-                                await member.send("You cannot change your roles after reacting from this reaction role category!")
-                    await member.add_roles(mroles, reason='User reacted to reaction role')
+                        if int(role) in [role.id for role in member.roles]:
+                            await member.send("You cannot change your roles after reacting from this reaction role category!")
+                            break
+                        else:
+                            await member.add_roles(mroles, reason='User reacted to reaction role')
 
                 elif "r" in role:
                     role = role.replace("r", "")
