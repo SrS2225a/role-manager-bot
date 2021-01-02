@@ -223,7 +223,6 @@ class Info(commands.Cog, name='Information Commands'):
             array = "None"
 
         flags = " "
-        print(member.public_flags)
         for flag, value in member.public_flags:
             if value is True:
                 flags += flag + " "
@@ -239,7 +238,7 @@ class Info(commands.Cog, name='Information Commands'):
                     emoji = ''
                 else:
                     emoji = activity.emoji
-                message += f'\n**Custom Status**\n{emoji} {activity.name}\n'
+                message += f'\n**Custom Status**\n{emoji} {"" if activity.name is None else activity.name}\n'
             elif activity.type == discord.ActivityType.playing:
                 message += f"\n**Playing a Game**\n{activity.name}"
                 if not isinstance(activity, discord.Game):
