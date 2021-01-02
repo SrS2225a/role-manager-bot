@@ -14,13 +14,13 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command(description="You can supply arg with 'None' to list members without a specified role")
     async def listmembers(self, ctx, *, role):
         """List members by a role or no role"""
-        if role.find("--=no-roles") > -1:
+        if role.find("--no-roles") > -1:
             members = []
             for member in ctx.guild.members:
                 if len(member.roles) == 1:
                     members.append(member.name + "#" + member.discriminator)
-        elif role.find("--=none") > -1:
-            role = await commands.RoleConverter().convert(ctx, role.split(" --=none")[0])
+        elif role.find("--none") > -1:
+            role = await commands.RoleConverter().convert(ctx, role.split(" --none")[0])
             print(role.id)
             members = []
             for member in ctx.guild.members:
