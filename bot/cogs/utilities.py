@@ -149,7 +149,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             for button in range(len(questions)):
                 await sent.add_reaction(indicators[button])
             voting = sent.id + sent.channel.id
-            await cursor.execute("INSERT INTO vote(guild, message, win, date, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, voting, multiple, item, "poll")
+            await cursor.execute("INSERT INTO vote(guild, message, win, date, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, voting, multiple, time, "poll")
             await asyncio.sleep(time)
             execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
             if execute is not None:
