@@ -304,7 +304,7 @@ class Events(commands.Cog):
             # if enabled check if we are in the whitelist and continue
             if whitelist not in [role.id for role in member.roles] and whitelist != 0:
                 await member.send("You do not have the required role to get this role from reaction roles!")
-            else:
+            elif not member.bot:
                 # splits reaction role types into code readable format and checks if we can receive role
                 roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild_id)
                 if "o" in role:
