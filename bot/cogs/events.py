@@ -318,18 +318,18 @@ class Events(commands.Cog):
                         else:
                             await member.add_roles(mroles, reason='User reacted to reaction role')
 
-                elif "r" in role:
-                    role = role.replace("r", "")
+                elif "n" in role:
+                    role = role.replace("n", "")
                     mroles = guild.get_role(role_id=int(role))
                     for role in roles:
-                        role = role[0].replace("r", "")
+                        role = role[0].replace("n", "")
                         if int(role) in [role.id for role in member.roles]:
                             roles = guild.get_role(int(role))
                             await member.remove_roles(roles, reason='User unreacted to reaction role')
                         await member.add_roles(mroles, reason='User reacted to reaction role')
 
-                elif "n" in role:
-                    role = role.replace("n", "")
+                elif "r" in role:
+                    role = role.replace("r", "")
                     mroles = guild.get_role(role_id=int(role))
                     await member.add_roles(mroles, reason='User reacted to reaction role')
 
