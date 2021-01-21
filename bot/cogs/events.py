@@ -246,6 +246,20 @@ class Events(commands.Cog):
 
             await self.bot.db.release(cursor)
 
+        # code for auto roles
+        if before.pending and not after.pending:
+            cursor = await self.bot.db.acquire()
+            guild = after.guild
+            guildid = after.guild.id
+            auto = await cursor.prepare("SELECT prefix FROM settings WHERE guild = $1")
+            auto = await auto.fetchval(guildid)
+            print("pending trigger")
+            if auto not in [role.id for role in after.roles] and auto is not None:
+                role = guild.get_role(role_id=auto)
+                await after.add_roles(role, reason='Auto role')
+
+            await self.bot.db.release(cursor)
+
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
         # OVERWRITES RECOVERY
@@ -430,11 +444,13 @@ class Events(commands.Cog):
         guild = member.guild
 
         # code for auto roles
-        auto = await cursor.prepare("SELECT prefix FROM settings WHERE guild = $1")
-        auto = await auto.fetchval(guildid)
-        if auto not in [role.id for role in member.roles] and auto is not None:
-            role = guild.get_role(role_id=auto)
-            await member.add_roles(role, reason='Auto role')
+        if not member.pending:
+            auto = await cursor.prepare("SELECT prefix FROM settings WHERE guild = $1")
+            auto = await auto.fetchval(guildid)
+            print("join trigger")
+            if auto not in [role.id for role in member.roles] and auto is not None:
+                role = guild.get_role(role_id=auto)
+                await member.add_roles(role, reason='Auto role')
 
         # code for sticky roles
         master = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
