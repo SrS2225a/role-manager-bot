@@ -253,7 +253,6 @@ class Events(commands.Cog):
             guildid = after.guild.id
             auto = await cursor.prepare("SELECT prefix FROM settings WHERE guild = $1")
             auto = await auto.fetchval(guildid)
-            print("pending trigger")
             if auto not in [role.id for role in after.roles] and auto is not None:
                 role = guild.get_role(role_id=auto)
                 await after.add_roles(role, reason='Auto role')
@@ -447,7 +446,6 @@ class Events(commands.Cog):
         if not member.pending:
             auto = await cursor.prepare("SELECT prefix FROM settings WHERE guild = $1")
             auto = await auto.fetchval(guildid)
-            print("join trigger")
             if auto not in [role.id for role in member.roles] and auto is not None:
                 role = guild.get_role(role_id=auto)
                 await member.add_roles(role, reason='Auto role')
