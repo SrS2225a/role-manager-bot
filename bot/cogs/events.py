@@ -46,7 +46,7 @@ class Events(commands.Cog):
                 global dark
                 blacklist = await cursor.prepare("SELECT role FROM leveling WHERE guild = $1 and system = $2")
                 blacklist = await blacklist.fetch(message.author.guild.id, 'blacklist')
-                # checks if the guild has enabled ranking and user not in blacklist
+                # checks if the guild has enabled ranking and role/channel not in blacklist
                 for no in blacklist:
                     if no[0] != message.channel.id or no[0] not in [role.id for role in message.author.roles]:
                         result = await cursor.prepare("SELECT user_id FROM levels WHERE guild_id = $1 and user_id = $2")
