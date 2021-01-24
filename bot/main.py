@@ -13,7 +13,7 @@ import os
 async def __init__(self, bot):
     self.bot = bot
 
-# sets bots command prefix and bot variables
+# sets command prefix and bot variables
 intents = discord.Intents.default()
 intents.members = True
 intents.presences = True
@@ -29,7 +29,7 @@ bot.emoji = []
 bot.version = '5.20.4'
 
 
-# loads token and emojis from file
+# loads token/database credentials and emojis from file
 with open("token.json", "r") as set:
     bot.settings = json.load(set)
 
