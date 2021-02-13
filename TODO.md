@@ -20,6 +20,6 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 
 ### In Progress
 - [ ] Update comments in code
-- [✓] Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday (Support for conditions?)
+- [x] Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday (Support for conditions?)
 
 ### Completed
