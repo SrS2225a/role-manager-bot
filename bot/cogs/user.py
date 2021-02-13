@@ -205,7 +205,10 @@ class User(commands.Cog, name='User Commands'):
                 await pages.start(ctx)
             elif diff1 is None:
                 await ctx.send("Partnerships is currently disabled for this server!")
+        else:
+            await ctx.send("The argument must be defined as rankings/invites/partnerships")
         await self.bot.db.release(cursor)
+    
 
     @commands.command(aliases=['level'])
     async def rank(self, ctx, *, user: discord.Member = None):
