@@ -12,11 +12,11 @@ It is part of the private bot Derivi built for the server known as New Line and 
 8. https://discord.gg/wuF85c7 - sleepyhead
 
 # Who created Dionysus?
-Dionysus was created by Nyx#8614 with special thanks to Nik#9393 for help with databases, Sugden#0562 for the extra help with code and Vendrom#9820 for the much needed suggestions.
+Dionysus was created by Nyx#8614 with special thanks to Nik#9393 for help with databases, Sugden#0562 for the extra help with code and Vendron#2001 for the much needed suggestions.
 
 # Support
-If you are running into issues with Dionysus, want to report a bug, have a question about something, or make a suggestion please join the support server at https://discord.gg/Ax2upvf and state your issue.
-Or you can use github's issue tracker.
+If you are running into issues with Dionysus, want to report a bug, have a question about something, or make a suggestion please join the support server at https://discord.gg/Ax2upvf and state your issue. Or you can use github's issue tracker.
+Additionally you can invite it here: https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot
 
 # Features
 * Intuative information commands with tons of useful information
