@@ -10,6 +10,7 @@ class Handler(commands.Cog):
     # ERROR HANDLER
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        # finds who is is in the team and send all an error report when it happens upon a command error
         team = await self.bot.application_info()
         teams = team.team.members
         error_return = f"Error: {error} (Command: {ctx.command})"
@@ -30,8 +31,10 @@ class Handler(commands.Cog):
             return
 
 
+    # ERROR HANDLER
     @commands.Cog.listener()
     async def on_error(self, event, error):
+        # finds who is is in the team and send all an error report when it happens upon a general error
         team = await self.bot.application_info()
         teams = team.team.members
         etype = type(error)
