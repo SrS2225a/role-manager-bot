@@ -6,6 +6,7 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 
 ### Priority's
 - [ ] Add roles based on someone's creation or server join date
+- [ ] Reward system based on how long a member has been in the server for
 - [ ] Server voting reward system
 - [ ] Update system on different problems the bot is currently experiencing
 - [ ] Create a web site for oauth with listed tasks and dashboard for configuring, plus documentation
