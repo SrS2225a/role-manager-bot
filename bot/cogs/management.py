@@ -14,19 +14,23 @@ class Management(commands.Cog, name="Management Commands"):
     async def createclub(self, ctx, name, description, graphic, time, *owners: discord.Member):
         """Allows you to create your very own club"""
         cursor = await self.bot.db.acquire()
+        # checks if the user creating the club did not hit the limit and notify us
         if len(owners) > 3+1:
             await ctx.send('You can only set up to 3 Representatives!')
         else:
             guild = ctx.guild
+            # gets our settings for how the club should be created
             club = await cursor.fetchrow("SELECT level, role, type, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
             chan = guild.get_channel(club[0])
             category = guild.get_channel(club[1])
             give = guild.get_role(club[3])
+            # sends a message that shows information about the club itself and how to join it
             mention = ' '.join([owner.mention for owner in owners])
             loading = await ctx.send(f"Creating The Club With The Name {name}")
             emote = '☑'
             embed = discord.Embed(title=f"{name} Club", description=f"{description} \n\n**Representatives:** {mention} \n\n**Weekly Events:** {time} UTC \n\nReact With {emote} To Join")
             embed.set_image(url=graphic)
+            # creates the club
             created = await guild.create_role(name=name, colour=discord.Colour(int('fffdd0', 16)), reason="Newly Created Club")
             overwrites = {created: discord.PermissionOverwrite(read_messages=True, send_messages=True), ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False)}
             for owner in owners:
@@ -36,6 +40,7 @@ class Management(commands.Cog, name="Management Commands"):
             channel = await guild.create_text_channel(name, category=category, overwrites=overwrites, topic=description, reason="Newly Created Club")
             sent = await chan.send(embed=embed)
             await sent.add_reaction(emote)
+            # inserts our club information into the database for future use later
             message = sent.channel.id + sent.id
             master = 'c' + str(created.id)
             await cursor.execute("INSERT INTO points(guild_id, channel, exp, lvl) VALUES($1, $2, $3, $4)", guild.id, channel.id, sent.id, created.id)
@@ -51,8 +56,10 @@ class Management(commands.Cog, name="Management Commands"):
         """Allows you to edit your very own club"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
+        # checks if the channel is a club from our database
         club = await cursor.fetchrow("SELECT channel, exp, lvl FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id, channel.id)
         channel = await cursor.fetchrow("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
+        # edits the message that shows information about the club itself and how to join it
         mention = ' '.join([owner.mention for owner in owners])
         chan = guild.get_channel(channel[0])
         new = guild.get_channel(club[0])
@@ -60,6 +67,7 @@ class Management(commands.Cog, name="Management Commands"):
         role = guild.get_role(club[2])
         give = guild.get_role(channel[1])
         search = re.findall(r"<@(!?)([0-9]*)>", message.embeds[0].description)
+        # edits the club
         overwrites = {role: discord.PermissionOverwrite(read_messages=True, send_messages=True), ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False)}
         loading = await ctx.send(f"Editing The Club With The Name {name}")
         for host in search:
@@ -83,6 +91,7 @@ class Management(commands.Cog, name="Management Commands"):
     async def deleteclub(self, ctx, channel: discord.TextChannel):
         """Deletes your created club"""
         cursor = await self.bot.db.acquire()
+        # checks if the channel is a club from our database
         guild = ctx.guild
         owner = await cursor.fetchrow("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
         main = guild.get_channel(owner[0])
@@ -91,6 +100,7 @@ class Management(commands.Cog, name="Management Commands"):
         delete = await cursor.fetchrow(f"SELECT channel, exp, lvl FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id, channel.id)
         if delete is None:
             await ctx.send(f"This club does not exist! Create One With `{ctx.prefix}createclub`")
+        # deletes the club
         category = guild.get_channel(delete[0])
         message = await main.fetch_message(delete[1])
         menu = guild.get_role(role_id=delete[2])
@@ -112,13 +122,16 @@ class Management(commands.Cog, name="Management Commands"):
     async def clubblacklist(self, ctx, member: discord.Member, channel: discord.TextChannel, *, reason=None):
         """Allows you to blacklists someone from a club"""
         cursor = await self.bot.db.acquire()
+        # checks if the channel is a club from our database
         guild = ctx.guild
         club = await cursor.fetchrow(f"SELECT lvl, exp FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id, channel.id)
         if club is None:
             await ctx.send("The channel specified is not a valid Club!")
         else:
+            # checks if the member was blacklisted from our club alreadly, and if they were remove them from the blacklist
             check = await cursor.fetchval("SELECT member FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild.id, member.id, club[1], 'club')
             if check is None:
+                # blacklists a member from a club
                 give = guild.get_role(club[0])
                 await member.remove_roles(give)
                 await cursor.execute("INSERT INTO owner(guild, member, message, type) VALUES($1, $2, $3, $4)", guild.id, member.id, club[1], 'club')
