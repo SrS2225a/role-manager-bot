@@ -20,8 +20,8 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 
 
 ### In Progress
-- [ ] Update comments in code
 - [ ] Add support for remind commands to take a time instead of just duration. Also a "here" which says remind to the current channel to make it a little easier on users
 - [x] Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday (Support for conditions?)
 
 ### Completed
+- [ ] Update comments in code
