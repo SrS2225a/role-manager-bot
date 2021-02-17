@@ -36,7 +36,7 @@ class Management(commands.Cog, name="Management Commands"):
             for owner in owners:
                 await owner.add_roles(created)
                 await owner.add_roles(give)
-                overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True)})
+                overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True, manage_messages=True)})
             channel = await guild.create_text_channel(name, category=category, overwrites=overwrites, topic=description, reason="Newly Created Club")
             sent = await chan.send(embed=embed)
             await sent.add_reaction(emote)
@@ -77,7 +77,7 @@ class Management(commands.Cog, name="Management Commands"):
             for owner in owners:
                 await owner.add_roles(role)
                 await owner.add_roles(give)
-                overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True)})
+                overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True, manage_messages=True)})
         await role.edit(name=name)
         await new.edit(name=name, topic=description, overwrites=overwrites)
         embed = discord.Embed(title=f'{name} Club', description=f"{description} \n\n**Representatives:** {mention} \n\n**Weekly Events:** {time} UTC \n\nReact With {'☑'} To Join")
