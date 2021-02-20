@@ -8,6 +8,7 @@ import discord
 import psutil
 from discord.ext import commands
 
+
 uses = 0
 
 class EmbedHelpCommand(commands.HelpCommand):
@@ -15,12 +16,14 @@ class EmbedHelpCommand(commands.HelpCommand):
     def get_ending_note(self):
         return f"Use {self.clean_prefix}help<cog name> to get info about all the commands from a category, and use {self.clean_prefix}help <command name> to get more info on a command."
 
+    # gets the command signature (I.E. prefix, name, and aliases)
     def get_command_signature(self, command):
         aliases = ''
         for alias in command.aliases:
             aliases += '({})'.format(alias)
         return f'{self.clean_prefix}{command.qualified_name} {aliases}'
 
+    # shows the items of all available commands per cog
     async def send_bot_help(self, mapping):
         embed = discord.Embed(title='Dionysus Help', colour=self.COLOUR)
 
@@ -38,6 +41,7 @@ class EmbedHelpCommand(commands.HelpCommand):
         embed.set_footer(text=self.get_ending_note())
         await self.get_destination().send(embed=embed)
 
+    # shows the description of all available commands for a cog 
     async def send_cog_help(self, cog):
         embed = discord.Embed(title=f'Dionysus Help - {cog.qualified_name}', colour=self.COLOUR)
         if cog.description:
@@ -52,6 +56,7 @@ class EmbedHelpCommand(commands.HelpCommand):
         embed.set_footer(text=self.get_ending_note())
         await self.get_destination().send(embed=embed)
 
+    # shows all related info about a particuler command
     async def send_command_help(self, command):
         embed = discord.Embed(title=f'Dionysus Help - {command.name}', color=self.COLOUR)
         aliases = ''
@@ -68,12 +73,14 @@ class EmbedHelpCommand(commands.HelpCommand):
 # help commands
 class Help(commands.Cog, name='Help Commands'):
     """Commands that give you info about the bot"""
+    # sets up help command from the class EmbedHelpCommand
     def __init__(self, bot):
         self.bot = bot
         self.bot._original_help_command = bot.help_command
         bot.help_command = EmbedHelpCommand()
         bot.help_command.cog = self
 
+    # increments uses when a command is runned
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
         global uses
@@ -82,6 +89,7 @@ class Help(commands.Cog, name='Help Commands'):
     @commands.command(aliases=["status", "info"])
     async def about(self, ctx):
         """Shows info about the bot"""
+        # basiclly shows related information about the bot such as usage statstics, version, and resources
         global uses
         ver = "Python " + platform.python_version()
         os = str(platform.system() + " " + platform.release() + " " + platform.version())

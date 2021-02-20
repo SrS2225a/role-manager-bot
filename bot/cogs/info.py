@@ -14,11 +14,14 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command(description="You can supply arg with 'None' to list members without a specified role")
     async def listmembers(self, ctx, *, role):
         """List members by a role or no role"""
+        # finds members based on if they don't have any roles
         if role.find("--no-roles") > -1:
             members = []
             for member in ctx.guild.members:
                 if len(member.roles) == 1:
                     members.append(member.name + "#" + member.discriminator)
+                    
+        # finds members without the specified role
         elif role.find("--none") > -1:
             role = await commands.RoleConverter().convert(ctx, role.split(" --none")[0])
             print(role.id)
@@ -27,13 +30,15 @@ class Info(commands.Cog, name='Information Commands'):
                 if role.id not in [role.id for role in member.roles]:
                     print(member)
                     members.append(member.name + "#" + member.discriminator + " " + str(member.id))
+        # finds members with the specifed role
         else:
             role = await commands.RoleConverter().convert(ctx, role)
             members = []
             for member in ctx.guild.members:
                 if role.id in [role.id for role in member.roles]:
                     members.append(member.name + "#" + member.discriminator + " " + str(member.id))
-
+                    
+        # puts results in a navigatable page interface
         class Source(menus.ListPageSource):
             def __init__(self, data):
                 super().__init__(data, per_page=20)
@@ -52,10 +57,12 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command()
     async def roles(self, ctx):
         """Shows a list of all roles in the server"""
+        # finds all of the server roles
         roles = []
         for role in ctx.guild.roles[::-1]:
             roles.append(role.name + " " + str(role.id))
 
+        # puts results in a navigatable page interface
         class Source(menus.ListPageSource):
             def __init__(self, data):
                 super().__init__(data, per_page=20)
@@ -71,6 +78,7 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Shows info about a role"""
+        # gets various information about a role
         has = len(role.members)
         dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
                 "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker",
@@ -101,6 +109,7 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command()
     async def channelinfo(self, ctx, *, channel: typing.Union[discord.TextChannel, discord.VoiceChannel] = None):
         """Shows info about a channel"""
+        # gets various information about a channel
         channel = ctx.channel if not channel else channel
         yes = " "
         no = " "
@@ -154,6 +163,7 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command(aliases=["serverinfo"])
     async def guildinfo(self, ctx, *, guild=None):
         """Shows info about a guild"""
+        # gets various information about a server (has to be in it)
         guild = ctx.guild if not guild else self.bot.get_guild(guild)
         fa = 'Enabled' if guild.mfa_level == 1 else 'Disabled'
         notifications = 'All Messages' if guild.default_notifications.value == 0 else 'Only @Mentions'
@@ -201,6 +211,7 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command(aliases=["whois"])
     async def userinfo(self, ctx, *, member: discord.Member = None):
         """Shows info about a user"""
+        # gets various information about a server member
         member = ctx.author if not member else member
         guild = ctx.guild
         roles = [role for role in member.roles]
@@ -284,6 +295,7 @@ class Info(commands.Cog, name='Information Commands'):
     @commands.command(aliases=['av'])
     async def avatar(self, ctx, *, member: discord.User = None):
         """Enlarges a members avatar"""
+        # enhances a users avatar
         member = ctx.author if not member else member
         embed = discord.Embed(title=f"{member} Avatar")
         embed.set_image(url=member.avatar_url)

@@ -11,6 +11,7 @@ class Owner(commands.Cog, name="Owner Commands"):
     @commands.is_owner()
     async def setname(self, ctx, *, arg):
         """Allows you to edit the name of the bot"""
+        # allows the bot owner to more easily change the bots name
         await ctx.bot.user.edit(username=arg)
         await ctx.send(f"Successuly changed bot's name to: {arg}")
 
@@ -18,6 +19,7 @@ class Owner(commands.Cog, name="Owner Commands"):
     @commands.is_owner()
     async def setavatar(self, ctx, *, arg):
         """Allows you to edit the profile picture of the bot"""
+        # allows the bot owner to more easily changee the bots avatar
         async with aiohttp.ClientSession() as session:
             async with session.get(str(arg)) as resp:
                 data = await resp.read()

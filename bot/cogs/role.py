@@ -19,10 +19,13 @@ class Role(commands.Cog, name="Role Commands"):
             await ctx.send("The first argument must be defined as add or remove")
             return
         loading = await ctx.send(f"{type} role for {to}")
+        # detects how we want to add or remove the role to member(s)
         if to in "everyone":
             for member in ctx.guild.members:
+                # checks if we want to add a role and if the member already has it
                 if role.id not in [role.id for role in member.roles] and type in "add":
                     await member.add_roles(role)
+                # checks if we want to remove a role and if the member already does not has it
                 elif role.id in [role.id for role in member.roles] and type in "remove":
                     await member.remove_roles(role)
         elif to in "bots":
@@ -55,6 +58,7 @@ class Role(commands.Cog, name="Role Commands"):
         if type not in ("color", "name", "position", "create", "delete"):
             await ctx.send("The 'type' must be defined as add or type")
             return
+        # allows us to edit a position of a a role
         if type in "position":
             if re.search(r"(\D*)\d*", arg):
                 await role.edit(position=int(arg))
@@ -63,6 +67,7 @@ class Role(commands.Cog, name="Role Commands"):
                 await ctx.send(f"Missing Role Argument")
             else:
                 ctx.send("Role Position Must Be An Integer")
+        # allows us to edit the color of a role
         if type in "color":
             if re.search(r"#([0-9a-fA-F]{6})", arg):
                 await role.edit(reason=None, color=discord.Colour(int(arg[1:], 16)))
@@ -71,6 +76,7 @@ class Role(commands.Cog, name="Role Commands"):
                 await ctx.send(f"Missing Role Argument")
             else:
                 ctx.send("Role Color Must Be A Hex")
+        # allows us to edit the name of a role
         if type in "name":
             if re.search("^[!-~][ -~]{0,49}$", arg):
                 await role.edit(name=arg)
@@ -79,12 +85,14 @@ class Role(commands.Cog, name="Role Commands"):
                 await ctx.send(f"Missing Role Argument")
             else:
                 await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
+        # allows us to create a new role
         if type in "create":
             if re.search("^[!-~][ -~]{0,49}$", arg):
                 await guild.create_role(name=arg)
                 await ctx.send("Role Created Successfully!")
             else:
                 await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
+        # allows us to delete an alreadly existing role
         if type in "delete":
             await role.delete()
             await ctx.send("Role Deleted Successfully!")

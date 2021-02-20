@@ -14,6 +14,7 @@ class Tasks(commands.Cog):
         # task for booster reward system
         try:
             cursor = await self.bot.db.acquire()
+            # gets settings per guild
             for guild in self.bot.guilds:
                 announcement = await cursor.prepare(f"SELECT announce FROM settings WHERE guild = $1")
                 boosting = await cursor.prepare(f"SELECT date, role FROM boost WHERE guild = $1 and type = $2")
@@ -57,7 +58,9 @@ class Tasks(commands.Cog):
     async def flags(self):
         try:
             cursor = await self.bot.db.acquire()
+            # gets all members in all guilds
             for member in self.bot.get_all_members():
+                # matches the users flags against the settings the server set and if we have it, give us the set role 
                 for flag, value in member.public_flags:
                     stmt = await cursor.prepare("SELECT role FROM boost WHERE guild = $1 and type = $2 and date = $3")
                     public = await stmt.fetchval(member.guild.id, 'flag', flag)

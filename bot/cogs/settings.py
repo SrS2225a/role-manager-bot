@@ -11,6 +11,8 @@ class Settings(commands.Cog, name='Settings Commands'):
     """Commands that adjusts various settings of the bot."""
     def __init__(self, bot):
         self.bot = bot
+        
+    # I am too lazy to add comments for all of this. The doc strings are pretty self explanitory with what the commmands do
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
