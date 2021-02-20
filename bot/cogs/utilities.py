@@ -5,6 +5,8 @@ import re
 
 import discord
 import typing
+
+from parsedatetime import Calendar
 from discord.ext import commands
 
 
@@ -13,7 +15,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=['rr'], description="Supply type with 'r' to signify default reaction roles, 'o' for one time only reaction roles, or 'n' for toggle reaction roles in an reaction role catagorey")
+    @commands.command(aliases=['rr'], description="Supply type with 'n' to signify default reaction roles, 'o' for one time only reaction roles, or 'r' for toggle reaction roles in an reaction role catagorey")
     @commands.has_permissions(manage_guild=True)
     async def reactionrole(self, ctx, message: discord.Message, emoji, role: discord.Role, type, blacklist: discord.Role = None):
         """Sets a reaction role with an defined message and emoji"""
@@ -54,7 +56,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             await ctx.send("I do not recognise that emoji!")
         await self.bot.db.release(cursor)
 
-    @commands.command(description='Supply type with list to list your reminders, delete to delete and reminder, or me/here to set the destination of the reminder')
+    @commands.command(description='Supply type with list to list your reminders, delete to delete and reminder, or me/dm/here to set the destination of the reminder')
     async def remind(self, ctx, type: typing.Union[discord.TextChannel, str], duration=None, *, description=None):
         """Sets a reminder with an given time"""
         cursor = await self.bot.db.acquire()
@@ -74,16 +76,14 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             await cursor.execute('DELETE FROM remind WHERE account = $1 and message = $2', ctx.author.id, duration)
             await ctx.send(f"Reminder Deleted Successfully!")
         else:
-            if type == 'dm' or isinstance(type, discord.TextChannel):
-                user = ctx.author if type == 'dm' else type
+            if type == 'dm' or type == 'here' or isinstance(type, discord.TextChannel):
+                user = ctx.author if type == 'dm' else ctx.channel if type == 'here' else type
 
-                units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
-
-                def convert_to_seconds(s):
-                    return int(datetime.timedelta(**{
-                        units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
-                        for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
-                    }).total_seconds())
+                def date_convert_seconds(s):
+                    current, result = Calendar().parse(s)
+                    t = datetime.datetime(*current[:6])
+                    futureDate = int((t-datetime.datetime.now()).total_seconds())
+                    return futureDate+1, result
 
                 def display_time(duration):
                     intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
@@ -98,11 +98,11 @@ class Utilities(commands.Cog, name='Utilities Commands'):
 
                     return ' '.join(result)
 
-                time = convert_to_seconds(duration)
-
-                if time is None:
+                time = date_convert_seconds(duration)
+                if time[1] < 1:
                     await ctx.send("I do not recognise that time!")
                 else:
+                    time = time[0]
                     delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
                     stamp = delta.timestamp()
                     rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -116,7 +116,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
                         await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about: {escaped}")
                         await cursor.execute("DELETE FROM remind WHERE account = $1 and message = $2", ctx.author.id, ''.join(remind_id))
             else:
-                await ctx.send('Argument 1 should be a dm or channel')
+                await ctx.send('Argument 1 should be dm, here or a channel')
             await self.bot.db.release(cursor)
 
     @commands.command(aliases=["makevote"])

@@ -125,7 +125,7 @@ class User(commands.Cog, name='User Commands'):
         await self.bot.db.release(cursor)
 
 
-    @commands.command(aliases=['top'], description='Supply type with rankings/invites/partnerships to view that particular leaderboard')
+    @commands.command(aliases=['top', 'lb'], description='Supply type with rankings/invites/partnerships to view that particular leaderboard')
     async def leaderboard(self, ctx, type):
         """Shows top rankings"""
         global result, check, user
@@ -151,7 +151,7 @@ class User(commands.Cog, name='User Commands'):
                         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                         return embed
 
-                pages = menus.MenuPages(source=Source(table), delete_message_after=True)
+                pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
                 await pages.start(ctx)
             elif diff1 is None:
                 await ctx.send("Rankings is currently disabled for this server!")
@@ -175,7 +175,7 @@ class User(commands.Cog, name='User Commands'):
                     embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                     return embed
 
-            pages = menus.MenuPages(source=Source(table), delete_message_after=True)
+            pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
             await pages.start(ctx)
 
         elif type == 'partnerships':
@@ -201,7 +201,7 @@ class User(commands.Cog, name='User Commands'):
                             text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                         return embed
 
-                pages = menus.MenuPages(source=Source(table), delete_message_after=True)
+                pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
                 await pages.start(ctx)
             elif diff1 is None:
                 await ctx.send("Partnerships is currently disabled for this server!")
@@ -563,6 +563,9 @@ class User(commands.Cog, name='User Commands'):
         else:
             await ctx.send("The 'type' argument should be defined as role, text, or voice")
         await self.bot.db.release(cursor)
+
+
+
 
 
 def setup(bot):
