@@ -347,6 +347,7 @@ class Events(commands.Cog):
                     for role in roles:
                         role = role[0].replace("o", "")
                         if int(role) in [role.id for role in member.roles]:
+                            await member.remove_roles(mroles, reason='User reacted to reaction role')
                             await member.send("You cannot change your roles after reacting from this reaction role category!")
                             break
                         else:
