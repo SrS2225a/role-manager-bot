@@ -223,22 +223,17 @@ class Settings(commands.Cog, name='Settings Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def overwrites(self, ctx, *, role: discord.Role):
-        """Sets if user defined channel overwrites be given back if the member rejoins by set role"""
+    async def overwrites(self, ctx, channel: discord.TextChannel, role: discord.Role):
+        """Sets if defined channel overwrites be given back if the member rejoins by a set role for selected channel"""
         cursor = await self.bot.db.acquire()
-        guild = ctx.guild.id
-        role = role.id
-        result = await cursor.fetchval("SELECT recovery FROM settings WHERE recovery = $1 and guild = $2", role, guild)
-        search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
-        if result is not None:
-            await cursor.execute("UPDATE settings SET recovery = NULL WHERE guild = $1", guild)
-            await ctx.send("Overwrites Recovery Disabled Successfully!")
-        elif search is None:
-            await cursor.execute("INSERT INTO settings(guild, recovery) VALUES($1, $2)", guild, role)
-            await ctx.send("Overwrites Enabled Successfully!")
+        guild = ctx.guild
+        result = await cursor.fetchrow("SELECT member, channel FROM roles WHERE recovery = $1 and guild = $2 and type = $3", role, guild.id, 'recover')
+        if result[0] and result[1] is not None:
+            await cursor.execute("DELETE FROM roles WHERE guild = $1 and member = $2 and role = $3 and type = $4", guild.id, channel.id, role.id, 'recover')
+            await ctx.send("Overwrites Recovery Set Successfully!")
         else:
-            await cursor.execute("UPDATE settings SET recovery = $1 WHERE guild = $2", role, guild)
-            await ctx.send("Overwrites Enabled Successfully!")
+            await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guild.id, channel.id, role.id, 'recover')
+            await ctx.send("Overwrites Set Successfully!")
         await self.bot.db.release(cursor)
 
     @commands.command()
