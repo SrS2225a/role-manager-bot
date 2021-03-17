@@ -17,8 +17,8 @@ class Role(commands.Cog, name="Role Commands"):
         """Allows you to add or remove an role from members, bots, or everyone"""
         if type not in ("add", "remove"):
             await ctx.send("The first argument must be defined as add or remove")
-            return
-        loading = await ctx.send(f"{type} role for {to}")
+
+        await ctx.send(f"Changing role {role.name} for {to}")
         # detects how we want to add or remove the role to member(s)
         if to in "everyone":
             for member in ctx.guild.members:
@@ -46,8 +46,8 @@ class Role(commands.Cog, name="Role Commands"):
                 await member.add_roles(role)
             elif role.id in [role.id for role in member.roles] and type in "remove":
                 await member.remove_roles(role)
-            to = member.name
-        await loading.edit(content=f"Successfully {type} role {role.name} for {to}")
+
+        await ctx.send(f"Successfully {type} role {role.name} for {to.name}")
 
     @commands.command(description="Supply type with color to edit a roles color, name to edit an roles name, position to edit a role position, create to create a role or delete to delete a role")
     @commands.has_permissions(manage_roles=True)
