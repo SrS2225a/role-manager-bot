@@ -19,25 +19,28 @@ class User(commands.Cog, name='User Commands'):
         await ctx.send(f"The ping is: {round(self.bot.latency * 1000)} ms!")
 
     @commands.command()
-    async def apply(self, ctx, view=None):
+    async def apply(self, ctx, list=None):
         """Allows you to create an application or view current questions"""
         cursor = await self.bot.db.acquire()
         # allows the user to see a list of questions for applying
-        if view == "view" or view == "questions" or view == "list":
-            view = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
-            
-            # puts results in a navigatable page interface
-            class Source(menus.ListPageSource):
-                def __init__(self, data):
-                    super().__init__(data, per_page=10)
+        if list == "view" or list == "questions" or list == "list":
+            list = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
 
-                async def format_page(self, menu, entry):
-                    offset = menu.current_page * self.per_page
-                    joined = '\n'.join(f'{i}. {v}' for i, v in enumerate(entry, start=1 + offset))
-                    return f'```{joined}```\nPage {menu.current_page + 1}/{self.get_max_pages()}'
+            if not list:
+                await ctx.send("No results!")
+            else:
+                # puts results in a navigatable page interface
+                class Source(menus.ListPageSource):
+                    def __init__(self, data):
+                        super().__init__(data, per_page=10)
 
-            pages = menus.MenuPages(source=Source([view[0] for view in view]), clear_reactions_after=True)
-            await pages.start(ctx)
+                    async def format_page(self, menu, entry):
+                        offset = menu.current_page * self.per_page
+                        joined = '\n'.join(f'{i}. {v}' for i, v in enumerate(entry, start=1 + offset))
+                        return f'```{joined}```\nPage {menu.current_page + 1}/{self.get_max_pages()}'
+
+                pages = menus.MenuPages(source=Source([view[0] for view in list]), clear_reactions_after=True)
+                await pages.start(ctx)
 
         else:
             # gets settings for applications
