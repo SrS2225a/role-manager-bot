@@ -47,10 +47,12 @@ class Handler(commands.Cog):
         traceback_text = ''.join(exception)
         if not isinstance(error, discord.Forbidden):
             for me in teams:
-                me = self.bot.get_user(me)
-                await me.send(f"New exception occurred for event listener {event}")
-                await me.send(f"```py\n{traceback_text}```")
-
+                try: 
+                    me = self.bot.get_user(me)
+                    await me.send(f"New exception occurred for event listener {event}")
+                    await me.send(f"```py\n{traceback_text}```")
+                except discord.Forbidden:
+                    pass
 
 def setup(bot):
     bot.add_cog(Handler(bot))
