@@ -23,8 +23,11 @@ class Handler(commands.Cog):
             embed = discord.Embed(title="An Exception Occurred", description=f"Durning handling of this command, an unexpected error has occured\n This error has been sent to the bot dev and will get to it ASAP \n\n `{error}`")
             await ctx.send(embed=embed)
             for me in teams:
-                user = self.bot.get_user(me.id)
-                await user.send(f"`New exception occurred in guild {ctx.guild} for command {ctx.command}`\n```py\n{traceback_text}```")
+                try: 
+                    user = self.bot.get_user(me.id)
+                    await user.send(f"`New exception occurred in guild {ctx.guild} for command {ctx.command}`\n```py\n{traceback_text}```")
+                except discord.Forbidden:
+                    pass
             return
         elif not isinstance(error, commands.CommandNotFound):
             await ctx.send(error_return)
