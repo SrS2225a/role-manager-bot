@@ -5,8 +5,6 @@ Note: Marked priority or backburner tabs are tasks that will be in the next bot 
 Note: In progress tasks marked with a check are from the priority's tab, while unmarked ones are from the backburner tab
 
 ### Priority's
-- [ ] Add roles based on someone's creation or server join date
-- [ ] Autorole that can be add/remove after X duration
 - [ ] Reward system based on how long a member has been in the server for
 - [ ] Server voting reward system
 - [ ] Update system on different problems the bot is currently experiencing
@@ -18,16 +16,18 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 ### Backburner
 - [ ] have giveaways send a DM confirmation that they've entered giveaway
 - [ ] Add a command to quickly set an new counting number
+- [ ] Improve reminder system by using an database and loop through in case the bot goes down
 
 ### Unsure
 - [ ] Invite tracking
 
 ### In Progress
-- [x] Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday (Support for conditions?)
+- [x] Add roles based on someone's creation or server join date
+- [x] Autorole that can be add/remove after X duration
 
 ### Completed
 - [ ] Update comments in code
 - [ ] Add support for remind commands to take a time instead of just duration. Also a "here" which says remind to the current channel to make it a little easier on users
 
 ### Abandoned
-- [ ] Improve reminder system by using an database and loop through in case the bot goes down
+- [x] Task system where bot performs a automated action every set day/week/month I.E. purge users from the last 7 days every Monday (Support for conditions?)
