@@ -22,7 +22,7 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 - [ ] Invite tracking
 
 ### In Progress
-- [x] Add roles based on someone's creation or server join date
+- [x] Automanically add roles based on someone's creation or server join date
 - [x] Autorole that can be add/remove after X duration
 
 ### Completed
