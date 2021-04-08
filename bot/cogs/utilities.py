@@ -15,7 +15,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=['rr'], description="Supply type with 'n' to signify default reaction roles, 'o' for one time only reaction roles, or 'r' for toggle reaction roles in an reaction role catagorey")
+    @commands.command(aliases=['rr'], description="Supply type with 'r' to signify default reaction roles, 'o' for one time only reaction roles, or 'n' for toggle reaction roles in an reaction role catagorey")
     @commands.has_permissions(manage_guild=True)
     async def reactionrole(self, ctx, message: discord.Message, emoji, role: discord.Role, type, blacklist: discord.Role = None):
         """Sets a reaction role with an defined message and emoji"""
