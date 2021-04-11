@@ -322,7 +322,7 @@ class User(commands.Cog, name='User Commands'):
         full = await cursor.fetchrow("SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
         full = full if full[0] is not None else [0, 0, 0]
         leave = full[1] + full[2]
-        server = round(full[0] * 100 / len(guild.members), 2) if full[0] != 0 else 0.0
+        server = round(full[0] - leave * 100 / len(guild.members), 2) if full[0] != 0 else 0.0
         deficit = round(leave * 100 / full[0], 2) if full[0] != 0 else 0.0
         embed = discord.Embed(title=f"{member} Invites", description=f"{full[0]} joins, {full[1]} leaves, {full[2]} fakes \n You currently have a deficit {deficit}% and invited {server}% of server", color=member.color)
         await ctx.send(embed=embed)
