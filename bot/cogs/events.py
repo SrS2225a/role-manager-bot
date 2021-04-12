@@ -20,7 +20,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         # set the bots custom status
-        game = discord.Game(f"*help | Version {self.bot.version}")
+        game = discord.Game(f"the greek multi-bot | *help")
         await self.bot.change_presence(activity=game, status=discord.Status.online, afk=None)
         
         # shows qucik info about who the bot is to console
