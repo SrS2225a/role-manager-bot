@@ -30,7 +30,6 @@ class Events(commands.Cog):
         print('| ', Fore.RED + time.strftime("%#H:%M:%S") + Fore.WHITE + '  |  ', '➤ ID:', Fore.CYAN, '[', self.bot.user.id, ']', Fore.WHITE)
         print('| ', Fore.RED + time.strftime("%#H:%M:%S") + Fore.WHITE + '  |  ', '➤ Token:', Back.RED + Fore.RED, '[', self.bot.token, ']', Back.RESET + Fore.WHITE)
         print('| ', Fore.RED + time.strftime("%#H:%M:%S") + Fore.WHITE + '  |  ', '➤ Prefix:', Fore.CYAN, '[', '*', ']', Fore.WHITE)
-        print('| ', Fore.RED + time.strftime("%#H:%M:%S") + Fore.WHITE + '  |  ', '➤ Version:', Fore.CYAN, '[', self.bot.version, ']', Fore.WHITE)
         print('#-------------------------------#', Fore.WHITE)
         print('| ', Fore.RED + time.strftime("%#H:%M:%S") + Fore.WHITE + '  |  ', Fore.BLUE, 'Developers:', 'Nyx#8614', Fore.WHITE)
         print('#-------------------------------#', Fore.WHITE)
@@ -257,7 +256,7 @@ class Events(commands.Cog):
         if before.pending and not after.pending:
             auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type =$3")
             for auto in await auto.fetch(guild.id, "add", "remove"):
-                await asyncio.sleep(auto[1])
+                await asyncio.sleep(int(auto[1]))
                 if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
                     role = guild.get_role(role_id=auto[0])
                     await after.add_roles(role, reason='Auto role')

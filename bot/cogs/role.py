@@ -47,7 +47,7 @@ class Role(commands.Cog, name="Role Commands"):
                 elif role.id in [role.id for role in member.roles] and type in "remove":
                     await member.remove_roles(role)
 
-            await ctx.send(f"Successfully {type} role {role.name} for {to.name}")
+            await ctx.send(f"Successfully {type} role {role} for {to}")
 
     @commands.command(description="Supply type with color to edit a roles color, name to edit an roles name, position to edit a role position, create to create a role or delete to delete a role")
     @commands.has_permissions(manage_roles=True)
