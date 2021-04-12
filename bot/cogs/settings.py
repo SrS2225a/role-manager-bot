@@ -4,6 +4,7 @@ import typing
 
 import discord
 from discord.ext import commands
+from parsedatetime import Calendar
 
 
 # administrator commands
@@ -257,22 +258,63 @@ class Settings(commands.Cog, name='Settings Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def autorole(self, ctx, *, role: discord.Role):
+    async def autorole(self, ctx, role: discord.Role, type, delay=None):
         """Sets what role will be given automatically to the user upon joining the guild"""
-        cursor = await self.bot.db.acquire()
-        guild = ctx.guild.id
-        result = await cursor.fetchval("SELECT prefix FROM settings WHERE prefix = $1 and guild = $2", role.id, guild)
-        search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
-        if result is not None:
-            await cursor.execute("UPDATE settings SET prefix = NULL WHERE guild = $1", guild)
-            await ctx.send("Auto Role Successfully Removed!")
-        elif search is None:
-            await cursor.execute("INSERT INTO settings(prefix, guild) VALUES($1, $2)", role.id, guild)
-            await ctx.send("Auto Role Set Successfully!")
+        if type is None or type in ("add", "remove"):
+            cursor = await self.bot.db.acquire()
+            guild = ctx.guild.id
+            result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and guild = $2 and type = $3", role.id, guild, type)
+            print(result)
+            if result is None:
+                def date_convert_seconds(s):
+                    current, result = Calendar().parse(s)
+                    t = datetime.datetime(*current[:6])
+                    futureDate = int((t - datetime.datetime.now()).total_seconds())
+                    return futureDate + 1, result
+
+                time = (0, 2) if delay is None else date_convert_seconds(delay)
+                print(time)
+                if time[1] < 1:
+                    await ctx.send("I do not recognise that time!")
+                else:
+                    await cursor.execute("INSERT INTO roles(guild, role, member, type) VALUES($1, $2, $3, $4)", guild, role.id, time[0], type)
+                    await ctx.send(f"Auto Role Set successfully!")
+            else:
+                await cursor.execute("DELETE FROM roles WHERE role = $1 and guild = $2 and type = $3", role.id, guild, type)
+                await ctx.send(f"Auto Role Removed successfully!")
+            await self.bot.db.release(cursor)
         else:
-            await cursor.execute("UPDATE settings SET prefix = $1 WHERE guild = $2", role.id, guild)
-            await ctx.send("Auto Role Set Successfully!")
-        await self.bot.db.release(cursor)
+            await ctx.send("The first argument must be defined as add or remove")
+
+    @commands.command(aliases=['autopn'])
+    @commands.has_permissions(manage_guild=True)
+    async def autopostition(self, ctx, type, delay, *, role: discord.Role):
+        """Allows you to automatically add roles based on someone's creation or server join date"""
+        if type in ("create", "join"):
+            cursor = await self.bot.db.acquire()
+            guild = ctx.guild.id
+            result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and type = $2 and guild = $3", role.id, type, guild)
+            if result is None:
+                def date_convert_seconds(s):
+                    current, result = Calendar().parse(s)
+                    t = datetime.datetime(*current[:6])
+                    futureDate = int((t - datetime.datetime.now()).total_seconds())
+                    return futureDate + 1, result
+
+                time = date_convert_seconds(delay)
+                if time[1] < 1:
+                    await ctx.send("I do not recognise that time!")
+                else:
+                    await cursor.execute("INSERT INTO roles(guild, role, member, type) VALUES($1, $2, $3, $4)", guild, role.id, time[0], type)
+                    await ctx.send("Auto Position Set Successfully!")
+            else:
+                await cursor.execute("DELETE FROM roles WHERE role = $1 and guild = $2 and type = $3", role.id, guild, type)
+                await ctx.send("Auto Position Deleted Successfully!")
+
+            await self.bot.db.release(cursor)
+        else:
+            await ctx.send("The first argument must be defined as create or join")
+
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)

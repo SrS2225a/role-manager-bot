@@ -1,5 +1,3 @@
-import re
-
 import discord
 import typing
 from discord.ext import commands, menus

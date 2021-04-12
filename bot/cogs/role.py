@@ -17,37 +17,37 @@ class Role(commands.Cog, name="Role Commands"):
         """Allows you to add or remove an role from members, bots, or everyone"""
         if type not in ("add", "remove"):
             await ctx.send("The first argument must be defined as add or remove")
-
-        await ctx.send(f"Changing role {role.name} for {to}")
-        # detects how we want to add or remove the role to member(s)
-        if to in "everyone":
-            for member in ctx.guild.members:
-                # checks if we want to add a role and if the member already has it
+        else:
+            await ctx.send(f"Changing role {role.name} for {to}")
+            # detects how we want to add or remove the role to member(s)
+            if to in "everyone":
+                for member in ctx.guild.members:
+                    # checks if we want to add a role and if the member already has it
+                    if role.id not in [role.id for role in member.roles] and type in "add":
+                        await member.add_roles(role)
+                    # checks if we want to remove a role and if the member already does not has it
+                    elif role.id in [role.id for role in member.roles] and type in "remove":
+                        await member.remove_roles(role)
+            elif to in "bots":
+                for member in ctx.guild.members:
+                    if member.bot and role.id not in [role.id for role in member.roles] and type in "add":
+                        await member.add_roles(role)
+                    elif member.bot and role.id in [role.id for role in member.roles] and type in "remove":
+                        await member.remove_roles(role)
+            elif to in "members":
+                for member in ctx.guild.members:
+                    if not member.bot and role.id not in [role.id for role in member.roles] and type in "add":
+                        await member.add_roles(role)
+                    elif not member.bot and role.id in [role.id for role in member.roles] and type in "remove":
+                        await member.remove_roles(role)
+            else:
+                member = await commands.MemberConverter().convert(ctx, to)
                 if role.id not in [role.id for role in member.roles] and type in "add":
                     await member.add_roles(role)
-                # checks if we want to remove a role and if the member already does not has it
                 elif role.id in [role.id for role in member.roles] and type in "remove":
                     await member.remove_roles(role)
-        elif to in "bots":
-            for member in ctx.guild.members:
-                if member.bot and role.id not in [role.id for role in member.roles] and type in "add":
-                    await member.add_roles(role)
-                elif member.bot and role.id in [role.id for role in member.roles] and type in "remove":
-                    await member.remove_roles(role)
-        elif to in "members":
-            for member in ctx.guild.members:
-                if not member.bot and role.id not in [role.id for role in member.roles] and type in "add":
-                    await member.add_roles(role)
-                elif not member.bot and role.id in [role.id for role in member.roles] and type in "remove":
-                    await member.remove_roles(role)
-        else:
-            member = await commands.MemberConverter().convert(ctx, to)
-            if role.id not in [role.id for role in member.roles] and type in "add":
-                await member.add_roles(role)
-            elif role.id in [role.id for role in member.roles] and type in "remove":
-                await member.remove_roles(role)
 
-        await ctx.send(f"Successfully {type} role {role.name} for {to.name}")
+            await ctx.send(f"Successfully {type} role {role.name} for {to.name}")
 
     @commands.command(description="Supply type with color to edit a roles color, name to edit an roles name, position to edit a role position, create to create a role or delete to delete a role")
     @commands.has_permissions(manage_roles=True)

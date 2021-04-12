@@ -1,5 +1,5 @@
+import traceback
 from datetime import datetime
-
 from discord.ext import tasks, commands
 
 
@@ -8,8 +8,9 @@ class Tasks(commands.Cog):
         self.bot = bot
         self.boosters.start()
         self.flags.start()
+        self.position.start()
 
-    @tasks.loop(hours=16.0)
+    @tasks.loop(hours=24.0)
     async def boosters(self):
         # task for booster reward system
         try:
@@ -47,14 +48,13 @@ class Tasks(commands.Cog):
             await self.bot.db.release(cursor)
 
         except Exception:
-            import traceback
             traceback.print_exc()
 
     @boosters.before_loop
     async def before_printer(self):
         await self.bot.wait_until_ready()
 
-    @tasks.loop(hours=16.0)
+    @tasks.loop(hours=24.0)
     async def flags(self):
         try:
             cursor = await self.bot.db.acquire()
@@ -72,10 +72,33 @@ class Tasks(commands.Cog):
             await self.bot.db.release(cursor)
 
         except Exception:
-            import traceback
             traceback.print_exc()
 
     @flags.before_loop
+    async def before_printer(self):
+        await self.bot.wait_until_ready()
+
+    @tasks.loop(hours=24.0)
+    async def position(self):
+        try:
+            cursor = await self.bot.db.acquire()
+            # gets all members in all guilds
+            for member in self.bot.get_all_members():
+                # code for auto position
+                position = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+                for position in await position.fetch(member.guild.id, 'create', 'join'):
+                    if position[2] == "create":
+                        if (datetime.now() - member.created_at).total_seconds() > position[1]:
+                            role = member.guild.get_role(role_id=int(position[0]))
+                            await member.add_roles(role, reason="Auto position creation date")
+                    else:
+                        if (datetime.now() - member.joined_at).total_seconds() > position[1]:
+                            role = member.guild.get_role(role_id=int(position[0]))
+                            await member.add_roles(role, reason="Auto position join date")
+        except Exception:
+            traceback.print_exc()
+
+    @position.before_loop
     async def before_printer(self):
         await self.bot.wait_until_ready()
 
