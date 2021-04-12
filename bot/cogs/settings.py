@@ -264,7 +264,6 @@ class Settings(commands.Cog, name='Settings Commands'):
             cursor = await self.bot.db.acquire()
             guild = ctx.guild.id
             result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and guild = $2 and type = $3", role.id, guild, type)
-            print(result)
             if result is None:
                 def date_convert_seconds(s):
                     current, result = Calendar().parse(s)
@@ -273,7 +272,6 @@ class Settings(commands.Cog, name='Settings Commands'):
                     return futureDate + 1, result
 
                 time = (0, 2) if delay is None else date_convert_seconds(delay)
-                print(time)
                 if time[1] < 1:
                     await ctx.send("I do not recognise that time!")
                 else:

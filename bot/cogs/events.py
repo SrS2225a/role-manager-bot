@@ -256,7 +256,7 @@ class Events(commands.Cog):
         # code for auto roles (for membership screening)
         if before.pending and not after.pending:
             auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type =$3")
-            for auto in await auto.fetchval(guild.id):
+            for auto in await auto.fetchval(guild.id, "add", "remove"):
                 await asyncio.sleep(auto[1])
                 if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
                     role = guild.get_role(role_id=auto[0])
