@@ -95,6 +95,8 @@ class Tasks(commands.Cog):
                         if (datetime.now() - member.joined_at).total_seconds() > position[1]:
                             role = member.guild.get_role(role_id=int(position[0]))
                             await member.add_roles(role, reason="Auto position join date")
+            await self.bot.db.release(cursor)
+
         except Exception:
             traceback.print_exc()
 
