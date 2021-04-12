@@ -14,7 +14,6 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 
 
 ### Backburner
-- [ ] have giveaways send a DM confirmation that they've entered giveaway
 - [ ] Add a command to quickly set an new counting number
 - [ ] Improve reminder system by using an database and loop through in case the bot goes down
 
@@ -22,10 +21,12 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 - [ ] Invite tracking
 
 ### In Progress
-- [x] Automanically add roles based on someone's creation or server join date
-- [x] Autorole that can be add/remove after X duration
+- [ ] have giveaways send a DM confirmation that they've entered giveaway
+
 
 ### Completed
+- [x] Automanically add roles based on someone's creation or server join date
+- [x] Autorole that can be add/remove after X duration
 - [ ] Update comments in code
 - [ ] Add support for remind commands to take a time instead of just duration. Also a "here" which says remind to the current channel to make it a little easier on users
 
