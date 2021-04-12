@@ -256,10 +256,10 @@ class Settings(commands.Cog, name='Settings Commands'):
             await ctx.send("Announcement Channel Enabled Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command()
+    @commands.command(description="Supply type with add/remove to add or remove the role to the user")
     @commands.has_permissions(manage_guild=True)
     async def autorole(self, ctx, role: discord.Role, type, delay=None):
-        """Sets what role will be given automatically to the user upon joining the guild"""
+        """Sets what role will be given or removed automatically to the user upon joining the guild"""
         if type is None or type in ("add", "remove"):
             cursor = await self.bot.db.acquire()
             guild = ctx.guild.id
