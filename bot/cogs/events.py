@@ -253,17 +253,17 @@ class Events(commands.Cog):
                     await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guild.id, n, after.id, 'sticky')
 
         # code for auto roles (for membership screening)
-        if before.pending and not after.pending:
-            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
-            for auto in await auto.fetch(guild.id, "add", "remove"):
-                if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
-                    await asyncio.sleep(int(auto[1]))
-                    role = guild.get_role(role_id=auto[0])
-                    await after.add_roles(role, reason='Auto role')
-                elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
-                    await asyncio.sleep(int(auto[1]))
-                    role = guild.get_role(role_id=auto[0])
-                    await after.remove_roles(role, reason='Auto role')
+#         if before.pending and not after.pending:
+#             auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+#             for auto in await auto.fetch(guild.id, "add", "remove"):
+#                 if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
+#                     await asyncio.sleep(int(auto[1]))
+#                     role = guild.get_role(role_id=auto[0])
+#                     await after.add_roles(role, reason='Auto role')
+#                 elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
+#                     await asyncio.sleep(int(auto[1]))
+#                     role = guild.get_role(role_id=auto[0])
+#                     await after.remove_roles(role, reason='Auto role')
 
         await self.bot.db.release(cursor)
 
