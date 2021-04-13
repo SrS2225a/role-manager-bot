@@ -214,9 +214,25 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
+        guild = after.guild
+
+        # code for auto roles (for membership screening)
+        if not before.pending == after.pending:
+            curr = await self.bot.db.acquire()
+            auto = await curr.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+            execute = await auto.fetch(guild.id, "add", "remove")
+            await self.bot.db.release(curr)
+            for auto in execute:
+                await asyncio.sleep(int(auto[1]))
+                if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
+                    role = guild.get_role(role_id=auto[0])
+                    await after.add_roles(role, reason='Auto role')
+                elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
+                    role = guild.get_role(role_id=auto[0])
+                    await after.remove_roles(role, reason='Auto role')
+
         # detects if an user is streaming and gives them the set role accordingly, else remove it
         cursor = await self.bot.db.acquire()
-        guild = after.guild
         if not before.activity == after.activity:
             stream = await cursor.prepare("SELECT live FROM settings WHERE guild = $1")
             role = guild.get_role(await stream.fetchval(guild.id))
@@ -251,21 +267,6 @@ class Events(commands.Cog):
                     await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guild.id, after.id, n, 'sticky')
                 if n not in [role.id for role in after.roles] and type is not None:
                     await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guild.id, n, after.id, 'sticky')
-
-        # code for auto roles (for membership screening)
-        if not before.pending == after.pending:
-            curr = await self.bot.db.acquire()
-            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
-            execute = await auto.fetch(guild.id, "add", "remove")
-            await self.bot.db.release(curr)
-            for auto in execute:
-                await asyncio.sleep(int(auto[1]))
-                if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
-                    role = guild.get_role(role_id=auto[0])
-                    await after.add_roles(role, reason='Auto role')
-                elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
-                    role = guild.get_role(role_id=auto[0])
-                    await after.remove_roles(role, reason='Auto role')
 
         await self.bot.db.release(cursor)
 
@@ -464,15 +465,15 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        cursor = await self.bot.db.acquire()
         guild = member.guild
 
         # code for auto roles (without membership screening)
         if not member.pending:
             curr = await self.bot.db.acquire()
-            auto = await cursor.prepare( "SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+            auto = await curr.prepare( "SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
             execute = await auto.fetch(guild.id, "add", "remove")
             await self.bot.db.release(curr)
+            print(execute)
             for auto in execute:
                 await asyncio.sleep(int(auto[1]))
                 if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
@@ -482,6 +483,7 @@ class Events(commands.Cog):
                     role = guild.get_role(role_id=auto[0])
                     await member.remove_roles(role, reason='Auto role')
 
+        cursor = await self.bot.db.acquire()
         # code for sticky roles
         master = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
         for select in await master.fetch(guild.id, member.id, 'sticky'):
