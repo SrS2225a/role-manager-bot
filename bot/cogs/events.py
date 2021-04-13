@@ -254,13 +254,14 @@ class Events(commands.Cog):
 
         # code for auto roles (for membership screening)
         if before.pending and not after.pending:
-            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type =$3")
+            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
             for auto in await auto.fetch(guild.id, "add", "remove"):
-                await asyncio.sleep(int(auto[1]))
                 if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
+                    await asyncio.sleep(int(auto[1]))
                     role = guild.get_role(role_id=auto[0])
                     await after.add_roles(role, reason='Auto role')
                 elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
+                    await asyncio.sleep(int(auto[1]))
                     role = guild.get_role(role_id=auto[0])
                     await after.remove_roles(role, reason='Auto role')
 
@@ -466,13 +467,14 @@ class Events(commands.Cog):
 
         # code for auto roles (without membership screening)
         if not member.pending:
-            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type =$3")
+            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
             for auto in await auto.fetch(guild.id, "add", "remove"):
-                await asyncio.sleep(int(auto[1]))
                 if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
+                    await asyncio.sleep(int(auto[1]))
                     role = guild.get_role(role_id=auto[0])
                     await member.add_roles(role, reason='Auto role')
                 elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
+                    await asyncio.sleep(int(auto[1]))
                     role = guild.get_role(role_id=auto[0])
                     await member.remove_roles(role, reason='Auto role')
 
