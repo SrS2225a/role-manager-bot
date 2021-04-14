@@ -17,6 +17,7 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 ### Backburner
 - [ ] Add a command to quickly set an new counting number
 - [ ] Improve reminder system by using an database and loop through in case the bot goes down
+- [ ] Redesign the UI
 
 ### Unsure
 - [ ] Invite tracking
