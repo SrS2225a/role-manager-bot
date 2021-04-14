@@ -223,11 +223,12 @@ class Events(commands.Cog):
             execute = await auto.fetch(guild.id, "add", "remove")
             await self.bot.db.release(curr)
             for auto in execute:
-                await asyncio.sleep(int(auto[1]))
                 if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
+                    await asyncio.sleep(int(auto[1]))
                     role = guild.get_role(role_id=auto[0])
                     await after.add_roles(role, reason='Auto role')
                 elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
+                    await asyncio.sleep(int(auto[1]))
                     role = guild.get_role(role_id=auto[0])
                     await after.remove_roles(role, reason='Auto role')
 
@@ -473,13 +474,13 @@ class Events(commands.Cog):
             auto = await curr.prepare( "SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
             execute = await auto.fetch(guild.id, "add", "remove")
             await self.bot.db.release(curr)
-            print(execute)
             for auto in execute:
-                await asyncio.sleep(int(auto[1]))
                 if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
+                    await asyncio.sleep(int(auto[1]))
                     role = guild.get_role(role_id=auto[0])
                     await member.add_roles(role, reason='Auto role')
                 elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
+                    await asyncio.sleep(int(auto[1]))
                     role = guild.get_role(role_id=auto[0])
                     await member.remove_roles(role, reason='Auto role')
 
