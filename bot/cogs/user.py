@@ -336,7 +336,7 @@ class User(commands.Cog, name='User Commands'):
         guild = ctx.guild
         member = ctx.author if not member else member
         full = await cursor.fetch("SELECT amount, amount2, amount3, invite FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
-        embed = discord.Embed(title=f"Invite Info For {member}")
+        embed = discord.Embed(title=f"Invite Info For {member}", color=member.color)
         for invite in full:
             embed.add_field(name=invite[3], value=f"{invite[0]} joins, {invite[1]} leaves, {invite[2]} fakes", inline=False)
 
