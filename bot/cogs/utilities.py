@@ -128,46 +128,48 @@ class Utilities(commands.Cog, name='Utilities Commands'):
         if len(questions) > 20:
             await ctx.send("You can only have a maximum of 20 questions!")
         else:
-            units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
-
             def convert_to_seconds(s):
-                return int(datetime.timedelta(**{
-                    units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
-                    for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
-                }).total_seconds())
+                current, result = Calendar().parse(s)
+                t = datetime.datetime(*current[:6])
+                futureDate = int((t - datetime.datetime.now()).total_seconds())
+                return futureDate + 1, result
 
             time = convert_to_seconds(duration)
-            delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
-            ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
-            type = "Multiple Options" if multiple is True else "Single Option"
-            embed = discord.Embed(title=topic)
-            embed.set_footer(text=f"Ends At {ends} - {type}")
-            indicators = self.bot.emoji[1648:1668][::-1]
-            for item, feilds in enumerate(questions):
-                embed.add_field(name=indicators[item], value=feilds)
-            sent = await ctx.send(embed=embed)
-            for button in range(len(questions)):
-                await sent.add_reaction(indicators[button])
-            voting = sent.id + sent.channel.id
-            await cursor.execute("INSERT INTO vote(guild, message, win, date, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, voting, multiple, time, "poll")
-            await asyncio.sleep(time)
-            execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
-            if execute is not None:
-                sent = await ctx.channel.fetch_message(sent.id)
-                data = sent.embeds[0]
-                name = [value.name for value in data.fields]
-                questions = [value.value for value in data.fields]
-                votes = sum([reaction.count - 1 for reaction in sent.reactions if reaction.emoji in name])
-                embed = discord.Embed(title="Poll Results", description=topic)
-                result = 0
-                for reaction in sent.reactions:
-                    if reaction.emoji in name:
-                        embed.add_field(name=questions[result], value=f"{reaction.count - 1} - {round((reaction.count - 1) * 100 / votes, 2) if votes != 0 else 0.0}%")
-                        result += 1
-                await sent.edit(embed=embed)
-                await sent.clear_reactions()
-            await cursor.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
-            await self.bot.db.release(cursor)
+            if time[1] < 1:
+                await ctx.send("I do not recognise that time!")
+            else:
+                time = time[0]
+                delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
+                ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
+                type = "Multiple Options" if multiple is True else "Single Option"
+                embed = discord.Embed(title=topic)
+                embed.set_footer(text=f"Ends At {ends} - {type}")
+                indicators = self.bot.emoji[1648:1668][::-1]
+                for item, feilds in enumerate(questions):
+                    embed.add_field(name=indicators[item], value=feilds)
+                sent = await ctx.send(embed=embed)
+                for button in range(len(questions)):
+                    await sent.add_reaction(indicators[button])
+                voting = sent.id + sent.channel.id
+                await cursor.execute("INSERT INTO vote(guild, message, win, date, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, voting, multiple, time, "poll")
+                await asyncio.sleep(time)
+                execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
+                if execute is not None:
+                    sent = await ctx.channel.fetch_message(sent.id)
+                    data = sent.embeds[0]
+                    name = [value.name for value in data.fields]
+                    questions = [value.value for value in data.fields]
+                    votes = sum([reaction.count - 1 for reaction in sent.reactions if reaction.emoji in name])
+                    embed = discord.Embed(title="Poll Results", description=topic)
+                    result = 0
+                    for reaction in sent.reactions:
+                        if reaction.emoji in name:
+                            embed.add_field(name=questions[result], value=f"{reaction.count - 1} - {round((reaction.count - 1) * 100 / votes, 2) if votes != 0 else 0.0}%")
+                            result += 1
+                    await sent.edit(embed=embed)
+                    await sent.clear_reactions()
+                await cursor.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
+                await self.bot.db.release(cursor)
 
     @commands.command(aliases=["endvote"])
     @commands.has_permissions(manage_messages=True)
@@ -207,41 +209,45 @@ class Utilities(commands.Cog, name='Utilities Commands'):
         units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 
         def convert_to_seconds(s):
-            return int(datetime.timedelta(**{
-                units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
-                for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
-            }).total_seconds())
+            current, result = Calendar().parse(s)
+            t = datetime.datetime(*current[:6])
+            futureDate = int((t - datetime.datetime.now()).total_seconds())
+            return futureDate + 1, result
 
         await cursor.execute("DELETE FROM vote WHERE date < DATE_SUB(NOW(), INTERVAL 7 DAY) and type = $1", "giveaway end")
         time = convert_to_seconds(duration)
-        now = datetime.datetime.utcnow()
-        delta = now + datetime.timedelta(seconds=time)
-        ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
-        stamp = delta.timestamp()
-        embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Winners: {winners} \nRequirement: {requirement} \nGiveaway Ends At: {ends}")
-        sent = await ctx.send(embed=embed)
-        await sent.add_reaction('🎉')
-        await cursor.execute("INSERT INTO vote(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, sent.id, stamp, winners, "giveaway")
-        await ctx.send("Giveaway Created")
-        await asyncio.sleep(time)
-        execute = await cursor.fetchval("SELECT date FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "giveaway")
-        stamp = datetime.datetime.fromtimestamp(execute[0])
-        if execute is not None and datetime.datetime.utcnow() < stamp:
-            sent = await ctx.channel.fetch_message(sent.id)
-            vote = sent.reactions
-            for reaction in vote:
-                if reaction.emoji == '🎉':
-                    users = await reaction.users().flatten()
-                    winner = random.choices(users, k=winners)
-                    winner = "\n".join([winner.mention for winner in winner if winner is not winner.bot])
-                    embed = discord.Embed(title=name, description=f"**Giveaway Ended** \nWinners:{winner}")
-                    embed.set_footer(text=f"Ended At: {ends}")
-                    await sent.edit(embed=embed)
-                    await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
-                    break
+        if time[1] < 1:
+            await ctx.send("I do not recognise that time!")
         else:
-            await ctx.send("This Giveaway Does Not Exist Or In The Current Channel")
-        await self.bot.db.release(cursor)
+            time = time[0]
+            now = datetime.datetime.utcnow()
+            delta = now + datetime.timedelta(seconds=time)
+            ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
+            stamp = delta.timestamp()
+            embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Winners: {winners} \nRequirement: {requirement} \nGiveaway Ends At: {ends}")
+            sent = await ctx.send(embed=embed)
+            await sent.add_reaction('🎉')
+            await cursor.execute("INSERT INTO vote(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, sent.id, stamp, winners, "giveaway")
+            await ctx.send("Giveaway Created", delete_after=4.0)
+            await asyncio.sleep(time)
+            execute = await cursor.fetchval("SELECT date FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "giveaway")
+            stamp = datetime.datetime.fromtimestamp(execute[0])
+            if execute is not None and datetime.datetime.utcnow() < stamp:
+                sent = await ctx.channel.fetch_message(sent.id)
+                vote = sent.reactions
+                for reaction in vote:
+                    if reaction.emoji == '🎉':
+                        users = await reaction.users().flatten()
+                        winner = random.choices(users, k=winners)
+                        winner = "\n".join([winner.mention for winner in winner if winner is not winner.bot])
+                        embed = discord.Embed(title=name, description=f"**Giveaway Ended** \nWinners:{winner}")
+                        embed.set_footer(text=f"Ended At: {ends}")
+                        await sent.edit(embed=embed)
+                        await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
+                        break
+            else:
+                await ctx.send("This Giveaway Does Not Exist Or In The Current Channel")
+            await self.bot.db.release(cursor)
 
     @commands.command(aliases=["cancelgiveaway"])
     @commands.has_permissions(manage_messages=True)

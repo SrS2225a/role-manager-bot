@@ -328,6 +328,21 @@ class User(commands.Cog, name='User Commands'):
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
+    @commands.command(aliases=['invitecodes'])
+    async def inviteinfo(self, ctx, *, member: discord.Member = None):
+        """Shows info about your invites, or someone elses"""
+        cursor = await self.bot.db.acquire()
+        # shows various information about how many members we invited, or someone elses
+        guild = ctx.guild
+        member = ctx.author if not member else member
+        full = await cursor.fetch("SELECT amount, amount2, amount3, invite FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
+        embed = discord.Embed(title=f"Invite Info For {member}")
+        for invite in full:
+            embed.add_field(name=invite[3], value=f"{invite[0]} joins, {invite[1]} leaves, {invite[2]} fakes", inline=False)
+
+        await ctx.send(embed=embed)
+        await self.bot.db.release(cursor)
+
     @commands.command()
     async def suggest(self, ctx, *, suggestion):
         """Allows you to make an suggestion for the guild"""
