@@ -331,6 +331,7 @@ class Events(commands.Cog):
             
             # gets our role
             role = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", main, emoji, guild_id)
+            roles = role
             role = random.choice(role)[0]
             
             # if enabled check if we are in the whitelist and continue
@@ -339,7 +340,6 @@ class Events(commands.Cog):
                 await member.send("You do not have the required role to get this role from reaction roles!")
             elif not member.bot:
                 # splits reaction role types into code readable format and checks if we can add role
-                roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild_id)
                 if "o" in role:
                     role = role.replace("o", "")
                     mroles = guild.get_role(role_id=int(role))
@@ -352,14 +352,15 @@ class Events(commands.Cog):
                             await member.add_roles(mroles, reason='User reacted to reaction role')
 
                 elif "n" in role:
+                    roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild_id)
                     role = role.replace("n", "")
                     mroles = guild.get_role(role_id=int(role))
                     for role in roles:
-                        role = role[0].replace("n", "")
-                        if int(role) in [role.id for role in member.roles]:
-                            roles = guild.get_role(int(role))
-                            await member.remove_roles(roles, reason='User unreacted to reaction role')
-                        await member.add_roles(mroles, reason='User reacted to reaction role')
+                        role = int(role[0].replace("n", ""))
+                        if role in [role.id for role in member.roles]:
+                            nroles = guild.get_role(role)
+                            await member.remove_roles(nroles, reason='User unreacted to reaction role')
+                    await member.add_roles(mroles, reason='User reacted to reaction role')
 
                 elif "r" in role:
                     role = role.replace("r", "")
