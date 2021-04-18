@@ -508,10 +508,10 @@ class Events(commands.Cog):
                     check = await cursor.fetch("SELECT date::int8, role FROM boost WHERE guild = $1 and type = $2 ORDER BY date DESC", guild.id, 'invite')
                     
                     # if enabled congratulates the inviter if they complete a number of invites
+                    announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
                     for day in check:
                         role = guild.get_role(day[1])
                         if total >= day[0]:
-                            announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
                             channel = guild.get_channel(announcement)
                             user = guild.get_member(invites.inviter.id)
                             if None not in (channel, user) and role.id not in [role.id for role in user.roles]:
