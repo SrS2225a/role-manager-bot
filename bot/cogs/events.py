@@ -331,7 +331,6 @@ class Events(commands.Cog):
             
             # gets our role
             role = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", main, emoji, guild_id)
-            roles = role
             role = random.choice(role)[0]
             
             # if enabled check if we are in the whitelist and continue
