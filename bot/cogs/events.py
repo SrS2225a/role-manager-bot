@@ -339,6 +339,7 @@ class Events(commands.Cog):
                 await member.send("You do not have the required role to get this role from reaction roles!")
             elif not member.bot:
                 # splits reaction role types into code readable format and checks if we can add role
+                roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild_id)
                 if "o" in role:
                     role = role.replace("o", "")
                     mroles = guild.get_role(role_id=int(role))
@@ -351,7 +352,6 @@ class Events(commands.Cog):
                             await member.add_roles(mroles, reason='User reacted to reaction role')
 
                 elif "n" in role:
-                    roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild_id)
                     role = role.replace("n", "")
                     mroles = guild.get_role(role_id=int(role))
                     for role in roles:
