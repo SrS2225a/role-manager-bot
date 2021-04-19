@@ -236,7 +236,7 @@ class User(commands.Cog, name='User Commands'):
     
 
     @commands.command(aliases=['level'])
-    async def rank(self, ctx, *, user: discord.Member = None):
+    async def rank(self, ctx, *, user: discord.User = None):
         """Shows your ranking status or someone else's"""
         global channel
         cursor = await self.bot.db.acquire()
@@ -313,7 +313,7 @@ class User(commands.Cog, name='User Commands'):
         await self.bot.db.release(cursor)
 
     @commands.command()
-    async def invites(self, ctx, *, member: discord.Member = None):
+    async def invites(self, ctx, *, member: discord.User = None):
         """Shows info about how many members you invited, or someone else"""
         cursor = await self.bot.db.acquire()
         # shows various information about how many members we invited, or someone elses
@@ -329,7 +329,7 @@ class User(commands.Cog, name='User Commands'):
         await self.bot.db.release(cursor)
 
     @commands.command(aliases=['invitecodes'])
-    async def inviteinfo(self, ctx, *, member: discord.Member = None):
+    async def inviteinfo(self, ctx, *, member: discord.User = None):
         """Shows info about your invites, or someone elses"""
         cursor = await self.bot.db.acquire()
         # shows various information about how many members we invited, or someone elses
