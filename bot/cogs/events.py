@@ -319,40 +319,33 @@ class Events(commands.Cog):
         emote = re.findall(r'(\d+)\s*', emoji)
         if emote:
             emoji = emote[0]
-            
-        # gets our emoji
-        chanmsg = await cursor.prepare("SELECT master FROM reaction WHERE guild = $1 and type = $2 and master = $3")
-        chanmsg = await chanmsg.fetchval(guild_id, emoji, main)
-        
+
         # checks if we have actually reacted to the emoji
-        if chanmsg == main:
+        role = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", main, emoji, guild_id)
+        if role:
+            role = random.choice(role)[0]
             guild = self.bot.get_guild(guild_id)
             member = await guild.fetch_member(user_id)
-            
-            # gets our role
-            role = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", main, emoji, guild_id)
-            roles = role
-            role = random.choice(role)[0]
             
             # if enabled check if we are in the whitelist and continue
             whitelist = await cursor.fetchval("SELECT blacklist FROM reaction WHERE role = $1 and master = $2 and guild = $3 and type = $4", role, main, guild_id, emoji)
             if whitelist not in [role.id for role in member.roles] and whitelist != 0:
                 await member.send("You do not have the required role to get this role from reaction roles!")
             elif not member.bot:
+                roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild_id)
                 # splits reaction role types into code readable format and checks if we can add role
                 if "o" in role:
                     role = role.replace("o", "")
                     mroles = guild.get_role(role_id=int(role))
                     for role in roles:
-                        role = role[0].replace("o", "")
-                        if int(role) in [role.id for role in member.roles]:
+                        role = int(role[0].replace("o", ""))
+                        if role in [role.id for role in member.roles]:
                             await member.send("You cannot change your roles after reacting from this reaction role category!")
                             break
                         else:
                             await member.add_roles(mroles, reason='User reacted to reaction role')
 
                 elif "n" in role:
-                    roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild_id)
                     role = role.replace("n", "")
                     mroles = guild.get_role(role_id=int(role))
                     for role in roles:
@@ -401,6 +394,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
+        # removes roles to an member once they unreact to an set emoji
         cursor = await self.bot.db.acquire()
         guild_id = payload.guild_id
         message_id = payload.message_id
@@ -408,21 +402,14 @@ class Events(commands.Cog):
         user_id = payload.user_id
         emoji = str(payload.emoji)
         main = message_id + channel_id
-        
-        # removes roles to an member once they unreact to an set emoji
+
         # adds support for custom emojis
         emote = re.findall(r'(\d+)\s*', emoji)
         if emote:
             emoji = emote[0]
-            
-         # gets our emoji
-        chanmsg = await cursor.prepare("SELECT master FROM reaction WHERE guild = $1 and type = $2 and master = $3")
-        chanmsg = await chanmsg.fetchval(guild_id, emoji, main)
-        
-        # checks if we have actually removed our reaction
-        if main == chanmsg:
-            role = await cursor.fetchval("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", chanmsg, emoji, guild_id)
-            
+
+        role = await cursor.fetchval("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", main, emoji, guild_id)
+        if role is not None:
             # splits reaction role types into code readable format anmd checks if we can remove role
             guild = self.bot.get_guild(guild_id)
             member = await guild.fetch_member(user_id)
