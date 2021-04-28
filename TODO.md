@@ -7,6 +7,7 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 ### Priority's
 - [ ] Reward system based on how long a member has been in the server for
 - [ ] Server voting reward system
+- [ ] Support for member of the day, week, month for leveling
 - [ ] add the ability for commands to be turned on/off
 - [ ] Update system on different problems the bot is currently experiencing
 - [ ] Create a web site for oauth with listed tasks and dashboard for configuring, plus documentation
