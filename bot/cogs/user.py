@@ -4,7 +4,7 @@ import re
 
 import discord
 from discord.ext import commands, menus
-from tabulate import tabulate
+import tabulate
 from tqdm import tqdm
 
 class User(commands.Cog, name='User Commands'):
@@ -145,6 +145,8 @@ class User(commands.Cog, name='User Commands'):
         global result, check, user
         cursor = await self.bot.db.acquire()
         # shows the leaderboard for leveling
+        tabulate.MIN_PADDING = 0
+
         if type == 'rankings':
             # checks if the sever has leveling enabled for Dionysus
             diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'difficulty')
@@ -165,7 +167,7 @@ class User(commands.Cog, name='User Commands'):
                     async def format_page(self, menu, entry):
                         offset = menu.current_page * self.per_page
                         embed = discord.Embed(title=f"Dionysus Rankings (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
-                                              description=f"```{tabulate(entry, headers=['XP', 'LV', 'USER'], tablefmt='presto')}```")
+                                              description=f"```{tabulate.tabulate(entry, headers=['XP', 'LV', 'USER'], tablefmt='presto')}```")
                         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                         return embed
 
@@ -193,7 +195,7 @@ class User(commands.Cog, name='User Commands'):
                     offset = menu.current_page * self.per_page
                     embed = discord.Embed(
                         title=f"Dionysus Invites (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
-                        description=f"```{tabulate(entry, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='presto')}```")
+                        description=f"```{tabulate.tabulate(entry, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='presto')}```")
                     embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                     return embed
 
@@ -221,7 +223,7 @@ class User(commands.Cog, name='User Commands'):
                         offset = menu.current_page * self.per_page
                         embed = discord.Embed(
                             title=f"Dionysus Partners (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
-                            description=f"```{tabulate(entry, headers=['PARTNERS', 'USER'], tablefmt='presto')}```")
+                            description=f"```{tabulate.tabulate(entry, headers=['PARTNERS', 'USER'], tablefmt='presto')}```")
                         embed.set_footer(
                             text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                         return embed
@@ -236,7 +238,7 @@ class User(commands.Cog, name='User Commands'):
     
 
     @commands.command(aliases=['level'])
-    async def rank(self, ctx, *, user: discord.Member = None):
+    async def rank(self, ctx, *, user: discord.User = None):
         """Shows your ranking status or someone else's"""
         global channel
         cursor = await self.bot.db.acquire()
@@ -313,7 +315,7 @@ class User(commands.Cog, name='User Commands'):
         await self.bot.db.release(cursor)
 
     @commands.command()
-    async def invites(self, ctx, *, member: discord.Member = None):
+    async def invites(self, ctx, *, member: discord.User = None):
         """Shows info about how many members you invited, or someone else"""
         cursor = await self.bot.db.acquire()
         # shows various information about how many members we invited, or someone elses
@@ -329,7 +331,7 @@ class User(commands.Cog, name='User Commands'):
         await self.bot.db.release(cursor)
 
     @commands.command(aliases=['invitecodes'])
-    async def inviteinfo(self, ctx, *, member: discord.Member = None):
+    async def inviteinfo(self, ctx, *, member: discord.User = None):
         """Shows info about your invites, or someone elses"""
         cursor = await self.bot.db.acquire()
         # shows various information about how many members we invited, or someone elses

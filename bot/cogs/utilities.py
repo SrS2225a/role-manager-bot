@@ -203,10 +203,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
     @commands.has_permissions(manage_messages=True)
     async def creategiveaway(self, ctx, name, winners: int, duration, requirement=None):
         """Allows you to create and host your own giveaway"""
-        global winner
         cursor = await self.bot.db.acquire()
-        cursor.row_factory = lambda cursor, row: row[0]
-        units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 
         def convert_to_seconds(s):
             current, result = Calendar().parse(s)
@@ -214,7 +211,6 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             futureDate = int((t - datetime.datetime.now()).total_seconds())
             return futureDate + 1, result
 
-        await cursor.execute("DELETE FROM vote WHERE date < DATE_SUB(NOW(), INTERVAL 7 DAY) and type = $1", "giveaway end")
         time = convert_to_seconds(duration)
         if time[1] < 1:
             await ctx.send("I do not recognise that time!")
@@ -223,45 +219,40 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             now = datetime.datetime.utcnow()
             delta = now + datetime.timedelta(seconds=time)
             ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
-            stamp = delta.timestamp()
-            embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Winners: {winners} \nRequirement: {requirement} \nGiveaway Ends At: {ends}")
+            embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winners}")
+            embed.set_footer(text=f"Ends At: {ends}")
             sent = await ctx.send(embed=embed)
             await sent.add_reaction('🎉')
-            await cursor.execute("INSERT INTO vote(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, sent.id, stamp, winners, "giveaway")
-            await ctx.send("Giveaway Created", delete_after=4.0)
+            await cursor.execute("INSERT INTO vote(guild, message, date, win, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, sent.id, delta.timestamp(), winners, "giveaway")
             await asyncio.sleep(time)
-            execute = await cursor.fetchval("SELECT date FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "giveaway")
-            stamp = datetime.datetime.fromtimestamp(execute[0])
-            if execute is not None and datetime.datetime.utcnow() < stamp:
-                sent = await ctx.channel.fetch_message(sent.id)
-                vote = sent.reactions
-                for reaction in vote:
-                    if reaction.emoji == '🎉':
-                        users = await reaction.users().flatten()
-                        winner = random.choices(users, k=winners)
-                        winner = "\n".join([winner.mention for winner in winner if winner is not winner.bot])
-                        embed = discord.Embed(title=name, description=f"**Giveaway Ended** \nWinners:{winner}")
-                        embed.set_footer(text=f"Ended At: {ends}")
-                        await sent.edit(embed=embed)
-                        await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
-                        break
-            else:
-                await ctx.send("This Giveaway Does Not Exist Or In The Current Channel")
+
+            sent = await ctx.channel.fetch_message(sent.id)
+            vote = sent.reactions
+            for reaction in vote:
+                if reaction.emoji == '🎉':
+                    users = await reaction.users().flatten()
+                    winner = random.choices(users, k=winners)
+                    winners = "\n".join([winner.mention for winner in winner if not winner.bot])
+                    embed = discord.Embed(title=name, description=f"**Giveaway Ended** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winners}")
+                    embed.set_footer(text=f"Ended At: {ends}")
+                    await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
+                    await sent.edit(embed=embed)
+                    break
+
             await self.bot.db.release(cursor)
 
     @commands.command(aliases=["cancelgiveaway"])
     @commands.has_permissions(manage_messages=True)
-    async def endgiveaway(self, ctx, message: int):
+    async def endgiveaway(self, ctx, message: discord.Message):
         """Allows you to end a running giveaway"""
         cursor = await self.bot.db.acquire()
-        sent = await ctx.channel.fetch_message(message)
+        sent = await ctx.channel.fetch_message(message.id)
         execute = await cursor.fetchrow("SELECT date, win FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "giveaway")
         if execute is not None:
             vote = sent.reactions
             for reaction in vote:
                 if reaction.emoji == '🎉':
                     data = sent.embeds[0]
-                    name = data.title
                     stamp = datetime.datetime.fromtimestamp(execute[0])
                     time = datetime.datetime.utcnow().timestamp()
                     if datetime.datetime.utcnow() < stamp:
@@ -269,15 +260,12 @@ class Utilities(commands.Cog, name='Utilities Commands'):
                         ends = datetime.datetime.strftime(now, '%a %b %d %Y %I:%M:%S %p UTC')
                         users = await reaction.users().flatten()
                         winner = random.choices(users, k=execute[1])
-                        winners = "\n".join([winner.mention for winner in winner if winner.id != 437447118127366154])
-                        embed = discord.Embed(title=name, description=f"**Giveaway Ended** \nWinners:{winners}")
+                        winners = "\n".join([winner.mention for winner in winner if not winner.bot])
+                        embed = discord.Embed(title=data.title, description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners:{winners}")
                         embed.set_footer(text=f"Ended At: {ends}")
                         await sent.edit(embed=embed)
                         await cursor.execute("UPDATE vote SET date = $1, type = $2 WHERE guild = $3 and message = $4 and type = $5", time, "giveaway end", ctx.guild.id, sent.id, "giveaway")
-                        await cursor.execute(
-                            "UPDATE vote SET date = $1 WHERE guild = $2 and message = $3 and type = $4", time,
-                            ctx.guild.id, sent.id, "giveaway end")
-                        await ctx.send("Ended Giveaway")
+                        await ctx.send("Ended Giveaway", delete_after=2.8)
                         break
                     else:
                         await ctx.send("That Giveaway Has Already Ended!")
@@ -297,14 +285,13 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             for reaction in vote:
                 if reaction.emoji == '🎉':
                     data = sent.embeds[0]
-                    name = data.title
-                    ends = data.footer.text
                     users = await reaction.users().flatten()
-                    winner = random.choices(users, k=execute[0])
-                    winner = "\n".join([winner.mention for winner in winner if winner.id != 437447118127366154])
-                    embed = discord.Embed(name=name, description=f"**Giveaway Ended** \nWinners:{winner}")
-                    embed.set_footer(text=f"Ended At: {ends}")
+                    winner = random.choices(users, k=execute)
+                    winners = "\n".join([winner.mention for winner in winner if not winner.bot])
+                    embed = discord.Embed(name=data.title, description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners:{winners}")
+                    embed.set_footer(text=f"Ended At: {data.footer.text}")
                     await sent.edit(embed=embed)
+                    await ctx.send("Giveaway rerolled", delete_after=2.8)
                     break
         else:
             await ctx.send("This Giveaway Does Not Exist Or In The Current Channel")
