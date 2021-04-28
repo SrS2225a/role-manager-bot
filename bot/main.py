@@ -22,7 +22,7 @@ intents.webhooks = False
 intents.integrations = False
 intents.emojis = False
 intents.bans = False
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('&'), intents=intents)
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'), intents=intents)
 bot.owner_ids = [508455796783317002, 381694604187009025, 270848136006729728, 222492698236420099, 372923892865433600]
 bot.active = []
 bot.emoji = []
