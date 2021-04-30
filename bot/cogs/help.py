@@ -110,6 +110,12 @@ class Help(commands.Cog, name='Help Commands'):
         embed.add_field(name='Stats', value=stats)
         await ctx.send(embed=embed)
 
+    @commands.command()
+    async def ping(self, ctx):
+        """Responds with the bots ping between the client and discord"""
+        # gets the bots current ping
+        await ctx.send(f"The ping is: {round(self.bot.latency * 1000)} ms!")
+
 
 def setup(bot):
     bot.add_cog(Help(bot))

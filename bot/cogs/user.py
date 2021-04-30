@@ -13,12 +13,6 @@ class User(commands.Cog, name='User Commands'):
         self.bot = bot
 
     @commands.command()
-    async def ping(self, ctx):
-        """Responds with the bots ping between the client and discord"""
-        # gets the bots current ping
-        await ctx.send(f"The ping is: {round(self.bot.latency * 1000)} ms!")
-
-    @commands.command()
     async def apply(self, ctx, list=None):
         """Allows you to create an application or view current questions"""
         cursor = await self.bot.db.acquire()
@@ -138,11 +132,9 @@ class User(commands.Cog, name='User Commands'):
 
         await self.bot.db.release(cursor)
 
-
     @commands.command(aliases=['top', 'lb'], description='Supply type with rankings/invites/partnerships to view that particular leaderboard')
     async def leaderboard(self, ctx, type):
         """Shows top rankings"""
-        global result, check, user
         cursor = await self.bot.db.acquire()
         # shows the leaderboard for leveling
         tabulate.MIN_PADDING = 0
@@ -239,7 +231,6 @@ class User(commands.Cog, name='User Commands'):
     @commands.command(aliases=['level'])
     async def rank(self, ctx, *, user: discord.User = None):
         """Shows your ranking status or someone else's"""
-        global channel
         cursor = await self.bot.db.acquire()
         member = ctx.author if not user else user
         # checks if the sever has leveling enabled for Dionysus
@@ -663,10 +654,6 @@ class User(commands.Cog, name='User Commands'):
         else:
             await ctx.send("The 'type' argument should be defined as role, text, or voice")
         await self.bot.db.release(cursor)
-
-
-
-
 
 def setup(bot):
     bot.add_cog(User(bot))

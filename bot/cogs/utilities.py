@@ -14,48 +14,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
     """Useful Commands Found In The Bot"""
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.command(aliases=['rr'], description="Supply type with 'r' to signify default reaction roles, 'o' for one time only reaction roles, or 'n' for toggle reaction roles in an reaction role catagorey")
-    @commands.has_permissions(manage_guild=True)
-    async def reactionrole(self, ctx, message: discord.Message, emoji, role: discord.Role, type, blacklist: discord.Role = None):
-        """Sets a reaction role with an defined message and emoji"""
-        global roles, mark
-        cursor = await self.bot.db.acquire()
-        guild = ctx.guild.id
-        role = role.id
-        main = message.id + ctx.channel.id
-        roles = blacklist.id if blacklist is not None else 0
-        emote = re.findall(r'(\d+)\s*', emoji)
-        mark = True if emote and int(emote[0]) in [emojis.id for emojis in await ctx.guild.fetch_emojis()] else False
-        unicode = True if emoji in self.bot.emoji else False
-        result = await cursor.fetchval("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild)
-        if result is not None and "r" in str(result):
-            type = "r"
-            role = type + str(role)
-        elif result is not None and "o" in str(result):
-            type = "o"
-            role = type + str(role)
-        elif result is not None and "n" in str(result):
-            type = "n"
-            role = type + str(role)
-        elif type in ("r", "o", "n"):
-            role = type + str(role)
-        else:
-            await ctx.send("The reaction role emoji has been incorrectly defined for this category!")
-        if unicode or mark:
-            reaction = emote[0] if mark else emoji
-            results = await cursor.fetchval("SELECT role FROM reaction WHERE role = $1 and master = $2 and guild = $3", role, main, guild)
-            if not results == role:
-                await cursor.execute("INSERT INTO reaction(guild, role, master, type, blacklist) VALUES($1, $2, $3, $4, $5)", guild, role, main, reaction, roles)
-                await message.add_reaction(emoji)
-                await ctx.send("Reaction Role Set Successfully!")
-            else:
-                await cursor.execute("DELETE FROM reaction WHERE role = $1 and master = $2 and guild = $3", role, main, guild)
-                await ctx.send("Reaction Role Deleted Successfully!")
-        else:
-            await ctx.send("I do not recognise that emoji!")
-        await self.bot.db.release(cursor)
-
+        
     @commands.command(description='Supply type with list to list your reminders, delete to delete and reminder, or me/dm/here to set the destination of the reminder')
     async def remind(self, ctx, type: typing.Union[discord.TextChannel, str], duration=None, *, description=None):
         """Sets a reminder with an given time"""
