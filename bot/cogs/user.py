@@ -166,7 +166,7 @@ class User(commands.Cog, name='User Commands'):
 
                     async def format_page(self, menu, entry):
                         offset = menu.current_page * self.per_page
-                        embed = discord.Embed(title=f"Dionysus Rankings (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                        embed = discord.Embed(title=f"Dionysus Rankings (Showing Entries {1 + offset} - {len(entry) + offset})",
                                               description=f"```{tabulate.tabulate(entry, headers=['XP', 'LV', 'USER'], tablefmt='presto')}```")
                         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                         return embed
@@ -194,7 +194,7 @@ class User(commands.Cog, name='User Commands'):
                 async def format_page(self, menu, entry):
                     offset = menu.current_page * self.per_page
                     embed = discord.Embed(
-                        title=f"Dionysus Invites (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                        title=f"Dionysus Invites (Showing Entries {1 + offset} - {len(entry) + offset})",
                         description=f"```{tabulate.tabulate(entry, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='presto')}```")
                     embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                     return embed
@@ -222,10 +222,9 @@ class User(commands.Cog, name='User Commands'):
                     async def format_page(self, menu, entry):
                         offset = menu.current_page * self.per_page
                         embed = discord.Embed(
-                            title=f"Dionysus Partners (Showing Entries {1 + offset} - {50 + offset if len(entry) == 50 else len(entry) + offset})",
+                            title=f"Dionysus Partners (Showing Entries {1 + offset} - {len(entry) + offset})",
                             description=f"```{tabulate.tabulate(entry, headers=['PARTNERS', 'USER'], tablefmt='presto')}```")
-                        embed.set_footer(
-                            text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
+                        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                         return embed
 
                 pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
