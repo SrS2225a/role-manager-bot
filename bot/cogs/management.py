@@ -176,7 +176,7 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def boosterreward(self, ctx, day: int, *, role: discord.Role):
+    async def booster(self, ctx, day: int, *, role: discord.Role):
         """Allows you to set an booster reward based on how long a booster boosted for"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
