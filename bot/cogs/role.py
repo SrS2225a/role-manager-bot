@@ -20,32 +20,35 @@ class Role(commands.Cog, name="Role Commands"):
         else:
             await ctx.send(f"Changing role {role.name} for {to}")
             # detects how we want to add or remove the role to member(s)
-            if to in "everyone":
-                for member in ctx.guild.members:
-                    # checks if we want to add a role and if the member already has it
+            try: 
+                if to in "everyone":
+                    for member in ctx.guild.members:
+                        # checks if we want to add a role and if the member already has it
+                        if role.id not in [role.id for role in member.roles] and type in "add":
+                            await member.add_roles(role)
+                        # checks if we want to remove a role and if the member already does not has it
+                        elif role.id in [role.id for role in member.roles] and type in "remove":
+                            await member.remove_roles(role)
+                elif to in "bots":
+                    for member in ctx.guild.members:
+                        if member.bot and role.id not in [role.id for role in member.roles] and type in "add":
+                            await member.add_roles(role)
+                        elif member.bot and role.id in [role.id for role in member.roles] and type in "remove":
+                            await member.remove_roles(role)
+                elif to in "members":
+                    for member in ctx.guild.members:
+                        if not member.bot and role.id not in [role.id for role in member.roles] and type in "add":
+                            await member.add_roles(role)
+                        elif not member.bot and role.id in [role.id for role in member.roles] and type in "remove":
+                            await member.remove_roles(role)
+                else:
+                    member = await commands.MemberConverter().convert(ctx, to)
                     if role.id not in [role.id for role in member.roles] and type in "add":
                         await member.add_roles(role)
-                    # checks if we want to remove a role and if the member already does not has it
                     elif role.id in [role.id for role in member.roles] and type in "remove":
                         await member.remove_roles(role)
-            elif to in "bots":
-                for member in ctx.guild.members:
-                    if member.bot and role.id not in [role.id for role in member.roles] and type in "add":
-                        await member.add_roles(role)
-                    elif member.bot and role.id in [role.id for role in member.roles] and type in "remove":
-                        await member.remove_roles(role)
-            elif to in "members":
-                for member in ctx.guild.members:
-                    if not member.bot and role.id not in [role.id for role in member.roles] and type in "add":
-                        await member.add_roles(role)
-                    elif not member.bot and role.id in [role.id for role in member.roles] and type in "remove":
-                        await member.remove_roles(role)
-            else:
-                member = await commands.MemberConverter().convert(ctx, to)
-                if role.id not in [role.id for role in member.roles] and type in "add":
-                    await member.add_roles(role)
-                elif role.id in [role.id for role in member.roles] and type in "remove":
-                    await member.remove_roles(role)
+            except discord.NotFound:
+                pass
 
             await ctx.send(f"Successfully {type} role {role} for {to}")
 
