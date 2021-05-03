@@ -35,7 +35,8 @@ class Club(commands.Cog, name="Club Commands"):
             overwrites = {created: discord.PermissionOverwrite(read_messages=True, send_messages=True), ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False)}
             for owner in owners:
                 await owner.add_roles(created)
-                await owner.add_roles(give)
+                if give is not None:
+                    await owner.add_roles(give)
                 overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True, manage_messages=True)})
             channel = await guild.create_text_channel(name, category=category, overwrites=overwrites, topic=description, reason="Newly Created Club")
             sent = await chan.send(embed=embed)
@@ -76,7 +77,8 @@ class Club(commands.Cog, name="Club Commands"):
                 await user.remove_roles(give)
             for owner in owners:
                 await owner.add_roles(role)
-                await owner.add_roles(give)
+                if give is not None:
+                    await owner.add_roles(give)
                 overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True, manage_messages=True)})
         await role.edit(name=name)
         await new.edit(name=name, topic=description, overwrites=overwrites)

@@ -344,13 +344,14 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def clubs(self, ctx, channel: discord.TextChannel, category: discord.CategoryChannel, role: discord.Role, give: discord.Role):
+    async def clubs(self, ctx, channel: discord.TextChannel, category: discord.CategoryChannel, role: discord.Role, give: discord.Role=None):
         """Sets what members are allowed to create clubs"""
         cursor = await self.bot.db.acquire()
         category = category.id
         level = channel.id
         role = role.id
-        give = give.id
+        if give is not None:
+            give = give.id
         type = await cursor.fetchval("SELECT system FROM leveling WHERE guild = $1 and system= $2", ctx.guild.id, 'points')
         check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $6", ctx.guild.id, 'points', category, level, role, give)
         if check is not None:
