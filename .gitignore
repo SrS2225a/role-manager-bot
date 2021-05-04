@@ -1,0 +1,4 @@
+bot/cogs/__pycache__
+bot/discord.log
+bot/token.json
+.vscode/
