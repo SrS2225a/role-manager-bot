@@ -1,7 +1,7 @@
 import datetime
-import re
+import argparse
 import typing
-
+import re
 import discord
 from discord.ext import commands
 from parsedatetime import Calendar
@@ -55,12 +55,11 @@ class Management(commands.Cog, name='Management Commands'):
     async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role, delay=None):
         """Allows you to set an counting channel"""
         cursor = await self.bot.db.acquire()
-        units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
-        def convert_to_seconds(s):
-            return int(datetime.timedelta(**{
-                units.get(m.group('unit').lower(), 'seconds'): int(m.group('val'))
-                for m in re.finditer(r'(?P<val>\d+)(?P<unit>[smhdw]?)', s, flags=re.I)
-            }).total_seconds())
+        def date_convert_seconds(s):
+            current, result = Calendar().parse(s)
+            t = datetime.datetime(*current[:6])
+            futureDate = int((t-datetime.datetime.now()).total_seconds())
+            return futureDate+1, result
 
         result = await cursor.fetchval("SELECT channel FROM count WHERE guild = $1 and channel = $2 and role = $3", ctx.guild.id, channel.id, role.id)
         if result is not None:
@@ -68,7 +67,7 @@ class Management(commands.Cog, name='Management Commands'):
             await channel.set_permissions(role, overwrite=None)
             await ctx.send("Counting Channel Deleted Successfully!")
         else:
-            time = convert_to_seconds(delay) if delay is not None else 0
+            time = date_convert_seconds(delay[1]) if delay[0] > 1 else 0
             await cursor.execute("INSERT INTO count(guild, channel, role, count, delay) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, role.id, count, time)
             await channel.set_permissions(role, read_messages=True, send_messages=False)
             await ctx.send("Counting Channel Set Successfully!")
@@ -80,12 +79,15 @@ class Management(commands.Cog, name='Management Commands'):
         """Lets you set up applications"""
         cursor = await self.bot.db.acquire()
         # feature to close and open applications
+        print(type)
         if type == "question":
-            result = cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
-            if re.search("--edit=", text):
-                cursor.execute("UPDATE questions SET text = $1 WHERE guild = $1, type = $2, number = $3", ctx.guild.id, 'question', '')
+            result = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
+
+            if re.search("--edit=([0-9])", text):
+                value = re.split("--edit=([0-9])", text, 1)
+                await cursor.execute("UPDATE questions SET text = $1 WHERE guild = $2 and type = $3 and number = $4", value[0], ctx.guild.id, 'question', int(value[1]))
                 await ctx.send("Question edited successfully!")
-            elif text not in [fetch['text'] for fetch in result]:
+            elif text not in [fetch for fetch in result]:
                 await cursor.execute("INSERT INTO questions(guild, type, text, number) VALUES($1, $2, $3, $4)", ctx.guild.id, 'question', text, len(result)+1)
                 await ctx.send("Question set successfully!")
             else:
@@ -134,6 +136,8 @@ class Management(commands.Cog, name='Management Commands'):
             else:
                 await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'deny', text)
                 await ctx.send("Denied text removed successfully!")
+        else:
+            await ctx.send("The 'type' must be defined as question, role, require, channel, accept or deny")
         await self.bot.db.release(cursor)
 
     @commands.command()
@@ -278,7 +282,7 @@ class Management(commands.Cog, name='Management Commands'):
     @commands.command(description="Define 'type' as blacklist to set which role/channel cannot level, multiplier for what channel/role gains an xp bounus, or weight for how hard it is level up per voice/message/default or behavoir to change the behavoir, or ranking for what role to give upon the user reaching the level")
     @commands.has_permissions(manage_guild=True)
     async def leveling(self, ctx, type, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel, str], number: typing.Union[int, bool]=None):
-        """Allows you to set ignored channels/roles, multipliers, or behavior"""
+        """Allows you to set up server leveling"""
         cursor = self.bot.db.acquire()
         if type == "blacklist":
             if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
