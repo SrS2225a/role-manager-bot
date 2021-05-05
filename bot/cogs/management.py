@@ -214,8 +214,8 @@ class Management(commands.Cog, name='Management Commands'):
         """Sets if defined channel overwrites be given back if the member rejoins by a set role for selected channel"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
-        result = await cursor.fetchrow("SELECT member, channel FROM roles WHERE recovery = $1 and guild = $2 and type = $3", role, guild.id, 'recover')
-        if result[0] and result[1] is not None:
+        result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and member = $2 and guild = $3 and type = $4", role.id, channel.id, guild.id, 'recover')
+        if result is not None:
             await cursor.execute("DELETE FROM roles WHERE guild = $1 and member = $2 and role = $3 and type = $4", guild.id, channel.id, role.id, 'recover')
             await ctx.send("Overwrites Recovery Set Successfully!")
         else:

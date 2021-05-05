@@ -278,9 +278,9 @@ class Events(commands.Cog):
             cursor = await self.bot.db.acquire()
             guild = after.guild
             channel = after
-            recovery = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2")
+            recovery = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
             memovr = await cursor.prepare("SELECT member, channel FROM recover WHERE guild = $1 and channel = $2")
-            role = guild.get_role(await recovery.fetchval(guild.id, channel.id))
+            role = guild.get_role(await recovery.fetchval(guild.id, channel.id, 'recover'))
             users = []
             # if an user has channel overwrites and they have the set role on them, insert the channel overwrites into the database to give back once the user rejoins the guild
             for perm, value in channel.overwrites.items():
