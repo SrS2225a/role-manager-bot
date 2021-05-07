@@ -350,6 +350,7 @@ class User(commands.Cog, name='User Commands'):
             sent = await channel.send(embed=embed)
             for reaction in vote:
                 await sent.add_reaction(reaction)
+            await ctx.send("Suggestion successfully sent!")
         else:
             await ctx.send("Suggestions are currently not enabled for this guild!")
         await self.bot.db.release(cursor)
