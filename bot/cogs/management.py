@@ -145,7 +145,7 @@ class Management(commands.Cog, name='Management Commands'):
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
         result = await cursor.fetchval("SELECT suggest FROM settings WHERE suggest = $1 and guild = $2", channel.id, guild)
-        search = await cursor.fetchval("SELECT guild FROM settings WHERE suggest = $1 and guild = $2", channel.id, guild)
+        search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
         if result is not None:
             await cursor.execute("UPDATE settings SET suggest = NULL WHERE guild = $1", guild)
             await ctx.send("Suggestions Channel Successfully Removed!")
@@ -153,7 +153,7 @@ class Management(commands.Cog, name='Management Commands'):
             await cursor.execute("INSERT INTO settings(guild, suggest) VALUES($1, $2)", guild, channel.id)
             await ctx.send("Suggestions Channel Set Successfully!")
         else:
-            await cursor.execute("UPDATE settings SET suggest = $1 WHERE guild = $2", guild, channel.id)
+            await cursor.execute("UPDATE settings SET suggest = $1 WHERE guild = $2", channel.id, guild)
             await ctx.send("Suggestions Channel Set Successfully!")
         await self.bot.db.release(cursor)
 
