@@ -5,6 +5,7 @@ Note: Marked priority or backburner tabs are tasks that will be in the next bot 
 Note: In progress tasks marked with a check are from the priority's tab, while unmarked ones are from the backburner tab
 
 ### Priority's
+- [ ] add settings list command
 - [ ] Server voting reward system
 - [ ] Support for member of the day, week, month for leveling
 - [ ] add the ability for commands to be turned on/off
