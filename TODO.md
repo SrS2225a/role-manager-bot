@@ -29,7 +29,6 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 ### Completed
 - [ ] Redesign the UI
 - [x] Reward system based on how long a member has been in the server for
-- [x] Automanically add roles based on someone's creation or server join date
 - [x] Autorole that can be add/remove after X duration
 - [ ] Update comments in code
 - [ ] Add support for remind commands to take a time instead of just duration. Also a "here" which says remind to the current channel to make it a little easier on users
