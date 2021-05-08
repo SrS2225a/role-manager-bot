@@ -5,7 +5,6 @@ Note: Marked priority or backburner tabs are tasks that will be in the next bot 
 Note: In progress tasks marked with a check are from the priority's tab, while unmarked ones are from the backburner tab
 
 ### Priority's
-- [ ] Reward system based on how long a member has been in the server for
 - [ ] Server voting reward system
 - [ ] Support for member of the day, week, month for leveling
 - [ ] add the ability for commands to be turned on/off
@@ -18,8 +17,7 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 ### Backburner
 - [ ] Add a command to quickly set an new counting number
 - [ ] Improve reminder system by using an database and loop through in case the bot goes down
-- [ ] Redesign the UI
-
+- [ ] 
 ### Unsure
 - [ ] Invite tracking
 
@@ -28,6 +26,8 @@ Note: In progress tasks marked with a check are from the priority's tab, while u
 
 
 ### Completed
+- [ ] Redesign the UI
+- [x] Reward system based on how long a member has been in the server for
 - [x] Automanically add roles based on someone's creation or server join date
 - [x] Autorole that can be add/remove after X duration
 - [ ] Update comments in code
