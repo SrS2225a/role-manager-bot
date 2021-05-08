@@ -101,7 +101,7 @@ class Role(commands.Cog, name="Role Commands"):
 
     @commands.command(description="Supply type with add/remove to add or remove the role to the user")
     @commands.has_permissions(manage_guild=True)
-    async def autorole(self, ctx, role: discord.Role, type, delay=None):
+    async def autorole(self, ctx, type, role: discord.Role, delay=None):
         """Sets what role will be given or removed automatically to the user upon joining the guild"""
         if type is None or type in ("add", "remove"):
             cursor = await self.bot.db.acquire()
@@ -146,7 +146,7 @@ class Role(commands.Cog, name="Role Commands"):
 
     @commands.command(aliases=['autopn'])
     @commands.has_permissions(manage_guild=True)
-    async def autopostition(self, ctx, type, delay, *, role: discord.Role):
+    async def autopostition(self, ctx, type, role: discord.Role, delay):
         """Allows you to automatically add roles based on someone's creation or server join date"""
         if type in ("create", "join"):
             cursor = await self.bot.db.acquire()
