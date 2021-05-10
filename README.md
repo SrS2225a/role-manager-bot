@@ -28,7 +28,7 @@
 
 # Edit your roles with a line of commands
 
-## With Dionysus in your server,
+## With Dionysus in your server:
 
    - Automatically place roles above others
    - Assign members with roles once they join the server
