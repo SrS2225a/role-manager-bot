@@ -203,8 +203,9 @@ class Events(commands.Cog):
             if no[0] != vcchannel or no[0] not in [role.id for role in member.author.roles] and after.channel.id:
                 if after.deaf or after.mute or after.self_mute or after.self_deaf or after.afk is True or None or after.channel is None:
                     self.bot.active.remove([member, after])
-                else:
+                elif member not in self.bot.active:
                     self.bot.active.append([member, after])
+
                 if self.bot.active and len(self.bot.active) == 1:
                     self.vc.start()
                 elif not self.bot.active:
@@ -306,7 +307,6 @@ class Events(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         cursor = await self.bot.db.acquire()
         # for reaction roles
-        global word
         guild_id = payload.guild_id
         message_id = payload.message_id
         channel_id = payload.channel_id
@@ -598,7 +598,7 @@ class Events(commands.Cog):
                                 if multi[0] == voice.channel.id or multi[0] in [role.id for role in user.roles]:
                                     weight += multi[1]
                             await cursor.execute('UPDATE levels SET exp = $1 WHERE guild_id = $2 and user_id = $3', result1[1] + random.randint(0, weight), user.guild.id, user.id)
-                await self.bot.db.release(cursor)
+            await self.bot.db.release(cursor)
         except Exception:
             import traceback
             traceback.print_exc()
