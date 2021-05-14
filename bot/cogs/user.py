@@ -1,16 +1,133 @@
 import asyncio
 import io
 import re
+import datetime
 
 import discord
 from discord.ext import commands, menus
 import tabulate
 from tqdm import tqdm
 
+import matplotlib.pyplot as plt
+
 class User(commands.Cog, name='User Commands'):
     """Basic commands anyone can run relating to Discord or the Bot itself"""
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command()
+    async def members(self, ctx, argument=None):
+        """Displays Joins and Leaves over a 1 month period"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild
+        month = [0, 0]
+        week = [0, 0]
+        day = [0, 0]
+
+
+        plt.style.use('dark_background')
+
+        fig, ax = plt.subplots()
+    
+        plt.grid()
+        ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+        ax.tick_params(axis='x', labelrotation=45)
+
+        if argument == 'joins':
+            members = await cursor.fetch("SELECT member, day FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
+            max = members[-1][1]
+
+            x = []
+            y = []
+
+            for member in members:
+                month[0] += member[0]
+
+                if max-datetime.timedelta(days=7) < member[1]:
+                    week[0] += member[0]
+                elif max == member[1]:
+                    day[0] += member[0]
+
+                x.append(member[1].strftime('%d %m'))
+                y.append(member[0])
+
+            plt.plot(x, y, marker="o", ls="", ms=3)
+            plt.plot(x, y)
+
+            embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
+            embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`')
+            embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`')
+            embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`')
+        elif argument == 'leaves':
+            members = await cursor.fetch("SELECT leave, day FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
+            max = members[-1][1]
+
+            x = []
+            y = []
+
+            for member in members:
+                month[1] += member[0]
+
+                if max-datetime.timedelta(days=7) < member[1]:
+                    week[1] += member[0]
+                elif max == member[1]:
+                    day[1] += member[0]
+
+                x.append(member[1].strftime('%d %m'))
+                y.append(member[0])
+
+            plt.plot(x, y, marker="o", ls="", ms=3)
+            plt.plot(x, y)
+
+            embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
+            embed.add_field(name="Last 24 Hours", value=f'Leaves: `{day[1]}`')
+            embed.add_field(name="Last 7 Days", value=f'Leaves: `{week[1]}`')
+            embed.add_field(name="Last 30 Days", value=f'Leaves: `{month[1]}`')
+        else:
+            members = await cursor.fetch("SELECT member, leave, day FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
+            max = members[-1][2]
+
+            x1 = []
+            y1 = []
+            x2 = []
+            y2 = []
+
+            for member in members:
+                month[0] += member[0]
+                month[1] += member[1]
+
+                if max-datetime.timedelta(days=7) < member[2]:
+                    week[0] += member[0]
+                    week[1] += member[1]
+                elif max == member[2]:
+                    day[0] += member[0]
+                    day[1] += member[1]
+
+                x1.append(member[2].strftime('%d %m'))
+                y1.append(member[0])
+
+                x2.append(member[2].strftime('%d %m'))
+                y2.append(member[1])
+
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.plot(x2, y2, marker="o", ls="", ms=3)
+            plt.plot(x1, y1, label="Joins",)
+            plt.plot(x2, y2, label="Leaves")
+            plt.legend()
+
+            embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
+            embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
+            embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
+            embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
+
+        data_stream = io.BytesIO()
+        plt.savefig(data_stream, format='png', bbox_inches="tight", dpi = 100, transparent=True)
+        data_stream.seek(0)
+        
+        graph = discord.File(data_stream, filename='graph.png')
+        embed.set_image(url='attachment://graph.png')
+        await ctx.send(embed=embed, file=graph)
+        await self.bot.db.release(cursor)
 
     @commands.command()
     async def apply(self, ctx, list=None):

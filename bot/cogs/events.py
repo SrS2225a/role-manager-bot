@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+import datetime
 import random
 import re
 
@@ -427,6 +427,13 @@ class Events(commands.Cog):
         if await clear.fetchval(member.guild.id, 'clear') == 1:
             await cursor.execute("DELETE FROM levels WHERE guild_id = $1 and user_id = $2", member.guild.id, member.id)
 
+
+        dateVal = await cursor.fetchrow("SELECT leave, MAX(day) FROM member WHERE guild = $1 GROUP BY leave", member.guild.id)
+        date = datetime.date.today()
+        dateDay = (date-datetime.timedelta(days=1)) if dateVal is None else dateVal[1]
+        if dateVal is not None:
+            await cursor.execute("UPDATE member SET leave = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateDay, member.guild.id)
+
         # removes the member custom channels / roles if they had them when leaving
         roleauth = await cursor.prepare("SELECT role, type FROM roles WHERE guild = $1 and member = $2 and not type = $3")
         for roleauth in await roleauth.fetch(member.guild.id, member.id, 'sticky'):
@@ -444,7 +451,7 @@ class Events(commands.Cog):
         var = list(check) if check is not None else [0, 0]
         
         # detects if the leave was a fake join
-        if (datetime.now() - member.joined_at).total_seconds() < 120:
+        if (datetime.datetime.now() - member.joined_at).total_seconds() < 120:
             var[1] += 1
         else:
             var[0] += 1
@@ -479,6 +486,18 @@ class Events(commands.Cog):
             if select[0] not in [role.id for role in member.roles] and select[0] is not None:
                 srole = guild.get_role(role_id=int(select[0]))
                 await member.add_roles(srole, reason='User had sticky roles when leaving')
+
+        # code for member join graph
+        dateVal = await cursor.fetchrow("SELECT member, MAX(day) FROM member WHERE guild = $1 GROUP BY member", guild.id)
+        date = datetime.date.today()
+        dateDay = (date-datetime.timedelta(days=1)) if dateVal is None else dateVal[1]
+
+        if (date-dateDay).days > 0:
+            await cursor.execute("DELETE FROM member WHERE day < $1", (datetime.date.today()-datetime.timedelta(days=30)))
+            await cursor.execute("INSERT INTO member(guild, member, leave, day) VALUES($1, $2, $3, $4)", guild.id, 1, 0, date)
+        else:
+            await cursor.execute("UPDATE member SET member = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateDay, guild.id)
+
 
         # code for invite rewards
         for invites in await guild.invites():
@@ -515,8 +534,8 @@ class Events(commands.Cog):
             override = await override.fetchrow(guild.id, member.id, channel.id)
             # checks if we should give back the member that joined their previous channel overwrites
             if override is not None:
-                yes = discord.Permissions(permissions=override[0])
-                no = discord.Permissions(permissions=override[1])
+                yes = discord.Permissions(permissions=int(override[0]))
+                no = discord.Permissions(permissions=int(override[1]))
                 overrides = discord.PermissionOverwrite().from_pair(yes, no)
                 await channel.set_permissions(member, overwrite=overrides, reason='user joined back with previous channel overwrites')
         await self.bot.db.release(cursor)

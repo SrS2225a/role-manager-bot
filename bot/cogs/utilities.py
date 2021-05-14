@@ -160,7 +160,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
 
     @commands.command(aliases=["makegiveaway", "giveaway"])
     @commands.has_permissions(manage_messages=True)
-    async def creategiveaway(self, ctx, name, winners: int, duration, requirement=None):
+    async def creategiveaway(self, ctx, name: str, winners: int, duration, requirement=None):
         """Allows you to create and host your own giveaway"""
         cursor = await self.bot.db.acquire()
 
