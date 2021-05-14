@@ -280,8 +280,9 @@ class Utilities(commands.Cog, name='Utilities Commands'):
     async def say(self, ctx, channel: discord.TextChannel, *, message):
         """Sends a message to an defined channel, as though it was sent by the bot"""
         channel = ctx.channel if not channel else channel
+        escaped = discord.utils.escape_mentions(message)
         await ctx.message.delete()
-        await channel.send(message)
+        await channel.send(escaped)
 
 
 def setup(bot):
