@@ -23,7 +23,7 @@ class User(commands.Cog, name='User Commands'):
         month = [0, 0]
         week = [0, 0]
         day = [0, 0]
-
+        embed = None
 
         plt.style.use('dark_background')
 
@@ -133,9 +133,10 @@ class User(commands.Cog, name='User Commands'):
         plt.savefig(data_stream, format='png', bbox_inches="tight", dpi = 100, transparent=True)
         data_stream.seek(0)
         
-        graph = discord.File(data_stream, filename='graph.png')
-        embed.set_image(url='attachment://graph.png')
-        await ctx.send(embed=embed, file=graph)
+        if embed is not None:
+            graph = discord.File(data_stream, filename='graph.png')
+            embed.set_image(url='attachment://graph.png')
+            await ctx.send(embed=embed, file=graph)
         await self.bot.db.release(cursor)
 
     @commands.command()
