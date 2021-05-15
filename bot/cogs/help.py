@@ -102,7 +102,7 @@ class Help(commands.Cog, name='Help Commands'):
         stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {uses}"
         embed = discord.Embed(title="About Dionysus", color=0x0001fe)
         embed.add_field(name='Credits', value='Created By Nyx Eris#8614\nSpecial Thanks to Nik#9393 For Help With Databases and Sugden#0562 for the extra help with code')
-        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here](https://github.com/SrS2225a/role-manager-bot)\nSupport: [Click Here](https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here](https://github.com/SrS2225a/role-manager-bot/wiki)")
+        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here](https://github.com/SrS2225a/role-manager-bot)\nSupport: [Click Here](https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here](https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here](https://trello.com/b/Y86Q7qKA/dionysus-bot)\ntop.gg: [Click Here](https://top.gg/bot/437447118127366154)")
         embed.add_field(name='Running On', value=ver)
         embed.add_field(name='Host', value=os)
         embed.add_field(name='Uptime', value="Since " + up)
