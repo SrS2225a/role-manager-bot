@@ -190,9 +190,9 @@ class Utilities(commands.Cog, name='Utilities Commands'):
             for reaction in vote:
                 if reaction.emoji == '🎉':
                     users = await reaction.users().flatten()
-                    winner = random.choices(users, k=winners)
-                    winners = "\n".join([winner.mention for winner in winner if not winner.bot])
-                    embed = discord.Embed(title=name, description=f"**Giveaway Ended** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winners}")
+                    winner = random.choices([winner.mention for winner in users if not winner.bot], k=winners)
+                    winner = "\n".join(winner)
+                    embed = discord.Embed(title=name, description=f"**Giveaway Ended** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winner}")
                     embed.set_footer(text=f"Ended At: {ends}")
                     await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
                     await sent.edit(embed=embed)
@@ -218,8 +218,8 @@ class Utilities(commands.Cog, name='Utilities Commands'):
                         now = datetime.datetime.utcnow()
                         ends = datetime.datetime.strftime(now, '%a %b %d %Y %I:%M:%S %p UTC')
                         users = await reaction.users().flatten()
-                        winner = random.choices(users, k=execute[1])
-                        winners = "\n".join([winner.mention for winner in winner if not winner.bot])
+                        winner = random.choices([winner.mention for winner in users if not winner.bot], k=execute[1])
+                        winner = "\n".join(winner)
                         embed = discord.Embed(title=data.title, description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners:{winners}")
                         embed.set_footer(text=f"Ended At: {ends}")
                         await sent.edit(embed=embed)
@@ -245,8 +245,8 @@ class Utilities(commands.Cog, name='Utilities Commands'):
                 if reaction.emoji == '🎉':
                     data = sent.embeds[0]
                     users = await reaction.users().flatten()
-                    winner = random.choices(users, k=execute)
-                    winners = "\n".join([winner.mention for winner in winner if not winner.bot])
+                    winner = random.choices([winner.mention for winner in users if not winner.bot], k=execute)
+                    winners = "\n".join(winner)
                     embed = discord.Embed(name=data.title, description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners:{winners}")
                     embed.set_footer(text=f"Ended At: {data.footer.text}")
                     await sent.edit(embed=embed)
