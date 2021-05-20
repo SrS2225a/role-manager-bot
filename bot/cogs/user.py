@@ -48,7 +48,7 @@ class User(commands.Cog, name='User Commands'):
 
                     if max == member[1]:
                         day[0] += member[0]
-                    elif max-datetime.timedelta(days=7) < member[1]:
+                    elif max-datetime.timedelta(days=7) <= member[1]:
                         week[0] += member[0]
 
                     x.append(member[1].strftime('%d %m'))
@@ -76,7 +76,7 @@ class User(commands.Cog, name='User Commands'):
 
                     if max == member[1]:
                         day[1] += member[0]
-                    elif max-datetime.timedelta(days=7) < member[1]:
+                    elif max-datetime.timedelta(days=7) <= member[1]:
                         week[1] += member[0]
 
                     x.append(member[1].strftime('%d %m'))
@@ -108,7 +108,7 @@ class User(commands.Cog, name='User Commands'):
                     if max == member[2]:
                         day[0] += member[0]
                         day[1] += member[1]
-                    elif max-datetime.timedelta(days=7) < member[2]:
+                    elif max-datetime.timedelta(days=7) <= member[2]:
                         week[0] += member[0]
                         week[1] += member[1]
 

@@ -262,13 +262,15 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def partnership(self, ctx, channel: discord.TextChannel, role: discord.Role, reward: discord.Role, amount: int):
+    async def partnership(self, ctx, channel: discord.TextChannel, role: discord.Role, reward: discord.Role=None, amount: int=None):
         """Allows you to set an partnership reward based on how many partnerships were completed"""
         cursor = await self.bot.db.acquire()
         role = role.id
         reward = reward.id
         channel = channel.id
         check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, 'partners', channel)
+        reward = 0 if reward is None else reward
+        amount = 0 if amount is None else amount
         if check is not None:
             await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, 'partners', channel)
             await ctx.send("Partner Requirement Deleted Successfully!")

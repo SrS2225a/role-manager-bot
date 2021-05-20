@@ -1,5 +1,8 @@
 import discord
 import typing
+import tabulate
+import re
+
 from discord.ext import commands, menus
 
 
@@ -8,6 +11,171 @@ class Info(commands.Cog, name='Information Commands'):
 
     def __init__(self, bot):
         self.bot = bot
+    
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def settings(self, ctx, setting=None):
+        """List your configured bot settings for your server"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild
+        tabulate.MIN_PADDING = 0
+        ident_flag = False if setting is not None else True
+        message = f"***{guild} Server Settings***\n\n\n"
+
+        if setting == "custom" or ident_flag:
+            custom = await cursor.fetch("SELECT * FROM custom WHERE guild = $1", guild.id)
+            custom_table = []
+            for custom in custom:
+                role = guild.get_role(custom[2])
+                position = guild.get_role(custom[3])
+                custom_table.append([custom[1], role, position, custom[4], custom[5], custom[6]])
+            if custom_table:
+                message += f"**Custom Settings**\n```{tabulate.tabulate(custom_table, headers=['Type', 'Role', 'Position', 'Amount', 'Tag', 'Remove'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting == "count" or ident_flag:
+            count = await cursor.fetch("SELECT channel, role, count, delay FROM count WHERE guild = $1", guild.id)
+            count_table = []
+            for count in count:
+                channel = guild.get_channel(count[0])
+                role = guild.get_role(count[1])
+                count_table.append([channel, role, count[2], count[3]])
+            if count_table:
+                message += f"**Counter Settings**\n```{tabulate.tabulate(count_table, headers=['Channel', 'Role', 'Count', 'Delay'], tablefmt='presto', disable_numparse=True)}```\n\n"
+            
+        if setting == "booster" or ident_flag:
+            booster = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'boost')
+            boost_table = []
+            for booster in booster:
+                role = guild.get_role(booster[0])
+                boost_table.append([role, booster[1]])
+            if boost_table:
+                message += f"**Booster Reward Settings**\n```{tabulate.tabulate(boost_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting == "invite" or ident_flag:
+            invite = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'invite')
+            invite_table = []
+            for invite in invite:
+                role = guild.get_role(invite[0])
+                invite_table.append([role, invite[1]])
+            if invite:
+                message += f"**Invite Reward Settings**\n```{tabulate.tabulate(invite_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting == "overwrite" or ident_flag:
+            overwrite = await cursor.fetch("SELECT member, role FROM roles WHERE guild = $1 and type = $2", guild.id, 'recover')
+            overwrite_table = []
+            for overwrite in overwrite:
+                channel = guild.get_channel(overwrite[0])
+                role = guild.get_role(overwrite[1])
+                overwrite_table.append([channel, role])
+            if overwrite_table:
+                message += f"**Channel Overwrites Settings**\n```{tabulate.tabulate(overwrite_table, headers=['Channel', 'Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting == "position" or ident_flag:
+            position = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or type = $3", guild.id, 'create', 'join')
+            position_table = []
+            for position in position:
+                role = guild.get_role(position[1])
+                position_table.append(position[0], role, position[2])
+            if position_table:
+                message += f"**Auto Position Settings**\n```{tabulate.tabulate(position_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+        if setting == "announce" or ident_flag:
+            announce = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
+            announce = guild.get_channel(announce)
+            if announce:
+                message += f"**Announce Settings**\n```{announce}```\n\n"
+
+        if setting == "suggest" or ident_flag:
+            suggest = await cursor.fetchval("SELECT suggest FROM settings WHERE guild = $1", guild.id)
+            suggest = guild.get_channel(suggest)
+            if suggest:
+                message += f"**Sugggest Settings**\n```{suggest}```\n\n"
+
+        if setting == "livestream" or ident_flag:
+            livestream = await cursor.fetchval("SELECT live FROM settings WHERE guild = $1", guild.id)
+            livestream = guild.get_role(livestream)
+            if livestream:
+                message += f"**Livestream Settings**\n ````{livestream}```\n\n"
+
+        if setting == "flags" or ident_flag:
+            flags = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'flag')
+            flags_table = []
+            for flags in flags:
+                role = guild.get_role(flags[0])
+                flags_table.append([role, flags[1]])
+            if flags_table:
+                message += f"**Flag Settings**\n```{tabulate.tabulate(flags_table, headers=['Role', 'Flag'], tablefmt='presto', disable_numparse=True)}```"
+
+        if setting == "partnership" or ident_flag:
+            partnership = await cursor.fetch("SELECT level, difficulty, type, role FROM leveling WHERE guild = $1 and system = $2", guild.id, 'partners')
+            partnership_table = []
+            for partnership in partnership:
+                channel = guild.get_channel(partnership[2])
+                role = guild.get_role(partnership[3])
+                reward = guild.get_role(partnership[1])
+                flags_table.append([channel, role, reward, partnership[0]])
+            if partnership_table:
+                message += f"**Partnership Settings**\n```{tabulate.tabulate(partnership_table, headers=['Channel', 'Role', 'Reward', 'Amount'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting == "leveling" or ident_flag:
+            leveling = await cursor.fetch("SELECT * FROM leveling WHERE guild = $1 AND not system = $2 AND not system = $3", guild.id, 'partners', 'points')
+            leveling_table = []
+            for leveling in leveling:
+                converter = commands.RoleConverter()
+                if leveling[1] == 'blacklist':
+                    main = guild.get_role(leveling[3])
+                    main2 = guild.get_channel(leveling[3])
+                    leveling_table.append([leveling[1], leveling[2], main, main2])
+                elif leveling[1] == 'multiplier':
+                    main = guild.get_role(leveling[3])
+                    main2 = guild.get_channel(leveling[3])
+                    leveling_table.append([leveling[1], leveling[2], main, main2])
+                elif leveling[1] == 'levels':
+                    role = guild.get_role(leveling[3])
+                    leveling_table.append([leveling[1], None, role, leveling[4]])
+
+                elif leveling[1] in ('message', 'voice', 'difficulty', 'keep', 'clear'):
+                    leveling.appened([leveling[1], None, None, leveling[2]])
+            if leveling_table:
+                message += f"**Leveling Settings**\n```{tabulate.tabulate(leveling_table, headers=['Type', 'Channel', 'Role', 'Value'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+            reaction = await cursor.fetch("SELECT * FROM reaction WHERE guild = $1", guild.id)
+            reaction_table = []
+            for reaction in reaction:
+                add = True
+                if 'r' in reaction[1]:
+                    type = 'default'
+                elif 'n' in reaction[1]:
+                    type = 'toggle'
+                elif 'o' in reaction[1]:
+                    type = 'once'
+                else:
+                    add = False
+                
+                if add:
+                    role = guild.get_role(int(re.findall(r'\d*', reaction[1])[1]))
+                    blacklist = guild.get_role(reaction[4])
+                    reaction_table.append([type, role, reaction[2], reaction[3], blacklist])
+            if reaction_table:
+                message += f"**Reaction Settings**\n```{tabulate.tabulate(reaction_table, headers=['Type', 'Role', 'Message', 'Emoji', 'Blacklist'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting == "clubs" or ident_flag:
+            clubs = await cursor.fetch("SELECT role, level, type, difficulty FROM leveling WHERE guild = $1 AND system = $2", guild.id, 'points')
+            clubs_table = []
+            for clubs in clubs:
+                catagorey = guild.get_channel(clubs[0])
+                channel = guild.get_channel(clubs[1])
+                role = guild.get_role(clubs[2])
+                give = guild.get_role(clubs[3])
+                clubs_table.append([catagorey, channel, role, give])
+            if clubs_table:
+                message += f"**Club Settings**\n```{tabulate.tabulate(clubs_table, headers=['Catagorey', 'Channel', 'Role', 'Give'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting not in ("clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "overwrite", "invite", "booster", "count", "custom") and ident_flag is False:
+            await ctx.send('The setting option must be defined as "clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "overwrite", "invite", "booster", "count", "custom"; or none')
+        else:
+            await ctx.send(message)
+
+        await self.bot.db.release(cursor)
 
     @commands.command(description="You can supply arg with 'None' to list members without a specified role")
     async def listmembers(self, ctx, *, role):
@@ -22,11 +190,9 @@ class Info(commands.Cog, name='Information Commands'):
         # finds members without the specified role
         elif role.find("--none") > -1:
             role = await commands.RoleConverter().convert(ctx, role.split(" --none")[0])
-            print(role.id)
             members = []
             for member in ctx.guild.members:
                 if role.id not in [role.id for role in member.roles]:
-                    print(member)
                     members.append(member.name + "#" + member.discriminator + " " + str(member.id))
         # finds members with the specifed role
         else:
