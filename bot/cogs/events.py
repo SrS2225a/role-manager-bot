@@ -427,12 +427,11 @@ class Events(commands.Cog):
         if await clear.fetchval(member.guild.id, 'clear') == 1:
             await cursor.execute("DELETE FROM levels WHERE guild_id = $1 and user_id = $2", member.guild.id, member.id)
 
-
+        # code for member join graph
         dateVal = await cursor.fetchrow("SELECT leave, day FROM member WHERE guild = $1 ORDER BY day DESC", member.guild.id)
-        date = datetime.date.today()
-        dateDay = (date-datetime.timedelta(days=1)) if dateVal is None else dateVal[1]
+
         if dateVal is not None:
-            await cursor.execute("UPDATE member SET leave = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateDay, member.guild.id)
+            await cursor.execute("UPDATE member SET leave = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateVal[1], member.guild.id)
 
         # removes the member custom channels / roles if they had them when leaving
         roleauth = await cursor.prepare("SELECT role, type FROM roles WHERE guild = $1 and member = $2 and not type = $3")
@@ -490,13 +489,12 @@ class Events(commands.Cog):
         # code for member join graph
         dateVal = await cursor.fetchrow("SELECT member, day FROM member WHERE guild = $1 ORDER BY day DESC", guild.id)
         date = datetime.date.today()
-        dateDay = (date-datetime.timedelta(days=1)) if dateVal is None else dateVal[1]
 
-        if (date-dateDay).days > 0:
+        if dateVal is None or (date-dateVal[1]).days > 0:
             await cursor.execute("DELETE FROM member WHERE day < $1", (datetime.date.today()-datetime.timedelta(days=30)))
             await cursor.execute("INSERT INTO member(guild, member, leave, day) VALUES($1, $2, $3, $4)", guild.id, 1, 0, date)
         else:
-            await cursor.execute("UPDATE member SET member = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateDay, guild.id)
+            await cursor.execute("UPDATE member SET member = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateVal[1], guild.id)
 
 
         # code for invite rewards
