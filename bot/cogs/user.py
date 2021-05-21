@@ -97,7 +97,7 @@ class User(commands.Cog, name='User Commands'):
 
                 plt.plot(x, y, marker="o", ls="", ms=3)
                 plt.plot(x, y, color='#4e42ff')
-                plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3, interpolate=True)
+                plt.fill_between(x, y, color='#4e42ff', alpha=0.3, interpolate=True)
 
                 embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
                 embed.add_field(name="Last 24 Hours", value=f'Leaves: `{day[1]}`')
