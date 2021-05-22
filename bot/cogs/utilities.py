@@ -276,7 +276,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
         await self.bot.db.release(cursor)
 
     @commands.command()
-    @commands.has_permissions(manage_messages=True)
+    @commands.has_permissions(manage_guild=True)
     async def say(self, ctx, channel: discord.TextChannel, *, message):
         """Sends a message to an defined channel, as though it was sent by the bot"""
         channel = ctx.channel if not channel else channel
