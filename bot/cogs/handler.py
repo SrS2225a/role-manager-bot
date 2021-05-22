@@ -12,13 +12,13 @@ class Handler(commands.Cog):
     async def on_guild_join(self, guild):
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(844387430743801896)
-        channel.send(f"Dionysus was added into guild **{guild}**. We now have **{len(self.bot.guilds)}** guild!")
+        await channel.send(f"Dionysus was added into guild **{guild}**. We now have **{len(self.bot.guilds)}** guild!")
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(844387430743801896)
-        channel.send(f"Dionysus was removed from guild **{guild}**. We now have **{len(self.bot.guilds)}** guild!")
+        await channel.send(f"Dionysus was removed from guild **{guild}**. We now have **{len(self.bot.guilds)}** guild!")
 
     # ERROR HANDLER
     @commands.Cog.listener()

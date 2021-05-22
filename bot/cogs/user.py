@@ -138,8 +138,12 @@ class User(commands.Cog, name='User Commands'):
                 plt.plot(x2, y2, marker="o", ls="", ms=3)
                 plt.plot(x1, y1, label="Joins", color='#21BBFF')
                 plt.plot(x2, y2, label="Leaves", color='#4e42ff')
-                plt.fill_between(x1, y1, y2, color='#21BBFF', alpha=0.3)
-                plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
+                if y1 < y2:
+                    plt.fill_between(x1, y2, y1, color='#4e42ff', alpha=0.3)
+                    plt.fill_between(x2, y1, color='#21BBFF', alpha=0.3)
+                else:
+                    plt.fill_between(x1, y1, y2, color='#21BBFF', alpha=0.3)
+                    plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
                 plt.legend()
 
                 embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
