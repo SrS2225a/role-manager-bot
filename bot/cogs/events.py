@@ -430,7 +430,7 @@ class Events(commands.Cog):
         # code for member join graph
         dateVal = await cursor.fetchrow("SELECT leave, day FROM member WHERE guild = $1 ORDER BY day DESC", member.guild.id)
 
-        if dateVal is not None:
+        if dateVal is not None or datetime.date.today() == dateVal[1]:
             await cursor.execute("UPDATE member SET leave = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateVal[1], member.guild.id)
 
         # removes the member custom channels / roles if they had them when leaving
