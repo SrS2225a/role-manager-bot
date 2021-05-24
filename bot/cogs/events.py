@@ -428,7 +428,8 @@ class Events(commands.Cog):
             await cursor.execute("DELETE FROM levels WHERE guild_id = $1 and user_id = $2", member.guild.id, member.id)
 
         # code for member join graph
-        dateVal = await cursor.fetchrow("SELECT leave, day FROM member WHERE guild = $1 ORDER BY day DESC", member.guild.id)
+        dateVal = await cursor.prepare("SELECT member, day FROM member WHERE guild = $1 ORDER BY day DESC")
+        dateVal = await dateVal.fetchrow(member.guild.id)
         date = datetime.date.today() 
 
         if dateVal is None or (date-dateVal[1]).days > 0:
@@ -491,7 +492,8 @@ class Events(commands.Cog):
                 await member.add_roles(srole, reason='User had sticky roles when leaving')
 
         # code for member join graph
-        dateVal = await cursor.fetchrow("SELECT member, day FROM member WHERE guild = $1 ORDER BY day DESC", guild.id)
+        dateVal = await cursor.prepare("SELECT member, day FROM member WHERE guild = $1 ORDER BY day DESC")
+        dateVal = await dateVal.fetchrow(guild.id)
         date = datetime.date.today()
 
         if dateVal is None or (date-dateVal[1]).days > 0:
