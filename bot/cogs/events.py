@@ -429,8 +429,12 @@ class Events(commands.Cog):
 
         # code for member join graph
         dateVal = await cursor.fetchrow("SELECT leave, day FROM member WHERE guild = $1 ORDER BY day DESC", member.guild.id)
+        date = datetime.date.today() 
 
-        if dateVal is not None or datetime.date.today() == dateVal[1]:
+        if dateVal is None or (date-dateVal[1]).days > 0:
+            await cursor.execute("DELETE FROM member WHERE day < $1", (date-datetime.timedelta(days=30)))
+            await cursor.execute("INSERT INTO member(guild, member, leave, day) VALUES($1, $2, $3, $4)", member.guild.id, 0, 1, date)
+        else:
             await cursor.execute("UPDATE member SET leave = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateVal[1], member.guild.id)
 
         # removes the member custom channels / roles if they had them when leaving
@@ -491,7 +495,7 @@ class Events(commands.Cog):
         date = datetime.date.today()
 
         if dateVal is None or (date-dateVal[1]).days > 0:
-            await cursor.execute("DELETE FROM member WHERE day < $1", (datetime.date.today()-datetime.timedelta(days=30)))
+            await cursor.execute("DELETE FROM member WHERE day < $1", (date-datetime.timedelta(days=30)))
             await cursor.execute("INSERT INTO member(guild, member, leave, day) VALUES($1, $2, $3, $4)", guild.id, 1, 0, date)
         else:
             await cursor.execute("UPDATE member SET member = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateVal[1], guild.id)
