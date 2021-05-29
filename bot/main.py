@@ -24,9 +24,11 @@ db = asyncio.get_event_loop().run_until_complete(asyncpg.create_pool('postgresql
 # sets command prefix
 async def get_prefix(bot, message):
     async with db.acquire() as cursor:
-        prefix = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1")
-        prefix = await prefix.fetchval(message.guild.id) or '*'
-        return commands.when_mentioned_or(prefix)(bot, message) 
+        if message.guild is not None:
+            prefix = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1")
+            prefix = await prefix.fetchval(message.guild.id) or '*'
+            return commands.when_mentioned_or(prefix)(bot, message) 
+        return commands.when_mentioned_or('*')(bot, message) 
 
 # sets bot variables
 intents = discord.Intents.default()
