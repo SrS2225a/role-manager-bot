@@ -437,6 +437,47 @@ class Events(commands.Cog):
                 var[0] += 1
             await cursor.execute("UPDATE invite SET amount2 = $1, amount3 = $2 WHERE guild = $3 and invite = $4", var[0], var[1], member.guild.id, amount)
             await cursor.execute("DELETE FROM invite2 WHERE member = $1 and timestamp = $2", member.id, now)
+        cursor = await self.bot.db.acquire()
+        # if enabled deletes the user from leveling if they left the guild
+        clear = await cursor.prepare("SELECT type FROM leveling WHERE guild = $1 and system = $2")
+        if await clear.fetchval(member.guild.id, 'clear') == 1:
+            await cursor.execute("DELETE FROM levels WHERE guild_id = $1 and user_id = $2", member.guild.id, member.id)
+
+        # code for member join graph
+        dateVal = await cursor.prepare("SELECT leave, day FROM member WHERE guild = $1 ORDER BY day DESC")
+        dateVal = await dateVal.fetchrow(member.guild.id)
+        date = datetime.date.today() 
+
+        if dateVal is None or (date-dateVal[1]).days > 0:
+            await cursor.execute("DELETE FROM member WHERE day < $1", (date-datetime.timedelta(days=30)))
+            await cursor.execute("INSERT INTO member(guild, member, leave, day) VALUES($1, $2, $3, $4)", member.guild.id, 0, 1, date)
+        else:
+            await cursor.execute("UPDATE member SET leave = $1 WHERE day = $2 and guild = $3", dateVal[0]+1, dateVal[1], member.guild.id)
+
+        # removes the member custom channels / roles if they had them when leaving
+        roleauth = await cursor.prepare("SELECT role, type FROM roles WHERE guild = $1 and member = $2 and not type = $3")
+        for roleauth in await roleauth.fetch(member.guild.id, member.id, 'sticky'):
+            custom = member.guild.get_role(roleauth[0]) if roleauth[1] == 'role' else member.guild.get_channel(roleauth[0])
+            if custom is not None:
+                await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", member.guild.id, custom.id, member.id, roleauth[1])
+                await custom.delete(reason='Required Role/Channel Was Removed From Member')
+
+        # updates the inviters invite leaves if the user left the guild
+        now = member.joined_at.timestamp()
+        amount = await cursor.prepare("SELECT invite FROM invite2 WHERE guild = $1 and member = $2 and timestamp = $3")
+        amount = await amount.fetchval(member.guild.id, member.id, now)
+        check = await cursor.prepare("SELECT amount2, amount3 FROM invite WHERE guild = $1 and invite = $2")
+        check = await check.fetchrow(member.guild.id, amount)
+        var = list(check) if check is not None else [0, 0]
+        
+        # detects if the leave was a fake join
+        if (datetime.datetime.now() - member.joined_at).total_seconds() < 120:
+            var[1] += 1
+        else:
+            var[0] += 1
+        await cursor.execute("UPDATE invite SET amount2 = $1, amount3 = $2 WHERE guild = $3 and invite = $4", var[0], var[1], member.guild.id, amount)
+        await cursor.execute("DELETE FROM invite2 WHERE member = $1 and timestamp = $2", member.id, now)
+        await self.bot.db.release(cursor)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -466,9 +507,10 @@ class Events(commands.Cog):
                     srole = guild.get_role(role_id=int(select[0]))
                     await member.add_roles(srole, reason='User had sticky roles when leaving')
 
-            # code for member join graph
-            dateVal = await cursor.fetchrow("SELECT member, day FROM member WHERE guild = $1 ORDER BY day DESC", guild.id)
-            date = datetime.date.today()
+        # code for member join graph
+        dateVal = await cursor.prepare("SELECT member, day FROM member WHERE guild = $1 ORDER BY day DESC")
+        dateVal = await dateVal.fetchrow(guild.id)
+        date = datetime.date.today()
 
             if dateVal is None or (date-dateVal[1]).days > 0:
                 await cursor.execute("DELETE FROM member WHERE day < $1", (date-datetime.timedelta(days=30)))
