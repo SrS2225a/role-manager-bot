@@ -507,10 +507,10 @@ class Events(commands.Cog):
                     srole = guild.get_role(role_id=int(select[0]))
                     await member.add_roles(srole, reason='User had sticky roles when leaving')
 
-        # code for member join graph
-        dateVal = await cursor.prepare("SELECT member, day FROM member WHERE guild = $1 ORDER BY day DESC")
-        dateVal = await dateVal.fetchrow(guild.id)
-        date = datetime.date.today()
+            # code for member join graph
+            dateVal = await cursor.prepare("SELECT member, day FROM member WHERE guild = $1 ORDER BY day DESC")
+            dateVal = await dateVal.fetchrow(guild.id)
+            date = datetime.date.today()
 
             if dateVal is None or (date-dateVal[1]).days > 0:
                 await cursor.execute("DELETE FROM member WHERE day < $1", (date-datetime.timedelta(days=30)))
