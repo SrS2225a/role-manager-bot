@@ -8,41 +8,71 @@ import logging
 import json
 import os
 
+print("Initalizing and connecting to discord!")
 
 # represents a connection to Discord
 async def __init__(self, bot):
     self.bot = bot
 
-# sets command prefix and bot variables
+# loads token/database credentials and emojis from file
+with open("token.json", "r") as set:
+    settings = json.load(set)
+
+# connects to database
+db = asyncio.get_event_loop().run_until_complete(asyncpg.create_pool('postgresql://localhost:5432/postgres', user=settings['user'], password=settings['password'], max_size=600, max_queries=1000))
+
+# sets command prefix
+async def get_prefix(bot, message):
+    async with db.acquire() as cursor:
+        prefix = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1")
+        prefix = await prefix.fetchval(message.guild.id) or '*'
+        return commands.when_mentioned_or(prefix)(bot, message) 
+
+# sets bot variables
 intents = discord.Intents.default()
 intents.members = True 
 intents.presences = True
-intents.invites = False
 intents.webhooks = False
 intents.integrations = False
-intents.emojis = False
 intents.bans = False
-bot = commands.Bot(command_prefix=commands.when_mentioned_or('*'), intents=intents)
-bot.owner_ids = [508455796783317002, 381694604187009025, 270848136006729728, 222492698236420099, 372923892865433600]
+intents.emojis = False
+intents.typing = False
+
+bot = commands.Bot(command_prefix=get_prefix, intents=intents)
+bot.owner_ids = [508455796783317002, 270848136006729728, 222492698236420099, 372923892865433600]
 bot.active = []
 bot.emoji = []
-
-
-# loads token/database credentials and emojis from file
-with open("token.json", "r") as set:
-    bot.settings = json.load(set)
+bot.db = db
 
 with open("emojis.json", "r") as unicode:
     emojis = json.load(unicode)
     for key, value in emojis.items():
         bot.emoji.append(value['emoji'])
 
-# connects to database
-async def connect():
-    bot.db = await asyncpg.create_pool('postgresql://localhost:5432/postgres', user=bot.settings['user'], password=bot.settings['password'], max_size=300, max_queries=1000)
+# checks if an command has been run in a dm
+@bot.check
+async def predicate(ctx):
+    if ctx.guild is None:
+        raise commands.NoPrivateMessage
+    return commands.check(predicate)
 
-asyncio.get_event_loop().run_until_complete(connect())
+# checks if a guild has enabled or disabled a command
+@bot.check
+async def bot_check(ctx):
+    async with db.acquire() as cursor:
+        name = await cursor.prepare("SELECT date FROM boost WHERE guild = $1 and date = $2 and type = $3")
+        name = await name.fetchval(ctx.guild.id, ctx.command.name, 'command')
+        if name is None:
+            return True
+        else:
+            raise commands.DisabledCommand(f"{ctx.command.name} command is disabled")
 
+
+# loads cogs
+bot.load_extension("jishaku")
+for cogs in os.listdir('./cogs'):
+    if cogs.endswith('.py'):
+        bot.load_extension(f'cogs.{cogs[:-3]}')
 
 # log all actions happening with bot
 logger = logging.getLogger('discord')
@@ -52,20 +82,4 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(mes
 logger.addHandler(handler)
 
 
-# checks if an command has been run in a dm
-@bot.check
-async def predicate(ctx):
-    if ctx.guild is None:
-        raise commands.NoPrivateMessage
-    return commands.check(predicate)
-
-
-# loads cogs
-bot.load_extension("jishaku")
-for cogs in os.listdir('./cogs'):
-    if cogs.endswith('.py'):
-        bot.load_extension(f'cogs.{cogs[:-3]}')
-
-bot.token = bot.settings['token']
-
-bot.run(bot.token)  # runs bot
+bot.run(settings['token'])  # runs bot

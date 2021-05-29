@@ -24,99 +24,28 @@ class User(commands.Cog, name='User Commands'):
         month = [0, 0]
         week = [0, 0]
         day = [0, 0]
-        embed = None
 
         plt.style.use('dark_background')
         matplotlib.rcParams['figure.figsize'] = (10, 5)
-        # matplotlib.rcParams['axes.facecolor'] = '#333333'
-        # matplotlib.rcParams['legend.facecolor'] = '#161928'
-
 
         fig, ax = plt.subplots()
-        # 3d3b3b
     
         plt.grid()
-        # plt.figure(facecolor='#161928')
-        # ax.set_facecolor('#181B28')
         ax.xaxis.set_major_locator(plt.MaxNLocator(20))
         ax.tick_params(axis='x', labelrotation=45)
 
-        if argument == 'joins':
-            members = await cursor.fetch("SELECT member, day, leave FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
+        members = await cursor.fetch("SELECT member, leave, day FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
+
+        async def graph(graph_type):
+            max = members[-1][2]
+            x1 = []
+            y1 = []
+            x2 = []
+            y2 = []
+
             if not members: 
                 await ctx.send("Data not popluated yet!")
             else:
-                max = members[-1][1]
-
-                x = []
-                y = []
-
-                for member in members:
-                    month[0] += member[0]
-                    month[1] += member[2]
-
-                    if max == member[1]:
-                        day[0] += member[0]
-                    elif max-datetime.timedelta(days=7) <= member[1]:
-                        week[0] += member[0]
-
-                    x.append(member[1].strftime('%d %m'))
-                    y.append(member[0])
-
-                plt.plot(x, y, marker="o", ls="", ms=3)
-                plt.plot(x, y, color='#21BBFF')
-                plt.fill_between(x, y, color='#21BBFF', alpha=0.3, interpolate=True)
-
-                embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
-                embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`')
-                embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`')
-                embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`')
-                embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
-                embed.add_field(name="Member Retention", value=f"`{round(month[1] * 100 / month[0], 2) if month else 0.0}`")
-        elif argument == 'leaves':
-            members = await cursor.fetch("SELECT leave, day, member FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
-            if not members: 
-                await ctx.send("Data not popluated yet!")
-            else:
-                max = members[-1][1]
-
-                x = []
-                y = []
-
-                for member in members:
-                    month[1] += member[2]
-                    month[0] += member[0]
-
-                    if max == member[1]:
-                        day[0] += member[0]
-                    elif max-datetime.timedelta(days=7) <= member[1]:
-                        week[0] += member[0]
-
-                    x.append(member[1].strftime('%d %m'))
-                    y.append(member[0])
-
-                plt.plot(x, y, marker="o", ls="", ms=3)
-                plt.plot(x, y, color='#4e42ff')
-                plt.fill_between(x, y, color='#4e42ff', alpha=0.3, interpolate=True)
-
-                embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
-                embed.add_field(name="Last 24 Hours", value=f'Leaves: `{day[1]}`')
-                embed.add_field(name="Last 7 Days", value=f'Leaves: `{week[1]}`')
-                embed.add_field(name="Last 30 Days", value=f'Leaves: `{month[1]}`')
-                embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
-                embed.add_field(name="Member Retention", value=f"`{round(month[1] * 100 / month[0], 2) if month else 0.0}`")
-        else:
-            members = await cursor.fetch("SELECT member, leave, day FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
-            if not members: 
-                await ctx.send("Data not popluated yet!")
-            else:
-                max = members[-1][2]
-
-                x1 = []
-                y1 = []
-                x2 = []
-                y2 = []
-
                 for member in members:
                     month[0] += member[0]
                     month[1] += member[1]
@@ -124,7 +53,7 @@ class User(commands.Cog, name='User Commands'):
                     if max == member[2]:
                         day[0] += member[0]
                         day[1] += member[1]
-                    elif max-datetime.timedelta(days=7) <= member[2]:
+                    if max-datetime.timedelta(days=7) <= member[2]:
                         week[0] += member[0]
                         week[1] += member[1]
 
@@ -134,34 +63,53 @@ class User(commands.Cog, name='User Commands'):
                     x2.append(member[2].strftime('%d %m'))
                     y2.append(member[1])
 
-                plt.plot(x1, y1, marker="o", ls="", ms=3)
-                plt.plot(x2, y2, marker="o", ls="", ms=3)
-                plt.plot(x1, y1, label="Joins", color='#21BBFF')
-                plt.plot(x2, y2, label="Leaves", color='#4e42ff')
-                if y1 < y2:
-                    plt.fill_between(x1, y2, y1, color='#4e42ff', alpha=0.3)
-                    plt.fill_between(x2, y1, color='#21BBFF', alpha=0.3)
-                else:
-                    plt.fill_between(x1, y1, y2, color='#21BBFF', alpha=0.3)
-                    plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
-                plt.legend()
-
                 embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
-                embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
-                embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
-                embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
                 embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
-                embed.add_field(name="Member Retention", value=f"`{round(month[1] * 100 / month[0], 2) if month else 0.0}%`")
+                embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
+                embed.add_field(name="Net Joins", value=f"`{round(month[1] / month[0] * 100, 2)}%`")
+                if graph_type == "joins":
+                    plt.plot(x1, y1, label="Joins", color='#21BBFF')
+                    plt.plot(x1, y1, marker="o", ls="", ms=3)
+                    plt.fill_between(x1, y1, color='#21BBFF', alpha=0.3)
+                    embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`')
+                    embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`')
+                    embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`')
+                elif graph_type == "leaves":
+                    plt.plot(x2, y2, marker="o", ls="", ms=3)
+                    plt.plot(x2, y2, color='#4e42ff')
+                    plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
+                    embed.add_field(name="Last 24 Hours", value=f'Leaves: `{day[1]}`')
+                    embed.add_field(name="Last 7 Days", value=f'Leaves: `{week[1]}`')
+                    embed.add_field(name="Last 30 Days", value=f'Leaves: `{month[1]}`')
+                else:
+                    plt.plot(x1, y1, marker="o", ls="", ms=3)
+                    plt.plot(x2, y2, marker="o", ls="", ms=3)
+                    plt.plot(x1, y1, label="Joins", color='#21BBFF')
+                    plt.plot(x2, y2, label="Leaves", color='#4e42ff')
+                    if y1 < y2:
+                        plt.fill_between(x1, y2, y1, color='#4e42ff', alpha=0.3)
+                        plt.fill_between(x2, y1, color='#21BBFF', alpha=0.3)
+                    else:
+                        plt.fill_between(x1, y1, y2, color='#21BBFF', alpha=0.3)
+                        plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
+                    plt.legend()
+                    embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
+                    embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
+                    embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
 
-        data_stream = io.BytesIO()
-        plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
-        data_stream.seek(0)
-        plt.close()
-        
-        if embed is not None:
-            graph = discord.File(data_stream, filename='graph.png')
-            embed.set_image(url='attachment://graph.png')
-            await ctx.send(embed=embed, file=graph)
+                data_stream = io.BytesIO()
+                plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
+                data_stream.seek(0)
+                plt.close()
+
+                graph = discord.File(data_stream, filename='graph.png')
+                embed.set_image(url='attachment://graph.png')
+                    
+                return embed, graph
+
+        graph = await graph(argument)
+        await ctx.send(embed=graph[0], file=graph[1])
+
         await self.bot.db.release(cursor)
 
     @commands.command()

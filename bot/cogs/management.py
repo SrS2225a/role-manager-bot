@@ -244,6 +244,45 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
+    async def command(self, ctx, argument, *, command):
+        """Allows you to disable/enable a command or cog"""
+        cursor = await self.bot.db.acquire()
+        cog = self.bot.get_cog(command)
+        command = self.bot.get_command(command)
+        guild = ctx.guild
+        if command is not None:
+            if argument == "enable":
+                await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
+                await ctx.send(f"Command Enabled Successfully!")
+            elif argument == "disable":
+                if command.name == "jishaku":
+                    await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
+                elif command.name == "command":
+                    await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
+                else:
+                    await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
+                    await ctx.send(f"Command Disabled Successfully!")
+            else:
+                await ctx.send("The 'argument' arugment must be defined as enable or disable")
+        elif cog is not None:
+            if argument == "enable":
+                for command in cog.get_commands():
+                    await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
+                await ctx.send(f"Cog Enabled Successfully!")
+            elif argument == "disable":
+                for command in cog.get_commands():
+                    if command.name != "command":
+                        await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
+                await ctx.send(f"Cog Disabled Successfully!")
+            else:
+                await ctx.send("The 'argument' arugment must be defined as enable or disable")
+        else:
+            await ctx.send("Not a valid command or cog!")
+        await self.bot.db.release(cursor)
+
+
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
     async def flags(self, ctx, flag, *, role: discord.Role):
         """Allows you to set what role to give automatically depending on what flags the user has"""
         cursor = await self.bot.db.acquire()

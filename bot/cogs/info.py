@@ -78,6 +78,16 @@ class Info(commands.Cog, name='Information Commands'):
                 position_table.append(position[0], role, position[2])
             if position_table:
                 message += f"**Auto Position Settings**\n```{tabulate.tabulate(position_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting == "autorole" or ident_flag:
+            autorole = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or type = $3", guild.id, 'add', 'remove')
+            autorole_table = []
+            for autorole in autorole:
+                role = guild.get_role(autorole[1])
+                autorole_table.append(autrole[0], role, autorole[2])
+            if autorole_table:
+                 message += f"**Auto Role Settings**\n```{tabulate.tabulate(autorole_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+        
         if setting == "announce" or ident_flag:
             announce = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
             announce = guild.get_channel(announce)
@@ -274,7 +284,7 @@ class Info(commands.Cog, name='Information Commands'):
     async def channelinfo(self, ctx, *, channel: typing.Union[discord.TextChannel, discord.VoiceChannel] = None):
         """Shows info about a channel"""
         # gets various information about a channel
-        channel = ctx.channel if not channel else channel
+        channel = channel or ctx.channel
         yes = " "
         no = " "
         for perm, value in channel.overwrites.items():
@@ -328,7 +338,7 @@ class Info(commands.Cog, name='Information Commands'):
     async def guildinfo(self, ctx, *, guild=None):
         """Shows info about a guild"""
         # gets various information about a server (has to be in it)
-        guild = ctx.guild if not guild else self.bot.get_guild(guild)
+        guild = self.bot.get_guild(guild) or ctx.guild
         fa = 'Enabled' if guild.mfa_level == 1 else 'Disabled'
         notifications = 'All Messages' if guild.default_notifications.value == 0 else 'Only @Mentions'
         features = 'None' if not guild.features else ' '.join(guild.features)
@@ -376,7 +386,7 @@ class Info(commands.Cog, name='Information Commands'):
     async def userinfo(self, ctx, *, member: discord.Member = None):
         """Shows info about a user"""
         # gets various information about a server member
-        member = ctx.author if not member else member
+        member = member or ctx.author
         guild = ctx.guild
         roles = [role for role in member.roles]
         amount = len(roles) - 1
@@ -460,7 +470,7 @@ class Info(commands.Cog, name='Information Commands'):
     async def avatar(self, ctx, *, member: discord.User = None):
         """Enlarges a members avatar"""
         # enhances a users avatar
-        member = ctx.author if not member else member
+        member = member or ctx.author
         embed = discord.Embed(title=f"{member} Avatar")
         embed.set_image(url=member.avatar_url)
         await ctx.send(embed=embed)
