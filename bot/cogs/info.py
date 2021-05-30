@@ -84,7 +84,7 @@ class Info(commands.Cog, name='Information Commands'):
             autorole_table = []
             for autorole in autorole:
                 role = guild.get_role(autorole[1])
-                autorole_table.append(autrole[0], role, autorole[2])
+                autorole_table.append([autorole[0], role, autorole[2]])
             if autorole_table:
                  message += f"**Auto Role Settings**\n```{tabulate.tabulate(autorole_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
         

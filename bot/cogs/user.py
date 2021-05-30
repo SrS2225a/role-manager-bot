@@ -66,7 +66,7 @@ class User(commands.Cog, name='User Commands'):
                 embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
                 embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
                 embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
-                embed.add_field(name="Net Joins", value=f"`{round(month[1] / month[0] * 100, 2)}%`")
+                embed.add_field(name="Net Change", value=f"`{round(month[1] / month[0] * 100, 2)}%`")
                 if graph_type == "joins":
                     plt.plot(x1, y1, label="Joins", color='#21BBFF')
                     plt.plot(x1, y1, marker="o", ls="", ms=3)

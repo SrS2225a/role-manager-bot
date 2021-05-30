@@ -24,11 +24,9 @@ db = asyncio.get_event_loop().run_until_complete(asyncpg.create_pool('postgresql
 # sets command prefix
 async def get_prefix(bot, message):
     async with db.acquire() as cursor:
-        if message.guild is not None:
-            prefix = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1")
-            prefix = await prefix.fetchval(message.guild.id) or '*'
-            return commands.when_mentioned_or(prefix)(bot, message) 
-        return commands.when_mentioned_or('*')(bot, message) 
+        prefix = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1")
+        prefix = await prefix.fetchval(message.guild.id) or '*'
+        return commands.when_mentioned_or(prefix)(bot, message) 
 
 # sets bot variables
 intents = discord.Intents.default()
@@ -37,8 +35,8 @@ intents.presences = True
 intents.webhooks = False
 intents.integrations = False
 intents.bans = False
-intents.emojis = False
 intents.typing = False
+intents.dm_messages = False
 
 bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 bot.owner_ids = [508455796783317002, 270848136006729728, 222492698236420099, 372923892865433600]
@@ -50,13 +48,6 @@ with open("emojis.json", "r") as unicode:
     emojis = json.load(unicode)
     for key, value in emojis.items():
         bot.emoji.append(value['emoji'])
-
-# checks if an command has been run in a dm
-@bot.check
-async def predicate(ctx):
-    if ctx.guild is None:
-        raise commands.NoPrivateMessage
-    return commands.check(predicate)
 
 # checks if a guild has enabled or disabled a command
 @bot.check
