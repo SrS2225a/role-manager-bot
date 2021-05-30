@@ -211,7 +211,6 @@ class Events(commands.Cog):
                     # for custom roles / text channels / voice channels
                     if before.roles != after.roles:
                         roleauth = await cursor.prepare("SELECT custom.role, system, remove, roles.role, type INNER JOIN USING(guild) FROM custom WHERE roles.guild = $1 and member = $2 and not type = $3")
-                        print(roleauth)
 
                         # if enabled deletes the created custom role/text channel/voice channel once the set required role gets removed
                         for roleauth in await roleauth.fetch(guild.id, after.id, 'sticky'):
