@@ -19,7 +19,7 @@ with open("token.json", "r") as set:
     settings = json.load(set)
 
 # connects to database
-db = asyncio.get_event_loop().run_until_complete(asyncpg.create_pool('postgresql://localhost:5432/postgres', user=settings['user'], password=settings['password'], max_size=600, max_queries=1000))
+db = asyncio.get_event_loop().run_until_complete(asyncpg.create_pool('postgresql://localhost:5432/postgres', user=settings['user'], password=settings['password'], max_size=600, max_queries=1000, max_cacheable_statement_size=0))
 
 # sets command prefix
 async def get_prefix(bot, message):
@@ -33,7 +33,7 @@ async def get_prefix(bot, message):
 # sets bot variables
 intents = discord.Intents.default()
 intents.members = True 
-intents.presences = False
+intents.presences = True
 intents.webhooks = False
 intents.integrations = False
 intents.bans = False
@@ -49,18 +49,17 @@ with open("emojis.json", "r") as unicode:
     emojis = json.load(unicode)
     for key, value in emojis.items():
         bot.emoji.append(value['emoji'])
-
+        
 # checks if a guild has enabled or disabled a command
 @bot.check
 async def bot_check(ctx):
     async with db.acquire() as cursor:
         name = await cursor.prepare("SELECT date FROM boost WHERE guild = $1 and date = $2 and type = $3")
         name = await name.fetchval(ctx.guild.id, ctx.command.name, 'command')
-        if name is None:
+        if name is None or ctx.command.parent:
             return True
         else:
-            raise commands.DisabledCommand(f"{ctx.command.name} command is disabled")
-
+            raise commands.DisabledCommand(f"{ctx.command.name} command is disabled.")
 
 # loads cogs
 bot.load_extension("jishaku")

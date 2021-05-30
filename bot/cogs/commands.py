@@ -16,6 +16,8 @@ class Help(commands.Cog, name='Commands'):
         command = self.bot.get_command(command)
         guild = ctx.guild
         if command is not None:
+            if command.parent is not None:
+                command = command.parent
             if argument == "enable":
                 await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
                 await ctx.send(f"Command Enabled Successfully!")
@@ -45,7 +47,7 @@ class Help(commands.Cog, name='Commands'):
             await ctx.send("Not a valid command or cog!")
         await self.bot.db.release(cursor)
 
-    @commands.command()
+    @commands.command(brief="prefix &")
     @commands.has_permissions(manage_guild=True)
     async def prefix(self, ctx, prefix=None):
         """Views or sets a prefix"""
@@ -67,7 +69,6 @@ class Help(commands.Cog, name='Commands'):
             prefix = await cursor.fetchval("SELECT auth FROM settings WHERE guild = $1", guild)
             await ctx.send(f"Your current set prefix is: `{prefix or '*'}`")
         await self.bot.db.release(cursor)
-
 
 def setup(bot):
     bot.add_cog(Help(bot))

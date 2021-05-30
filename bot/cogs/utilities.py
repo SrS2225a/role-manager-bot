@@ -387,7 +387,7 @@ class Utilities(commands.Cog, name='Utilities'):
         await ctx.send(f"Reminder Deleted Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command(aliases=["makevote"])
+    @commands.command(aliases=["makevote"], brief='createpoll true "Whats your favorite color?" 4h red blue green orange purple')
     @commands.has_permissions(manage_messages=True)
     async def createpoll(self, ctx, multiple: bool, topic, duration, *questions):
         """Allows you to create a poll"""
@@ -467,7 +467,7 @@ class Utilities(commands.Cog, name='Utilities'):
             await ctx.send("This Poll Does Not Exist Or In The Current Channel")
         await self.bot.db.release(cursor)
 
-    @commands.command(aliases=["makegiveaway", "giveaway"])
+    @commands.command(aliases=["makegiveaway", "giveaway"], brief='creategiveaway "Nitro Classic" 2 2h')
     @commands.has_permissions(manage_messages=True)
     async def creategiveaway(self, ctx, name: str, winners: int, duration, requirement=None):
         """Allows you to create and host your own giveaway"""
@@ -499,12 +499,18 @@ class Utilities(commands.Cog, name='Utilities'):
             for reaction in vote:
                 if reaction.emoji == '🎉':
                     users = await reaction.users().flatten()
-                    winner = random.choices([winner.mention for winner in users if not winner.bot], k=winners)
-                    winner = "\n".join(winner)
-                    embed = discord.Embed(title=name, description=f"**Giveaway Ended** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winner}")
-                    embed.set_footer(text=f"Ended At: {ends}")
-                    await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
-                    await sent.edit(embed=embed)
+                    if users is None:
+                        embed = discord.Embed(title=name, description=f"**Giveaway Ended** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: No Winners!")
+                        embed.set_footer(text=f"Ended At: {ends}")
+                        await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
+                        await sent.edit(embed=embed)
+                    else:
+                        winner = random.choices([winner.mention for winner in users if not winner.bot], k=winners)
+                        winner = "\n".join(winner)
+                        embed = discord.Embed(title=name, description=f"**Giveaway Ended** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winner}")
+                        embed.set_footer(text=f"Ended At: {ends}")
+                        await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
+                        await sent.edit(embed=embed)
                     break
 
             await self.bot.db.release(cursor)
