@@ -287,7 +287,7 @@ class Utilities(commands.Cog, name='Utilities Commands'):
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def prefix(self, ctx, prefix=None):
-        """Sets what channel broadcast messages should be sent to"""
+        """Views or sets a prefix"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
         if prefix is not None:
