@@ -520,7 +520,11 @@ class Events(commands.Cog):
 
 
             # code for invite rewards
+<<<<<<< HEAD
             try: 
+=======
+            try:
+>>>>>>> 0dad99b (quick fix)
                 for invites in await guild.invites():
                     # checks if we are not the same user that created the invite
                     if invites.inviter.id != member.id:
@@ -533,7 +537,11 @@ class Events(commands.Cog):
                             await cursor.execute("INSERT INTO invite2(guild, member, invite, timestamp) VALUES($1, $2, $3, $4)", guild.id, member.id, invites.code, now)
                             total = await cursor.fetchval("SELECT SUM(amount) FROM invite WHERE guild = $1 and member = $2", guild.id, invites.inviter.id)
                             check = await cursor.fetch("SELECT date::int8, role FROM boost WHERE guild = $1 and type = $2 ORDER BY date DESC", guild.id, 'invite')
+<<<<<<< HEAD
 
+=======
+                            
+>>>>>>> 0dad99b (quick fix)
                             # if enabled congratulates the inviter if they complete a number of invites
                             announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
                             for day in check:
@@ -544,10 +552,17 @@ class Events(commands.Cog):
                                     if None not in (channel, user) and role.id not in [role.id for role in user.roles]:
                                         await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
                                         await user.add_roles(role)
+<<<<<<< HEAD
                                     
                     # if the inivter is not in the datahbase, add them                
                     elif amount is None and invites.uses > 0:
                         await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id, invites.inviter.id, invites.code, invites.uses, 0, 0)
+=======
+                                        
+                        # if the inivter is not in the datahbase, add them                
+                        elif amount is None and invites.uses > 0:
+                            await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id, invites.inviter.id, invites.code, invites.uses, 0, 0)
+>>>>>>> 0dad99b (quick fix)
             except discord.Forbidden:
                 pass
 
