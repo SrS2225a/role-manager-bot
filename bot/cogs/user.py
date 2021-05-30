@@ -399,7 +399,7 @@ class User(commands.Cog, name='User Commands'):
                 nick = member.display_name + ' [AFK]'
                 if len(nick) < 32:
                     await member.edit(nick=nick)
-            except discord.Forbidden or discord:
+            except discord.Forbidden:
                 pass
             await cursor.execute("INSERT INTO afk(guild, member, message) VALUES($1, $2, $3)", ctx.guild.id, member.id, reason)
             await ctx.send(f"{member.mention} I marked you as AFK!")
