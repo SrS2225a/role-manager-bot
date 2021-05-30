@@ -430,9 +430,9 @@ class Events(commands.Cog):
                 execute = await auto.fetch(guild.id, "add", "remove")
                 for auto in execute:
                     date = datetime.datetime.utcnow() + datetime.timedelta(seconds=int(auto[1]))
-                    if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
+                    if auto[2] == "add":
                         await cursor.execute("INSERT INTO autorole(guild, member, role, day, action) VALUES($1, $2, $3, $4, $5)", guild.id, member.id, auto[0], date, True)
-                    elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
+                    elif auto[2] == "remove":
                         await cursor.execute("INSERT INTO autorole(guild, member, role, day, action) VALUES($1, $2, $3, $4, $5)", guild.id, member.id, auto[0], date, False)
 
                     # code for sticky roles
@@ -505,8 +505,8 @@ class Events(commands.Cog):
                     autorole = await cursor.prepare("SELECT * FROM autorole")
                     autorole = await autorole.fetch()
                     for auto in autorole:
-                        if datetime.datetime.now() < auto[3]:
-                            guild = self.bot.get_guild(auto[0])
+                        if datetime.datetime.now() > auto[3]:
+                            guild = self.bot.get_guild(int(auto[0]))
                             member = guild.get_member(auto[1])
                             if not member.pending:
                                 role = guild.get_role(auto[2])
@@ -574,7 +574,6 @@ class Events(commands.Cog):
                                     multiply = await cursor.fetch("SELECT role, difficulty FROM leveling WHERE guild = $1 and system = $2", user.guild.id, 'multiplier')
                                     weight = await cursor.fetchval("SELECT COALESCE((SELECT difficulty FROM leveling WHERE guild = $1 and system = $2), 6)", user.guild.id, 'voice')
                                     for multi in multiply:
-                                        print(multi[0])
                                         if multi[0] == voice.channel.id or multi[0] in [role.id for role in user.roles]:
                                             weight += multi[1]
                                     await cursor.execute('UPDATE levels SET exp = $1 WHERE guild_id = $2 and user_id = $3', result1[1] + random.randint(0, weight), user.guild.id, user.id)
