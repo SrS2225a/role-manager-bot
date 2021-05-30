@@ -255,6 +255,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
         # OVERWRITES RECOVERY
+        
         if before.overwrites != after.overwrites:
             async with self.bot.db.acquire() as cursor:
                 guild = after.guild
@@ -264,6 +265,7 @@ class Events(commands.Cog):
                 role = guild.get_role(await recovery.fetchval(guild.id, channel.id, 'recover'))
                 users = []
                 # if an user has channel overwrites and they have the set role on them, insert the channel overwrites into the database to give back once the user rejoins the guild
+                
                 for perm, value in channel.overwrites.items():
                     if role is not None and isinstance(perm, discord.Member):
                         if role.id in [role.id for role in perm.roles]:
