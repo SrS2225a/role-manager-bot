@@ -392,7 +392,10 @@ class Utilities(commands.Cog, name='Utilities'):
     async def createpoll(self, ctx, multiple: bool, topic, duration, *questions):
         """Allows you to create a poll"""
         cursor = await self.bot.db.acquire()
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
         if len(questions) > 20:
             await ctx.send("You can only have a maximum of 20 questions!")
         else:
@@ -418,10 +421,9 @@ class Utilities(commands.Cog, name='Utilities'):
                 sent = await ctx.send(embed=embed)
                 for button in range(len(questions)):
                     await sent.add_reaction(indicators[button])
-                voting = sent.id + sent.channel.id
-                await cursor.execute("INSERT INTO vote(guild, message, win, date, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, voting, multiple, time, "poll")
+                await cursor.execute("INSERT INTO vote(guild, message, win, date, type) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, sent.id, multiple, time, "poll")
                 await asyncio.sleep(time)
-                execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
+                execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, sent.id, multiple, "poll")
                 if execute is not None:
                     sent = await ctx.channel.fetch_message(sent.id)
                     data = sent.embeds[0]
@@ -436,7 +438,7 @@ class Utilities(commands.Cog, name='Utilities'):
                             result += 1
                     await sent.edit(embed=embed)
                     await sent.clear_reactions()
-                await cursor.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, voting, multiple, "poll")
+                await cursor.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and win = $3 and type = $4", ctx.guild.id, sent.id, multiple, "poll")
                 await self.bot.db.release(cursor)
 
     @commands.command(aliases=["endvote"])
@@ -444,10 +446,12 @@ class Utilities(commands.Cog, name='Utilities'):
     async def endpoll(self, ctx, message: int):
         """Allows you to end a running poll"""
         cursor = await self.bot.db.acquire()
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
         sent = await ctx.channel.fetch_message(message)
-        voting = sent.id + sent.channel.id
-        execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, voting, "poll")
+        execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "poll")
         if execute is not None:
             data = sent.embeds[0]
             title = data.title
@@ -462,7 +466,7 @@ class Utilities(commands.Cog, name='Utilities'):
                     result += 1
             await sent.edit(embed=embed)
             await sent.clear_reactions()
-            await cursor.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, voting, "poll")
+            await cursor.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "poll")
         else:
             await ctx.send("This Poll Does Not Exist Or In The Current Channel")
         await self.bot.db.release(cursor)
@@ -472,6 +476,10 @@ class Utilities(commands.Cog, name='Utilities'):
     async def creategiveaway(self, ctx, name: str, winners: int, duration, requirement=None):
         """Allows you to create and host your own giveaway"""
         cursor = await self.bot.db.acquire()
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
 
         def convert_to_seconds(s):
             current, result = Calendar().parse(s)
@@ -499,7 +507,7 @@ class Utilities(commands.Cog, name='Utilities'):
             for reaction in vote:
                 if reaction.emoji == '🎉':
                     users = await reaction.users().flatten()
-                    if users is None:
+                    if reaction.count <= winners:
                         embed = discord.Embed(title=name, description=f"**Giveaway Ended** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: No Winners!")
                         embed.set_footer(text=f"Ended At: {ends}")
                         await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
@@ -509,6 +517,11 @@ class Utilities(commands.Cog, name='Utilities'):
                         winner = "\n".join(winner)
                         embed = discord.Embed(title=name, description=f"**Giveaway Ended** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winner}")
                         embed.set_footer(text=f"Ended At: {ends}")
+                        winAlert = await ctx.send(winner)
+                        try:
+                            await winAlert.delete()
+                        except discord.Forbidden:
+                            pass
                         await cursor.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", ctx.guild.id, sent.id, "giveaway")
                         await sent.edit(embed=embed)
                     break
@@ -520,6 +533,10 @@ class Utilities(commands.Cog, name='Utilities'):
     async def endgiveaway(self, ctx, message: discord.Message):
         """Allows you to end a running giveaway"""
         cursor = await self.bot.db.acquire()
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
         sent = await ctx.channel.fetch_message(message.id)
         execute = await cursor.fetchrow("SELECT date, win FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "giveaway")
         if execute is not None:
@@ -537,6 +554,11 @@ class Utilities(commands.Cog, name='Utilities'):
                         winner = "\n".join(winner)
                         embed = discord.Embed(title=data.title, description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners:{winner}")
                         embed.set_footer(text=f"Ended At: {ends}")
+                        winAlert = await ctx.send(winner)
+                        try:
+                            await winAlert.delete()
+                        except discord.Forbidden:
+                            pass
                         await sent.edit(embed=embed)
                         await cursor.execute("UPDATE vote SET date = $1, type = $2 WHERE guild = $3 and message = $4 and type = $5", time, "giveaway end", ctx.guild.id, sent.id, "giveaway")
                         await ctx.send("Ended Giveaway", delete_after=2.8)
@@ -552,6 +574,10 @@ class Utilities(commands.Cog, name='Utilities'):
     async def rerollgiveaway(self, ctx, message: int):
         """Allows you to reroll the winners selected for the giveaway"""
         cursor = await self.bot.db.acquire()
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            pass
         sent = await ctx.channel.fetch_message(message)
         execute = await cursor.fetchval("SELECT win FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "giveaway end")
         if execute is not None:

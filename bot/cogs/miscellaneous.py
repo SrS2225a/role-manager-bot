@@ -89,6 +89,15 @@ class Info(commands.Cog, name='Miscellaneous'):
                 autorole_table.append([autorole[0], role, autorole[2]])
             if autorole_table:
                  message += f"**Auto Role Settings**\n```{tabulate.tabulate(autorole_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+
+        if setting == "sticky" or ident_flag:
+            sticky = await cursor.fetch("SELECT role FROM reward WHERE guild = $1 and type = $2", guild.id, 'sticky')
+            sticky_table = []
+            for sticky in sticky:
+                role = guild.get_role(sticky[0])
+                sticky_table.append(role)
+            if sticky_table:
+                message += f"**Sticky Role Settings**\n```{tabulate.tabulate(sticky_table, headers=['Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
         
         if setting == "announce" or ident_flag:
             announce = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
@@ -146,7 +155,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                     leveling_table.append([leveling[1], None, role, leveling[4]])
 
                 elif leveling[1] in ('message', 'voice', 'difficulty', 'keep', 'clear'):
-                    leveling.appened([leveling[1], None, None, leveling[2]])
+                    leveling_table.append([leveling[1], None, None, leveling[2]])
             if leveling_table:
                 message += f"**Leveling Settings**\n```{tabulate.tabulate(leveling_table, headers=['Type', 'Channel', 'Role', 'Value'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
@@ -183,7 +192,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                 message += f"**Club Settings**\n```{tabulate.tabulate(clubs_table, headers=['Catagorey', 'Channel', 'Role', 'Give'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting not in ("clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "overwrite", "invite", "booster", "count", "custom") and ident_flag is False:
-            await ctx.send('The setting option must be defined as "clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "overwrite", "invite", "booster", "count", "custom"; or none')
+            await ctx.send('The setting option must be defined as "clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "sticky", "overwrite", "invite", "booster", "count", "custom"; or none')
         else:
             await ctx.send(message)
 

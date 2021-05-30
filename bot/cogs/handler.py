@@ -12,13 +12,13 @@ class Handler(commands.Cog):
     async def on_guild_join(self, guild):
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(844387430743801896)
-        await channel.send(f"Dionysus was added into guild **{guild}**. We now have **{len(self.bot.guilds)}** guild!")
+        await channel.send(f"Dionysus was added into guild **{guild}**. We now have **{len(self.bot.guilds)}** guilds!")
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(844387430743801896)
-        await channel.send(f"Dionysus was removed from guild **{guild}**. We now have **{len(self.bot.guilds)}** guild!")
+        await channel.send(f"Dionysus was removed from guild **{guild}**. We now have **{len(self.bot.guilds)}** guilds!")
 
     # ERROR HANDLER
     @commands.Cog.listener()
@@ -33,7 +33,7 @@ class Handler(commands.Cog):
         exception = traceback.format_exception(etype, error, trace, verbosity)
         traceback_text = ''.join(exception)
         if isinstance(error, commands.CommandInvokeError):
-            embed = discord.Embed(title="An Unexpected Error Occurred", description=f"This error has been automanically sent to the bot developers and will get to it ASAP.\nTry repeatning the command, or if you need faster attention join the support server: https://discord.gg/JHkhnzDvWG \n\n `{error}`")
+            embed = discord.Embed(title="An Unexpected Error Occurred", description=f"During the handling of this command and unexpected error occured. \nThis error has been automanically sent to the bot developers and will get to it ASAP. \nTry repeatning the command, or if you need faster attention join the support server: https://discord.gg/JHkhnzDvWG \n\n `{error}`")
             await ctx.send(embed=embed)
             await channel.send(f"`New exception occurred in guild {ctx.guild} for command {ctx.command}`\n```py\n{traceback_text}```")
         elif not isinstance(error, commands.CommandNotFound):

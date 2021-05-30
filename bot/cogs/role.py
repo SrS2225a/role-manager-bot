@@ -177,12 +177,12 @@ class Role(commands.Cog, name="Roles"):
 
     @commands.group(aliases=['autopn'], invoke_without_command=True, hidden=True)
     @commands.has_permissions(manage_guild=True)
-    async def autopostition(self, ctx, type, role: discord.Role, delay):
+    async def autoposition(self, ctx, type, role: discord.Role, delay):
         """Allows you to automatically add roles based on someones account creation or server join date"""
         if not ctx.invoked_subcommand:
             await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
         
-    @autopostition.command()
+    @autoposition.command()
     @commands.has_permissions(manage_guild=True)
     async def create(self, ctx, role: discord.Role, delay):
         """Adds a role based on someones account creation date"""
@@ -208,7 +208,7 @@ class Role(commands.Cog, name="Roles"):
 
         await self.bot.db.release(cursor)
 
-    @autopostition.command()
+    @autoposition.command()
     @commands.has_permissions(manage_guild=True)
     async def join(self, ctx, role: discord.Role, delay):
         """Adds a role based on someones server join date"""

@@ -88,7 +88,8 @@ If you want the custom role to be deleted from them as soon as they lose the set
             await ctx.send("Voice Role Set Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command()
+    @commands.command(description="""Set count to True if you want the bot to edit the channels topic with the new counting number.
+    And role to a role for the role to give upon the user giving a wrong number, passing nothing to the delay arguments disables this behavoir""")
     @commands.has_permissions(manage_guild=True)
     async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role, delay: int=None):
         """Allows you to set an counting channel"""
@@ -105,7 +106,7 @@ If you want the custom role to be deleted from them as soon as they lose the set
             await channel.set_permissions(role, overwrite=None)
             await ctx.send("Counting Channel Deleted Successfully!")
         else:
-            time = date_convert_seconds(delay)
+            time = date_convert_seconds(delay) if delay is not None else [0, 1]
             if time[1] < 1:
                 await ctx.send("I do not recognise that time!")
             else:
@@ -300,6 +301,34 @@ If you want the custom role to be deleted from them as soon as they lose the set
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
+    async def lookback(self, ctx, days):
+        """Allows you to set how many days to lookback for the graph command (default is 30)"""
+        cursor = await self.bot.db.acquire()
+        def date_convert_seconds(s):
+            current, result = Calendar().parse(s)
+            t = datetime.datetime(*current[:6])
+            futureDate = (t-datetime.datetime.now())
+            return futureDate.days+1, result
+
+        search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", ctx.guild.id)
+        time = date_convert_seconds(days)
+        if time[0] > 120:
+            await ctx.send("The lookback cannot be more than 120 days!")
+        elif time[0] == 1:
+            await ctx.send("The lookback must be at least greater than 1 day!")
+        elif time[1] < 1:
+            await ctx.send("I do not recognise that time!")
+        else:
+            if search is None:
+                await cursor.execute("INSERT INTO settings(guild, lookback) VALUES($1, $2)", ctx.guild.id, time[0])
+                await ctx.send("Lookback Set Successfully!")
+            else:
+                await cursor.execute("UPDATE settings SET lookback = $1 WHERE guild = $2", time[0], ctx.guild.id)
+                await ctx.send("Lookback Set Successfully!")
+        await self.bot.db.release(cursor)
+
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
     async def announce(self, ctx, channel: discord.TextChannel):
         """Sets what channel broadcast messages should be sent to"""
         cursor = await self.bot.db.acquire()
@@ -377,7 +406,7 @@ If you want the custom role to be deleted from them as soon as they lose the set
     @commands.has_permissions(manage_guild=True)
     async def blacklist(self, ctx, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel]):
         """Adds what channel or role cannot level up from"""
-        cursor = self.bot.db.acquire()
+        cursor = await self.bot.db.acquire()
         if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
             check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3", ctx.guild.id, 'blacklist', main.id)
             if check is not None:
@@ -392,7 +421,7 @@ If you want the custom role to be deleted from them as soon as they lose the set
     @commands.has_permissions(manage_guild=True)
     async def multiplier(self, ctx, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel, str], value: int):
         """Sets what channel or role should gain extra XP"""
-        cursor = self.bot.db.acquire()
+        cursor = await self.bot.db.acquire()
         if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
             check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main.id, value)
             if check is not None:
@@ -407,11 +436,11 @@ If you want the custom role to be deleted from them as soon as they lose the set
     @commands.has_permissions(manage_guild=True)
     async def weight(self, ctx, main, value: int):
         """Sets how much XP should be weighted"""
-        cursor = self.bot.db.acquire()
+        cursor = await self.bot.db.acquire()
         if main in ('message', 'voice', 'difficulty'):
             check = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, main)
             if check is not None:
-                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and difficulty = $3", ctx.guild.id, main, value)
+                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, main)
                 await ctx.send(f"{main} Weight Deleted Successfully!")
             else:
                 await cursor.execute("INSERT INTO leveling(guild, system, difficulty) VALUES($1, $2, $3)", ctx.guild.id, main, value)
@@ -424,7 +453,7 @@ If you want the custom role to be deleted from them as soon as they lose the set
     @commands.has_permissions(manage_guild=True)
     async def behavior(self, ctx, main, value: bool):
         """Sets if level roles should "stack" on each other and/or delete the users levels upon leaving the guild."""
-        cursor = self.bot.db.acquire()
+        cursor = await self.bot.db.acquire()
         if main in ("keep", "clear") and isinstance(value, bool):
             check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, main, value)
             if check is not None:
@@ -441,7 +470,7 @@ If you want the custom role to be deleted from them as soon as they lose the set
     @commands.has_permissions(manage_guild=True)
     async def ranking(self, ctx, main: discord.Role, value: int):
         """Sets a level role"""
-        cursor = self.bot.db.acquire()
+        cursor = await self.bot.db.acquire()
         if isinstance(main, discord.Role):
             check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4", ctx.guild.id, 'levels', main.id, value)
             if check is not None:
@@ -456,7 +485,7 @@ If you want the custom role to be deleted from them as soon as they lose the set
     @commands.has_permissions(manage_guild=True)
     async def top(self, ctx, main, value:discord.Role):
         """Allows you to add support for member of the day, week, or month"""
-        cursor = self.bot.db.acquire()
+        cursor = await self.bot.db.acquire()
         if main in ('day', 'week', 'year'):
             check = cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, 'top', main)
             if check is not None:
