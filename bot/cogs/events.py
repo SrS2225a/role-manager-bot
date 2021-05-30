@@ -506,9 +506,9 @@ class Events(commands.Cog):
                     autorole = await autorole.fetch()
                     for auto in autorole:
                         if datetime.datetime.now() > auto[3]:
-                            guild = self.bot.get_guild(uto[0])
+                            guild = self.bot.get_guild(auto[0])
                             member = guild.get_member(auto[1])
-                            if not member.pending and member is not None:
+                            if member is not None:
                                 role = guild.get_role(auto[2])
                                 if auto[4]:
                                     await member.add_roles(role)
