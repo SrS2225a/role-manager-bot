@@ -238,9 +238,9 @@ class Events(commands.Cog):
                                 await custom.delete(reason='Required Role/Channel Was Removed From Member')
 
                         # for sticky roles
-                        master = await cursor.fetch("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guild.id, after.id, 'sticky')
+                        master = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
                         # if enabled gives back the set role(s) if an member left with said role
-                        for user in await master.fetch(guild.id, 'sticky'):
+                        for user in await master.fetch(guild.id, after.id, 'sticky'):
                             if user[0] in [role.id for role in after.roles] and type is None:
                                 await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guild.id, after.id, user[0], 'sticky')
                             if user[0] not in [role.id for role in after.roles] and type is not None:
