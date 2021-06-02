@@ -228,10 +228,10 @@ class Events(commands.Cog):
 
                     # for custom roles / text channels / voice channels
                     if not before.roles == after.roles:
-                        roleauth = await cursor.prepare("SELECT role, system, remove FROM custom WHERE guild = $1 and member = $2")
+                        roleauth = await cursor.prepare("SELECT role, system, remove FROM custom WHERE guild = $1")
 
                         # if enabled deletes the created custom role/text channel/voice channel once the set required role gets removed
-                        for roleauth in await roleauth.fetch(guild.id, after.id):
+                        for roleauth in await roleauth.fetch(guild.id):
                             if roleauth[0] not in [role.id for role in after.roles] and roleauth[2] is True:
                                 await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guild.id, role, after.id, roleauth[1])
                                 custom = guild.get_role(role) if roleauth[1] == 'role' else guild.get_channel(role)
