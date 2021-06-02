@@ -228,10 +228,10 @@ class Events(commands.Cog):
 
                     # for custom roles / text channels / voice channels
                     if not before.roles == after.roles:
-                        roleauth = await cursor.prepare("SELECT role, system, remove FROM custom WHERE guild = $1 and member = $2", guild.id, after.id)
+                        roleauth = await cursor.prepare("SELECT role, system, remove FROM custom WHERE guild = $1 and member = $2")
 
                         # if enabled deletes the created custom role/text channel/voice channel once the set required role gets removed
-                        for roleauth in await roleauth.fetch(guild.id):
+                        for roleauth in await roleauth.fetch(guild.id, after.id):
                             if roleauth[0] not in [role.id for role in after.roles] and roleauth[2] is True:
                                 await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guild.id, role, after.id, roleauth[1])
                                 custom = guild.get_role(role) if roleauth[1] == 'role' else guild.get_channel(role)
@@ -309,7 +309,7 @@ class Events(commands.Cog):
                         roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild_id)
                         # splits reaction role types into code readable format and checks if we can add role
                         if "o" in role[0]:
-                            role = role.replace("o", "")
+                            role = role[0].replace("o", "")
                             mroles = guild.get_role(role_id=int(role))
                             for role in roles:
                                 role = int(role[0].replace("o", ""))
@@ -320,7 +320,7 @@ class Events(commands.Cog):
                                     await member.add_roles(mroles, reason='User reacted to reaction role')
 
                         elif "n" in role[0]:
-                            role = role.replace("n", "")
+                            role = role[0].replace("n", "")
                             mroles = guild.get_role(role_id=int(role))
                             for role in roles:
                                 role = int(role[0].replace("n", ""))
@@ -330,13 +330,13 @@ class Events(commands.Cog):
                             await member.add_roles(mroles, reason='User reacted to reaction role')
 
                         elif "r" in role:
-                            role = role.replace("r", "")
+                            role = role[0].replace("r", "")
                             mroles = guild.get_role(role_id=int(role))
                             await member.add_roles(mroles, reason='User reacted to reaction role')
                         
                         # support for the clubs system
                         elif "c" in role[0]:
-                            role = role.replace("c", "")
+                            role = role[0].replace("c", "")
                             mroles = guild.get_role(role_id=int(role))
                             cblacklist = await cursor.fetchval("SELECT message FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild_id, user_id, message_id, 'club')
                             if cblacklist is not None:
