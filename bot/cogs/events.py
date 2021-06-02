@@ -249,6 +249,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
         # OVERWRITES RECOVERY
+        
         if before.overwrites != after.overwrites:
             async with self.bot.db.acquire() as cursor:
                 async with cursor.transaction():
