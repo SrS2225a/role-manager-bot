@@ -41,9 +41,9 @@ class Management(commands.Cog, name='Management Commands'):
         """Sets what role to give and remove depending on the user joining the set voice channel"""
         chan = str(channel.id)
         cursor = await self.bot.db.acquire()
-        result = await cursor.fetchval("SELECT channel FROM boost WHERE date = $1 role = $2 and guild = $3 and type = $4", chan, role.id, ctx.guild.id, 'voice')
+        result = await cursor.fetchval("SELECT role FROM boost WHERE date = $1 and role = $2 and guild = $3 and type = $4", chan, role.id, ctx.guild.id, 'voice')
         if result is not None:
-            await cursor.execute("DELETE FROM boost WHERE role = $1 and date =  $2 and guild = $3 and type = $4", chan, role.id, ctx.guild.id, 'voice')
+            await cursor.execute("DELETE FROM boost WHERE role = $1 and date = $2 and guild = $3 and type = $4", chan, role.id, ctx.guild.id, 'voice')
             await ctx.send("Voice Role Deleted Successfully!")
         else:
             await cursor.execute("INSERT INTO boost(guild, role, date, type) VALUES($1, $2, $3, $4)", ctx.guild.id, role.id, chan, 'voice')
@@ -52,7 +52,7 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role, delay=None):
+    async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role, delay=None: int):
         """Allows you to set an counting channel"""
         cursor = await self.bot.db.acquire()
         def date_convert_seconds(s):
@@ -67,10 +67,13 @@ class Management(commands.Cog, name='Management Commands'):
             await channel.set_permissions(role, overwrite=None)
             await ctx.send("Counting Channel Deleted Successfully!")
         else:
-            time = date_convert_seconds(delay[1]) if delay[0] > 1 else 0
-            await cursor.execute("INSERT INTO count(guild, channel, role, count, delay) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, role.id, count, time)
-            await channel.set_permissions(role, read_messages=True, send_messages=False)
-            await ctx.send("Counting Channel Set Successfully!")
+            time = date_convert_seconds(delay)
+            if time[1] < 1:
+                await ctx.send("I do not recognise that time!")
+            else:
+                await cursor.execute("INSERT INTO count(guild, channel, role, count, delay) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, channel.id, role.id, count, time[0])
+                await channel.set_permissions(role, read_messages=True, send_messages=False)
+                await ctx.send("Counting Channel Set Successfully!")
         await self.bot.db.release(cursor)
 
     @commands.command(description="To disable applications, remove the channel applications will be set to")
