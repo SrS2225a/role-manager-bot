@@ -329,7 +329,7 @@ class Events(commands.Cog):
                                     await member.remove_roles(nroles, reason='User unreacted to reaction role')
                             await member.add_roles(mroles, reason='User reacted to reaction role')
 
-                        elif "r" in role:
+                        elif "r" in role[0]:
                             role = role[0].replace("r", "")
                             mroles = guild.get_role(role_id=int(role))
                             await member.add_roles(mroles, reason='User reacted to reaction role')
