@@ -228,19 +228,19 @@ class Events(commands.Cog):
 
                     # for custom roles / text channels / voice channels
                     if not before.roles == after.roles:
-                        roleauth = await cursor.prepare("SELECT role, system, remove FROM custom WHERE guild = $1 and member = $2")
+                        roleauth = await cursor.prepare("SELECT role, system, remove FROM custom WHERE guild = $1")
 
                         # if enabled deletes the created custom role/text channel/voice channel once the set required role gets removed
-                        for roleauth in await roleauth.fetch(guild.id, after.id):
+                        for roleauth in await roleauth.fetch(guild.id):
                             if roleauth[0] not in [role.id for role in after.roles] and roleauth[2] is True:
                                 await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guild.id, role, after.id, roleauth[1])
                                 custom = guild.get_role(role) if roleauth[1] == 'role' else guild.get_channel(role)
                                 await custom.delete(reason='Required Role/Channel Was Removed From Member')
 
                         # for sticky roles
-                        master = await cursor.fetch("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guild.id, after.id, 'sticky')
+                        master = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
                         # if enabled gives back the set role(s) if an member left with said role
-                        for user in await master.fetch(guild.id, 'sticky'):
+                        for user in await master.fetch(guild.id, after.id, 'sticky'):
                             if user[0] in [role.id for role in after.roles] and type is None:
                                 await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guild.id, after.id, user[0], 'sticky')
                             if user[0] not in [role.id for role in after.roles] and type is not None:
