@@ -52,7 +52,7 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role, delay=None: int):
+    async def counter(self, ctx, count: bool, channel: discord.TextChannel, role: discord.Role, delay: int=None):
         """Allows you to set an counting channel"""
         cursor = await self.bot.db.acquire()
         def date_convert_seconds(s):
