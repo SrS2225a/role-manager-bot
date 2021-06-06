@@ -360,7 +360,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                             # creates a simple aceppt/deny reaction menu
                             class Menu(menus.Menu):
                                 def __init__(self, data):
-                                    super().__init__(delete_message_after=True, timeout=None)
+                                    super().__init__(clear_reactions_after=True, timeout=None)
                                     self.data = data
 
                                 # checks if we have actually reacted to the menu
