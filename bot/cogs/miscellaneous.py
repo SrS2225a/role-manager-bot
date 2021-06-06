@@ -383,7 +383,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                                     if role is not None:
                                         staff = guild.get_role(int(role))
                                         await member.add_roles(staff)
-                                    embed = discord.Embed(title=f"Your application been accepted from {guild}!", description=yes if yes is not None else "Congrats! You been accepted", color=discord.Colour.green())
+                                    embed = discord.Embed(title=f"Your application been accepted from {guild}!", description=yes or "Congrats! You been accepted", color=discord.Colour.green())
                                     await member.send(embed=embed)
                                     await complete.send("This Response Has Been Sent!", delete_after=3.4)
                                     self.stop()
@@ -391,7 +391,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                                 # adds reaction for denying an applcation
                                 @menus.button('\N{CROSS MARK}')
                                 async def on_deny(self, _):
-                                    embed = discord.Embed(title=f"Your application been denied from {guild}!", description=no if no is not None else "Oh no! You been denied", color=discord.Colour.red())
+                                    embed = discord.Embed(title=f"Your application been denied from {guild}!", description=no or "Oh no! You been denied", color=discord.Colour.red())
                                     await member.send(embed=embed)
                                     await complete.send("This Response Has Been Sent!", delete_after=3.4)
                                     self.stop()
