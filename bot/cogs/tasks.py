@@ -9,6 +9,7 @@ class Tasks(commands.Cog):
         self.boosters.start()
         self.flags.start()
         self.position.start()
+        self.leveling.start()
 
     @tasks.loop(hours=24.0)
     async def boosters(self):
@@ -97,6 +98,40 @@ class Tasks(commands.Cog):
                                         if (datetime.now() - member.joined_at).total_seconds() > position[1]:
                                             role = member.guild.get_role(role_id=int(position[0]))
                                             await member.add_roles(role, reason="Auto position join date")
+
+        except Exception:
+            traceback.print_exc()
+
+    @position.before_loop
+    async def before_printer(self):
+        await self.bot.wait_until_ready()
+
+    @tasks.loop(hours=24.0)
+    async def leveling(self):
+        try:
+            async with self.bot.db.acquire() as cursor:
+                async with cursor.transaction():
+                    for guild in self.bot.guilds:
+                        top = await cursor.prepare("SELECT role, type, level FROM leveling WHERE guild = $1 and system = $2")
+                        top = await top.fetch(guild.id, 'top')
+                        if top:
+                            result = await cursor.prepare("SELECT user_id FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC")
+                            result = await result.fetchval(guild.id)
+                            for top in top:
+                                if top[1] == 'day' and top[2] == 1:
+                                    member = guild.get_member(result)
+                                    role = guild.get_role(top[0])
+                                    member.add_roles(role)
+                                elif top[1] == 'week' and top[2] == 7:
+                                    member = guild.get_member(result)
+                                    role = guild.get_role(top[0])
+                                    member.add_roles(role)
+                                elif top[1] == 'month' and top[2] == 30:
+                                    member = guild.get_member(result)
+                                    role = guild.get_role(top[0])
+                                    member.add_roles(role)
+                                    await cursor.execute("UPDATE leveling SET level = $1 WHERE guild = $1 and system = $2", 0, guild.id, 'top')
+                            await cursor.execute("UPDATE leveling SET level = $1 WHERE guild = $1 and system = $2", top[2]+1, guild.id, 'top')
 
         except Exception:
             traceback.print_exc()

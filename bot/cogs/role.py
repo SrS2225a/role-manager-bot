@@ -6,8 +6,8 @@ import datetime
 
 from parsedatetime import Calendar
 
-class Role(commands.Cog, name="Role Commands"):
-    """Lets you edit various things with roles."""
+class Role(commands.Cog, name="Roles"):
+    """[Lets you do various things with roles](https://github.com/SrS2225a/role-manager-bot/wiki/Roles)"""
     def __init__(self, bot):
         self.bot = bot
 

@@ -33,7 +33,7 @@ class Handler(commands.Cog):
         exception = traceback.format_exception(etype, error, trace, verbosity)
         traceback_text = ''.join(exception)
         if isinstance(error, commands.CommandInvokeError):
-            embed = discord.Embed(title="An Exception Occurred", description=f"Durning handling of this command, an unexpected error has occured\n This error has been sent to the bot dev and will get to it ASAP \n\n `{error}`")
+            embed = discord.Embed(title="An Unexpected Error Occurred", description=f"This error has been automanically sent to the bot developers and will get to it ASAP.\nTry repeatning the command, or if you need faster attention join the support server: https://discord.gg/JHkhnzDvWG \n\n `{error}`")
             await ctx.send(embed=embed)
             await channel.send(f"`New exception occurred in guild {ctx.guild} for command {ctx.command}`\n```py\n{traceback_text}```")
         elif not isinstance(error, commands.CommandNotFound):

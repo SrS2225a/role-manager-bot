@@ -4,8 +4,8 @@ import discord
 from discord.ext import commands
 
 
-class Club(commands.Cog, name="Club Commands"):
-    """Basic commands moderators can run relating to Discord or the Bot itself"""
+class Club(commands.Cog, name="Clubs"):
+    """[These commands let you manage the clubs feature](https://github.com/SrS2225a/role-manager-bot/wiki/Clubs)"""
     def __init__(self, bot):
         self.bot = bot
 

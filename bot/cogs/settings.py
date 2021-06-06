@@ -8,8 +8,8 @@ from parsedatetime import Calendar
 
 
 # administrator commands
-class Management(commands.Cog, name='Management Commands'):
-    """Commands that adjusts various settings of the bot."""
+class Management(commands.Cog, name='Settings'):
+    """[These commands adjust the various settings of the bot](https://github.com/SrS2225a/role-manager-bot/wiki/Settings)"""
     def __init__(self, bot):
         self.bot = bot
         
@@ -78,7 +78,7 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command(description="To disable applications, remove the channel applications will be set to")
     @commands.has_permissions(manage_guild=True)
-    async def applications(self, ctx, type, *, main: typing.Union[discord.Role, discord.TextChannel, str]):
+    async def application(self, ctx, type, *, main: typing.Union[discord.Role, discord.TextChannel, str]):
         """Lets you set up applications"""
         cursor = await self.bot.db.acquire()
         # feature to close and open applications
@@ -113,7 +113,7 @@ class Management(commands.Cog, name='Management Commands'):
                 await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'require', main)
                 await ctx.send("Requirement removed successfully!")
         elif type == "channel":
-            result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'channel')
+            result = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'channel')
             main = str(main.id)
             if not result == main:
                 await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'channel', main)
@@ -143,7 +143,7 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def suggestions(self, ctx, *, channel: discord.TextChannel):
+    async def suggestion(self, ctx, *, channel: discord.TextChannel):
         """Sets what channel guild suggestions should be sent to"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
@@ -245,48 +245,10 @@ class Management(commands.Cog, name='Management Commands'):
             await ctx.send("Announcement Channel Enabled Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command()
-    @commands.has_permissions(manage_guild=True)
-    async def command(self, ctx, argument, *, command):
-        """Allows you to disable/enable a command or cog"""
-        cursor = await self.bot.db.acquire()
-        cog = self.bot.get_cog(command)
-        command = self.bot.get_command(command)
-        guild = ctx.guild
-        if command is not None:
-            if argument == "enable":
-                await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
-                await ctx.send(f"Command Enabled Successfully!")
-            elif argument == "disable":
-                if command.name == "jishaku":
-                    await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
-                elif command.name == "command":
-                    await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
-                else:
-                    await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
-                    await ctx.send(f"Command Disabled Successfully!")
-            else:
-                await ctx.send("The 'argument' arugment must be defined as enable or disable")
-        elif cog is not None:
-            if argument == "enable":
-                for command in cog.get_commands():
-                    await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
-                await ctx.send(f"Cog Enabled Successfully!")
-            elif argument == "disable":
-                for command in cog.get_commands():
-                    if command.name != "command":
-                        await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
-                await ctx.send(f"Cog Disabled Successfully!")
-            else:
-                await ctx.send("The 'argument' arugment must be defined as enable or disable")
-        else:
-            await ctx.send("Not a valid command or cog!")
-        await self.bot.db.release(cursor)
-
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def flags(self, ctx, flag, *, role: discord.Role):
+    async def flag(self, ctx, flag, *, role: discord.Role):
         """Allows you to set what role to give automatically depending on what flags the user has"""
         cursor = await self.bot.db.acquire()
         if flag in ('staff', 'partner', 'hypesquad', 'bug_hunter', 'hypesquad_bravery', 'hypesquad_brilliance', 'hypesquad_balance', 'early_supporter', 'team_user', 'system', 'bug_hunter_level_2', 'verified_bot', 'verified_bot_developer'):
@@ -323,7 +285,7 @@ class Management(commands.Cog, name='Management Commands'):
 
     @commands.command(description="Define 'type' as blacklist to set which role/channel cannot level, multiplier for what channel/role gains an xp bounus, or weight for how hard it is level up per voice/message/default or behavoir to change the behavoir, or ranking for what role to give upon the user reaching the level")
     @commands.has_permissions(manage_guild=True)
-    async def leveling(self, ctx, type, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel, str], value: typing.Union[int, bool]=None):
+    async def leveling(self, ctx, type, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel, str], value: typing.Union[int, bool, str]=None):
         """Allows you to set up server leveling"""
         cursor = self.bot.db.acquire()
         if type == "blacklist":
@@ -371,7 +333,6 @@ class Management(commands.Cog, name='Management Commands'):
             else:
                 ctx.send("'main' must be defined as keep or clear")
         elif type == "ranking":
-            cursor = await self.bot.db.acquire()
             if isinstance(main, discord.Role):
                 check = await cursor.fetchval(
                     "SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4",
@@ -384,13 +345,22 @@ class Management(commands.Cog, name='Management Commands'):
                 else:
                     await cursor.execute("INSERT INTO leveling(guild, system, role, level) VALUES($1, $2, $3, $4)", ctx.guild.id, 'levels', main.id, value)
                     await ctx.send("Levels Set Successfully!")
+        elif type == "top":
+            if value in ('day', 'week', 'year'):
+                check = cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, 'top', value)
+                if check is not None:
+                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and type = $4", ctx.guild.id, 'top', main, value)
+                    await ctx.send(f"{main} Deleted Successfully!")
+                else:
+                    await cursor.execute("INSERT INTO leveling(guild, system, role, type) VALUES($1, $2, $3, $4)", ctx.guild.id, 'top', main, value)
+                    await ctx.send(f"{main} Set Successfully!")
         else:
-            await ctx.send("The 'type' must be defined as blacklist, weight, multiplier, or behavior")
+            await ctx.send("The 'type' must be defined as blacklist, weight, multiplier, behavior, or top")
         await self.bot.db.release(cursor)
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def clubs(self, ctx, channel: discord.TextChannel, category: discord.CategoryChannel, role: discord.Role, give: discord.Role=None):
+    async def club(self, ctx, channel: discord.TextChannel, category: discord.CategoryChannel, role: discord.Role, give: discord.Role=None):
         """Sets what members are allowed to create clubs"""
         cursor = await self.bot.db.acquire()
         category = category.id

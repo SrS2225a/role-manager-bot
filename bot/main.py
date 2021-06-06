@@ -24,8 +24,10 @@ db = asyncio.get_event_loop().run_until_complete(asyncpg.create_pool('postgresql
 # sets command prefix
 async def get_prefix(bot, message):
     async with db.acquire() as cursor:
-        prefix = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1")
-        prefix = await prefix.fetchval(message.guild.id) or '*'
+        prefix = '*'
+        if message.guild:
+            pre = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1")
+            prefix = await pre.fetchval(message.guild.id) or prefix
         return commands.when_mentioned_or(prefix)(bot, message) 
 
 # sets bot variables
@@ -36,9 +38,8 @@ intents.webhooks = False
 intents.integrations = False
 intents.bans = False
 intents.typing = False
-intents.dm_messages = False
 
-bot = commands.Bot(command_prefix=get_prefix, intents=intents)
+bot = commands.Bot(command_prefix=get_prefix, intents=intents, case_insensitive=True)
 bot.owner_ids = [508455796783317002, 270848136006729728, 222492698236420099, 372923892865433600]
 bot.active = []
 bot.emoji = []

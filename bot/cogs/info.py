@@ -1,253 +1,99 @@
-import discord
+import os
+import math
 import typing
-import tabulate
-import re
 
-from discord.ext import commands, menus
+import platform
+import time
+
+import discord
+import psutil
+from discord.ext import commands
 
 
-class Info(commands.Cog, name='Information Commands'):
-    """Show Information Related Info About The Server"""
+uses = 0
 
+class EmbedHelpCommand(commands.HelpCommand):
+    COLOUR = 0x95a5a6
+    def get_ending_note(self):
+        return "The Greek themed discord bot that makes your experience that much better @ dionysus.gg"
+
+    def get_heading_note(self):
+        return f"Type `{self.clean_prefix}help<command>` for specific command help.  e.g. `{self.clean_prefix}help support`"
+
+    # gets the command signature (I.E. prefix, name, and aliases)
+    def get_command_signature(self, command):
+        aliases = ''
+        for alias in command.aliases:
+            aliases += '({})'.format(alias)
+        return f'{self.clean_prefix}{command.qualified_name} {aliases}'
+
+    # shows the items of all available commands
+    async def send_bot_help(self, mapping):
+        embed = discord.Embed(title='Dionysus Help', colour=self.COLOUR)
+
+        embed.description = self.get_heading_note()
+
+        for cog, commands in mapping.items():
+            name = 'No Category' if cog is None else cog.qualified_name
+            if commands and name != 'Jishaku':
+                desc = f"**{cog.description}**\n\n"
+                value = '\u2002'.join(f'`{c.name}`' for c in commands)
+                val = desc + value
+                embed.add_field(name=name, value=val, inline=False)
+
+        embed.set_footer(text=self.get_ending_note())
+        await self.get_destination().send(embed=embed)
+
+        # shows all related info about a particuler command
+    async def send_command_help(self, command):
+        embed = discord.Embed(title=f'Dionysus Help - {command.name}', color=self.COLOUR)
+        aliases = ''
+        filtered = await self.filter_commands([command], sort=True)
+        aliases += ', '.join(alias for alias in command.aliases)
+        if command.name != 'jishaku' and filtered:
+            embed.description = command.description
+            embed.add_field(name=f'{self.clean_prefix}{command.qualified_name} {command.signature}', value=command.help or '...')
+            embed.set_footer(text="Aliases: " + aliases)
+
+        await self.get_destination().send(embed=embed)
+
+# help commands
+class Help(commands.Cog, name='Information'):
+    """[Gets Information About The Bot Or Server](https://github.com/SrS2225a/role-manager-bot/wiki/Information)"""
+    # sets up help command from the class EmbedHelpCommand
     def __init__(self, bot):
         self.bot = bot
-    
-    @commands.command()
-    @commands.has_permissions(manage_guild=True)
-    async def settings(self, ctx, setting=None):
-        """List your configured bot settings for your server"""
-        cursor = await self.bot.db.acquire()
-        guild = ctx.guild
-        tabulate.MIN_PADDING = 0
-        ident_flag = False if setting is not None else True
-        message = f"***{guild} Server Settings***\n\n\n"
+        self.bot._original_help_command = bot.help_command
+        bot.help_command = EmbedHelpCommand()
+        bot.help_command.cog = self
 
-        if setting == "custom" or ident_flag:
-            custom = await cursor.fetch("SELECT * FROM custom WHERE guild = $1", guild.id)
-            custom_table = []
-            for custom in custom:
-                role = guild.get_role(custom[2])
-                position = guild.get_role(custom[3])
-                custom_table.append([custom[1], role, position, custom[4], custom[5], custom[6]])
-            if custom_table:
-                message += f"**Custom Settings**\n```{tabulate.tabulate(custom_table, headers=['Type', 'Role', 'Position', 'Amount', 'Tag', 'Remove'], tablefmt='presto', disable_numparse=True)}```\n\n"
+    # increments uses when a command is runned
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx):
+        global uses
+        uses += 1
 
-        if setting == "count" or ident_flag:
-            count = await cursor.fetch("SELECT channel, role, count, delay FROM count WHERE guild = $1", guild.id)
-            count_table = []
-            for count in count:
-                channel = guild.get_channel(count[0])
-                role = guild.get_role(count[1])
-                count_table.append([channel, role, count[2], count[3]])
-            if count_table:
-                message += f"**Counter Settings**\n```{tabulate.tabulate(count_table, headers=['Channel', 'Role', 'Count', 'Delay'], tablefmt='presto', disable_numparse=True)}```\n\n"
-            
-        if setting == "booster" or ident_flag:
-            booster = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'boost')
-            boost_table = []
-            for booster in booster:
-                role = guild.get_role(booster[0])
-                boost_table.append([role, booster[1]])
-            if boost_table:
-                message += f"**Booster Reward Settings**\n```{tabulate.tabulate(boost_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
-
-        if setting == "invite" or ident_flag:
-            invite = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'invite')
-            invite_table = []
-            for invite in invite:
-                role = guild.get_role(invite[0])
-                invite_table.append([role, invite[1]])
-            if invite:
-                message += f"**Invite Reward Settings**\n```{tabulate.tabulate(invite_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
-
-        if setting == "overwrite" or ident_flag:
-            overwrite = await cursor.fetch("SELECT member, role FROM roles WHERE guild = $1 and type = $2", guild.id, 'recover')
-            overwrite_table = []
-            for overwrite in overwrite:
-                channel = guild.get_channel(overwrite[0])
-                role = guild.get_role(overwrite[1])
-                overwrite_table.append([channel, role])
-            if overwrite_table:
-                message += f"**Channel Overwrites Settings**\n```{tabulate.tabulate(overwrite_table, headers=['Channel', 'Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
-
-        if setting == "position" or ident_flag:
-            position = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or type = $3", guild.id, 'create', 'join')
-            position_table = []
-            for position in position:
-                role = guild.get_role(position[1])
-                position_table.append(position[0], role, position[2])
-            if position_table:
-                message += f"**Auto Position Settings**\n```{tabulate.tabulate(position_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
-
-        if setting == "autorole" or ident_flag:
-            autorole = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or type = $3", guild.id, 'add', 'remove')
-            autorole_table = []
-            for autorole in autorole:
-                role = guild.get_role(autorole[1])
-                autorole_table.append([autorole[0], role, autorole[2]])
-            if autorole_table:
-                 message += f"**Auto Role Settings**\n```{tabulate.tabulate(autorole_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
-        
-        if setting == "announce" or ident_flag:
-            announce = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
-            announce = guild.get_channel(announce)
-            if announce:
-                message += f"**Announce Settings**\n```{announce}```\n\n"
-
-        if setting == "suggest" or ident_flag:
-            suggest = await cursor.fetchval("SELECT suggest FROM settings WHERE guild = $1", guild.id)
-            suggest = guild.get_channel(suggest)
-            if suggest:
-                message += f"**Sugggest Settings**\n```{suggest}```\n\n"
-
-        if setting == "livestream" or ident_flag:
-            livestream = await cursor.fetchval("SELECT live FROM settings WHERE guild = $1", guild.id)
-            livestream = guild.get_role(livestream)
-            if livestream:
-                message += f"**Livestream Settings**\n ````{livestream}```\n\n"
-
-        if setting == "flags" or ident_flag:
-            flags = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'flag')
-            flags_table = []
-            for flags in flags:
-                role = guild.get_role(flags[0])
-                flags_table.append([role, flags[1]])
-            if flags_table:
-                message += f"**Flag Settings**\n```{tabulate.tabulate(flags_table, headers=['Role', 'Flag'], tablefmt='presto', disable_numparse=True)}```"
-
-        if setting == "partnership" or ident_flag:
-            partnership = await cursor.fetch("SELECT level, difficulty, type, role FROM leveling WHERE guild = $1 and system = $2", guild.id, 'partners')
-            partnership_table = []
-            for partnership in partnership:
-                channel = guild.get_channel(partnership[2])
-                role = guild.get_role(partnership[3])
-                reward = guild.get_role(partnership[1])
-                flags_table.append([channel, role, reward, partnership[0]])
-            if partnership_table:
-                message += f"**Partnership Settings**\n```{tabulate.tabulate(partnership_table, headers=['Channel', 'Role', 'Reward', 'Amount'], tablefmt='presto', disable_numparse=True)}```\n\n"
-
-        if setting == "leveling" or ident_flag:
-            leveling = await cursor.fetch("SELECT * FROM leveling WHERE guild = $1 AND not system = $2 AND not system = $3", guild.id, 'partners', 'points')
-            leveling_table = []
-            for leveling in leveling:
-                converter = commands.RoleConverter()
-                if leveling[1] == 'blacklist':
-                    main = guild.get_role(leveling[3])
-                    main2 = guild.get_channel(leveling[3])
-                    leveling_table.append([leveling[1], leveling[2], main, main2])
-                elif leveling[1] == 'multiplier':
-                    main = guild.get_role(leveling[3])
-                    main2 = guild.get_channel(leveling[3])
-                    leveling_table.append([leveling[1], leveling[2], main, main2])
-                elif leveling[1] == 'levels':
-                    role = guild.get_role(leveling[3])
-                    leveling_table.append([leveling[1], None, role, leveling[4]])
-
-                elif leveling[1] in ('message', 'voice', 'difficulty', 'keep', 'clear'):
-                    leveling.appened([leveling[1], None, None, leveling[2]])
-            if leveling_table:
-                message += f"**Leveling Settings**\n```{tabulate.tabulate(leveling_table, headers=['Type', 'Channel', 'Role', 'Value'], tablefmt='presto', disable_numparse=True)}```\n\n"
-
-            reaction = await cursor.fetch("SELECT * FROM reaction WHERE guild = $1", guild.id)
-            reaction_table = []
-            for reaction in reaction:
-                add = True
-                if 'r' in reaction[1]:
-                    type = 'default'
-                elif 'n' in reaction[1]:
-                    type = 'toggle'
-                elif 'o' in reaction[1]:
-                    type = 'once'
-                else:
-                    add = False
-                
-                if add:
-                    role = guild.get_role(int(re.findall(r'\d*', reaction[1])[1]))
-                    blacklist = guild.get_role(reaction[4])
-                    reaction_table.append([type, role, reaction[2], reaction[3], blacklist])
-            if reaction_table:
-                message += f"**Reaction Settings**\n```{tabulate.tabulate(reaction_table, headers=['Type', 'Role', 'Message', 'Emoji', 'Blacklist'], tablefmt='presto', disable_numparse=True)}```\n\n"
-
-        if setting == "clubs" or ident_flag:
-            clubs = await cursor.fetch("SELECT role, level, type, difficulty FROM leveling WHERE guild = $1 AND system = $2", guild.id, 'points')
-            clubs_table = []
-            for clubs in clubs:
-                catagorey = guild.get_channel(clubs[0])
-                channel = guild.get_channel(clubs[1])
-                role = guild.get_role(clubs[2])
-                give = guild.get_role(clubs[3])
-                clubs_table.append([catagorey, channel, role, give])
-            if clubs_table:
-                message += f"**Club Settings**\n```{tabulate.tabulate(clubs_table, headers=['Catagorey', 'Channel', 'Role', 'Give'], tablefmt='presto', disable_numparse=True)}```\n\n"
-
-        if setting not in ("clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "overwrite", "invite", "booster", "count", "custom") and ident_flag is False:
-            await ctx.send('The setting option must be defined as "clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "overwrite", "invite", "booster", "count", "custom"; or none')
-        else:
-            await ctx.send(message)
-
-        await self.bot.db.release(cursor)
-
-    @commands.command(description="You can supply arg with 'None' to list members without a specified role")
-    async def listmembers(self, ctx, *, role):
-        """List members by a role or no role"""
-        # finds members based on if they don't have any roles
-        if role.find("--no-roles") > -1:
-            members = []
-            for member in ctx.guild.members:
-                if len(member.roles) == 1:
-                    members.append(member.name + "#" + member.discriminator)
-                    
-        # finds members without the specified role
-        elif role.find("--none") > -1:
-            role = await commands.RoleConverter().convert(ctx, role.split(" --none")[0])
-            members = []
-            for member in ctx.guild.members:
-                if role.id not in [role.id for role in member.roles]:
-                    members.append(member.name + "#" + member.discriminator + " " + str(member.id))
-        # finds members with the specifed role
-        else:
-            role = await commands.RoleConverter().convert(ctx, role)
-            members = []
-            for member in ctx.guild.members:
-                if role.id in [role.id for role in member.roles]:
-                    members.append(member.name + "#" + member.discriminator + " " + str(member.id))
-                    
-        # puts results in a navigatable page interface
-        class Source(menus.ListPageSource):
-            def __init__(self, data):
-                super().__init__(data, per_page=20)
-
-            async def format_page(self, menu, entry):
-                offset = menu.current_page * self.per_page
-                joined = '\n'.join(f'{i}. {v}' for i, v in enumerate(entry, start=1 + offset))
-                return f'```{joined}```\nPage {menu.current_page + 1}/{self.get_max_pages()} | Total Members: {len(members)}'
-
-        if not members:
-            await ctx.send('No members')
-        else:
-            pages = menus.MenuPages(source=Source(members), clear_reactions_after=True)
-            await pages.start(ctx)
-
-    @commands.command()
-    async def roles(self, ctx):
-        """Shows a list of all roles in the server"""
-        # finds all of the server roles
-        roles = []
-        for role in ctx.guild.roles[::-1]:
-            roles.append(role.name + " " + str(role.id))
-
-        # puts results in a navigatable page interface
-        class Source(menus.ListPageSource):
-            def __init__(self, data):
-                super().__init__(data, per_page=20)
-
-            async def format_page(self, menu, entry):
-                offset = menu.current_page * self.per_page
-                joined = '\n'.join(f'{i}. {v}' for i, v in enumerate(entry, start=1 + offset))
-                return f'```{joined}```\nPage {menu.current_page + 1}/{self.get_max_pages()} | Total Roles: {len(roles)}'
-
-        pages = menus.MenuPages(source=Source(roles), clear_reactions_after=True)
-        await pages.start(ctx)
+    @commands.command(aliases=["status", "info"])
+    async def about(self, ctx):
+        """Shows info about the bot"""
+        # basiclly shows related information about the bot such as usage statstics, version, and resources
+        global uses
+        os = str(platform.system() + " " + platform.release()) + " - " + "Python " + platform.python_version()
+        p = psutil.Process()
+        up = time.strftime("%Y-%m-%d %H:%M " + "UTC", time.gmtime(p.create_time()))
+        number = 0
+        for members in self.bot.get_all_members():
+            number += 1
+        usage = f"CPU: {[round(x / psutil.cpu_count() * 100, 2) for x in psutil.getloadavg()]} \nRAM: {str(psutil.virtual_memory()[2])}% \nNetwork: Download {round(math.floor(psutil.net_io_counters().bytes_recv / 1073742000), 2)} GB, Upload {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB"
+        stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {uses}"
+        embed = discord.Embed(title="About Dionysus", color=0x0001fe)
+        embed.add_field(name='Credits', value='**Main Devs**\n<@!270848136006729728> <@!508455796783317002>\n**Contributors**\n<@!332180997653135383>')
+        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here](https://github.com/SrS2225a/role-manager-bot)\nSupport: [Click Here](https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here](https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here](https://trello.com/b/Y86Q7qKA/dionysus-bot)\ntop.gg: [Click Here](https://top.gg/bot/437447118127366154)")
+        embed.add_field(name='Stats', value=stats)
+        embed.add_field(name='Usage', value=usage)
+        embed.add_field(name='Uptime', value="Since " + up)
+        embed.add_field(name='Running On', value=os)
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def roleinfo(self, ctx, *, role: discord.Role):
@@ -466,15 +312,6 @@ class Info(commands.Cog, name='Information Commands'):
         embed.set_thumbnail(url=member.avatar_url)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['av'])
-    async def avatar(self, ctx, *, member: discord.User = None):
-        """Enlarges a members avatar"""
-        # enhances a users avatar
-        member = member or ctx.author
-        embed = discord.Embed(title=f"{member} Avatar")
-        embed.set_image(url=member.avatar_url)
-        await ctx.send(embed=embed)
-
-
 def setup(bot):
-    bot.add_cog(Info(bot))
+    bot.add_cog(Help(bot))
+
