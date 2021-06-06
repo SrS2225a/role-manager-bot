@@ -339,7 +339,6 @@ class Info(commands.Cog, name='Miscellaneous'):
                             # asks the user to confirm the application proccess then records responses
                             confirm = await self.bot.wait_for('message', check=check, timeout=60)
                             if confirm.content == 'start':
-                                print(confirm.content)
                                 for i, v in enumerate(questions, start=1):
                                     await member.send(f"Question {i}. {v}")
                                     response = await self.bot.wait_for('message', check=check)
