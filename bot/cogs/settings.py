@@ -360,6 +360,29 @@ class Management(commands.Cog, name='Settings'):
             await ctx.send("The 'type' must be defined as blacklist, weight, multiplier, behavior, or top")
         await self.bot.db.release(cursor)
 
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def club(self, ctx, channel: discord.TextChannel, category: discord.CategoryChannel, role: discord.Role, give: discord.Role=None):
+        """Sets what members are allowed to create clubs"""
+        cursor = await self.bot.db.acquire()
+        category = category.id
+        level = channel.id
+        role = role.id
+        if give is not None:
+            give = give.id
+        type = await cursor.fetchval("SELECT system FROM leveling WHERE guild = $1 and system= $2", ctx.guild.id, 'points')
+        check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $6", ctx.guild.id, 'points', category, level, role, give)
+        if check is not None:
+            await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $6", ctx.guild.id, 'points', category, level, role, give)
+            await ctx.send("Clubs Requirement Deleted Successfully!")
+        elif type is None:
+            await cursor.execute("INSERT INTO leveling(guild, system, role, level, type, difficulty) VALUES($1, $2, $3, $4, $5, $6)", ctx.guild.id, 'points', category, level, role, give)
+            await ctx.send("Clubs Requirement Set Successfully!")
+        else:
+            await cursor.execute("UPDATE leveling SET role = $1, level = $2, type = $3 WHERE guild = $4 and system = $5 and difficulty = $6", category, level, role, ctx.guild.id, 'points', give)
+            await ctx.send("Clubs Requirement Updated Successfully!")
+        await self.bot.db.release(cursor)
+
 
 def setup(bot):
     bot.add_cog(Management(bot))
