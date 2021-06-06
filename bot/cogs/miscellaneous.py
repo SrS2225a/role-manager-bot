@@ -3,6 +3,7 @@ import typing
 import tabulate
 import re
 import asyncio
+import io
 
 from discord.ext import commands, menus
 
