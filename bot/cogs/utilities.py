@@ -187,7 +187,7 @@ class Utilities(commands.Cog, name='Utilities'):
 
         await self.bot.db.release(cursor)
 
-    @commands.command(description="Supply type with role/text/voice to delete that custom")
+    @commands.group(invoke_without_command=True, hidden=True)
     async def deletecustom(self, ctx, type):
         """Deletes your custom role or channel that you have created"""
         cursor = await self.bot.db.acquire()

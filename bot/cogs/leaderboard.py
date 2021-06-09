@@ -16,8 +16,8 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    async def members(self, ctx, argument=None):
+    @commands.group()
+    async def members(self, ctx):
         """Displays Joins and Leaves over a 1 month period"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
@@ -36,127 +36,285 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
         members = await cursor.fetch("SELECT member, leave, day FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
 
-        async def graph(graph_type):
-            if members:
-                max = members[-1][2]
-                x1 = []
-                y1 = []
-                x2 = []
-                y2 = []
-                for member in members:
-                    month[0] += member[0]
-                    month[1] += member[1]
+        if members:
+            max = members[-1][2]
+            x1 = []
+            y1 = []
+            x2 = []
+            y2 = []
+            for member in members:
+                month[0] += member[0]
+                month[1] += member[1]
 
-                    if max == member[2]:
-                        day[0] += member[0]
-                        day[1] += member[1]
-                    if max-datetime.timedelta(days=7) <= member[2]:
-                        week[0] += member[0]
-                        week[1] += member[1]
+                if max == member[2]:
+                    day[0] += member[0]
+                    day[1] += member[1]
+                if max-datetime.timedelta(days=7) <= member[2]:
+                    week[0] += member[0]
+                    week[1] += member[1]
 
-                    x1.append(member[2].strftime('%d %m'))
-                    y1.append(member[0])
+                x1.append(member[2].strftime('%d %m'))
+                y1.append(member[0])
 
-                    x2.append(member[2].strftime('%d %m'))
-                    y2.append(member[1])
+                x2.append(member[2].strftime('%d %m'))
+                y2.append(member[1])
 
-                embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
-                embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
-                embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
-                embed.add_field(name="Net Change", value=f"`{round(month[1] / month[0] * 100, 2)}%`")
-                if graph_type == "joins":
-                    plt.plot(x1, y1, label="Joins", color='#21BBFF')
-                    plt.plot(x1, y1, marker="o", ls="", ms=3)
-                    plt.fill_between(x1, y1, color='#21BBFF', alpha=0.3)
-                    embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`')
-                    embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`')
-                    embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`')
-                elif graph_type == "leaves":
-                    plt.plot(x2, y2, marker="o", ls="", ms=3)
-                    plt.plot(x2, y2, color='#4e42ff')
-                    plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
-                    embed.add_field(name="Last 24 Hours", value=f'Leaves: `{day[1]}`')
-                    embed.add_field(name="Last 7 Days", value=f'Leaves: `{week[1]}`')
-                    embed.add_field(name="Last 30 Days", value=f'Leaves: `{month[1]}`')
-                else:
-                    plt.plot(x1, y1, marker="o", ls="", ms=3)
-                    plt.plot(x2, y2, marker="o", ls="", ms=3)
-                    plt.plot(x1, y1, label="Joins", color='#21BBFF')
-                    plt.plot(x2, y2, label="Leaves", color='#4e42ff')
-                    if y1 < y2:
-                        plt.fill_between(x1, y2, y1, color='#4e42ff', alpha=0.3)
-                        plt.fill_between(x2, y1, color='#21BBFF', alpha=0.3)
-                    else:
-                        plt.fill_between(x1, y1, y2, color='#21BBFF', alpha=0.3)
-                        plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
-                    plt.legend()
-                    embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
-                    embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
-                    embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
+            embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
+            embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
+            embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
+            embed.add_field(name="Net Change", value=f"`{round(month[0] / (month[0] + month[1]) * 100, 2)}%`")
 
-                data_stream = io.BytesIO()
-                plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
-                data_stream.seek(0)
-                plt.close()
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.plot(x2, y2, marker="o", ls="", ms=3)
+            plt.plot(x1, y1, label="Joins", color='#21BBFF')
+            plt.plot(x2, y2, label="Leaves", color='#4e42ff')
+            if y1 < y2:
+                plt.fill_between(x1, y2, y1, color='#4e42ff', alpha=0.3)
+                plt.fill_between(x2, y1, color='#21BBFF', alpha=0.3)
+            else:
+                plt.fill_between(x1, y1, y2, color='#21BBFF', alpha=0.3)
+                plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
+            plt.legend()
+            embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
+            embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
+            embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
 
-                graph = discord.File(data_stream, filename='graph.png')
-                embed.set_image(url='attachment://graph.png')
+            data_stream = io.BytesIO()
+            plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
+            data_stream.seek(0)
+            plt.close()
+
+            graph = discord.File(data_stream, filename='graph.png')
+            embed.set_image(url='attachment://graph.png')
                     
-                return embed, graph
-
-        graph = await graph(argument)
-        if graph:
-            await ctx.send(embed=graph[0], file=graph[1])
+        if members:
+            await ctx.send(embed=embed, file=graph)
         else:
             await ctx.send("Data not popluated yet!")
 
         await self.bot.db.release(cursor)
 
-    @commands.command(aliases=['top', 'lb'], description='Supply type with rankings/invites/partnerships to view that particular leaderboard')
-    async def leaderboard(self, ctx, type):
-        """Shows top rankings"""
+    @members.command()
+    async def joins(self, ctx):
+        """Displays Joins over a 1 month peroid"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild
+        month = [0, 0]
+        week = [0, 0]
+        day = [0, 0]
+
+        plt.style.use('dark_background')
+        matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+        fig, ax = plt.subplots()
+    
+        plt.grid()
+        ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+        ax.tick_params(axis='x', labelrotation=45)
+
+        members = await cursor.fetch("SELECT member, leave, day FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
+
+        if members:
+            max = members[-1][2]
+            x1 = []
+            y1 = []
+            for member in members:
+                month[0] += member[0]
+                month[1] += member[1]
+
+                if max == member[2]:
+                    day[0] += member[0]
+                    day[1] += member[1]
+                if max-datetime.timedelta(days=7) <= member[2]:
+                    week[0] += member[0]
+                    week[1] += member[1]
+
+                x1.append(member[2].strftime('%d %m'))
+                y1.append(member[0])
+
+            embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
+            embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
+            embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
+            embed.add_field(name="Net Change", value=f"`{round(month[0] / (month[0] + month[1]) * 100, 2)}%`")
+
+            plt.plot(x1, y1, label="Joins", color='#21BBFF')
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.fill_between(x1, y1, color='#21BBFF', alpha=0.3)
+            embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`')
+            embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`')
+            embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`')
+
+            embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
+            embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
+            embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
+
+            data_stream = io.BytesIO()
+            plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
+            data_stream.seek(0)
+            plt.close()
+
+            graph = discord.File(data_stream, filename='graph.png')
+            embed.set_image(url='attachment://graph.png')
+
+        if members:
+            await ctx.send(embed=embed, file=graph)
+        else:
+            await ctx.send("Data not popluated yet!")
+            
+        await self.bot.db.release(cursor)
+
+    @members.command()
+    async def leaves(self, ctx):
+        """Displays Leaves over a 1 month peroid"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild
+        month = [0, 0]
+        week = [0, 0]
+        day = [0, 0]
+
+        plt.style.use('dark_background')
+        matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+        fig, ax = plt.subplots()
+    
+        plt.grid()
+        ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+        ax.tick_params(axis='x', labelrotation=45)
+
+        members = await cursor.fetch("SELECT member, leave, day FROM member WHERE guild = $1 ORDER BY day ASC", guild.id)
+
+        if members:
+            max = members[-1][2]
+            x1 = []
+            y1 = []
+
+            for member in members:
+                month[0] += member[0]
+                month[1] += member[1]
+
+                if max == member[2]:
+                    day[0] += member[0]
+                    day[1] += member[1]
+                if max-datetime.timedelta(days=7) <= member[2]:
+                    week[0] += member[0]
+                    week[1] += member[1]
+
+                x1.append(member[2].strftime('%d %m'))
+                y1.append(member[0])
+
+            embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
+            embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
+            embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
+            embed.add_field(name="Net Change", value=f"`{round(month[0] / (month[0] + month[1]) * 100, 2)}%`")
+
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.plot(x1, y1, color='#4e42ff')
+            plt.fill_between(x1, y1, color='#4e42ff', alpha=0.3)
+            embed.add_field(name="Last 24 Hours", value=f'Leaves: `{day[1]}`')
+            embed.add_field(name="Last 7 Days", value=f'Leaves: `{week[1]}`')
+            embed.add_field(name="Last 30 Days", value=f'Leaves: `{month[1]}`')
+
+            data_stream = io.BytesIO()
+            plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
+            data_stream.seek(0)
+            plt.close()
+
+            graph = discord.File(data_stream, filename='graph.png')
+            embed.set_image(url='attachment://graph.png')
+
+        if members:
+            await ctx.send(embed=embed, file=graph)
+        else:
+            await ctx.send("Data not popluated yet!")
+
+        await self.bot.db.release(cursor)
+
+
+    @commands.group(aliases=['top', 'lb'], hidden=True, invoke_without_command=True, description='Supply type with rankings/invites/partnerships to view that particular leaderboard')
+    async def leaderboard(self, ctx):
+        """Shows the leaderboard"""
+        if not ctx.invoked_subcommand:
+            await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
+
+    @leaderboard.command()
+    async def rankings(self, ctx):
+        """Shows top leveling rankings"""
         cursor = await self.bot.db.acquire()
         # shows the leaderboard for leveling
         tabulate.MIN_PADDING = 0
-
-        if type == 'rankings':
-            # checks if the sever has leveling enabled for Dionysus
-            diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'difficulty')
-            if diff1 is not None:
-                # gets our leaderboard results
-                result = await cursor.fetch("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC", ctx.guild.id)
-                table = []
-                for row in result:
-                    user = self.bot.get_user(id=int(row[0]))
-                    if user is not None:
-                        table.append([row[1], row[2], user.name + "#" + user.discriminator])
-
-                # puts results in a navigatable page interface and formats our data into a text table
-                class Source(menus.ListPageSource):
-                    def __init__(self, data):
-                        super().__init__(data, per_page=20)
-
-                    async def format_page(self, menu, entry):
-                        offset = menu.current_page * self.per_page
-                        embed = discord.Embed(title=f"Dionysus Rankings (Showing Entries {1 + offset} - {len(entry) + offset})",
-                                              description=f"```{tabulate.tabulate(entry, headers=['XP', 'LV', 'USER'], tablefmt='presto')}```")
-                        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
-                        return embed
-
-                pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
-                await pages.start(ctx)
-            elif diff1 is None:
-                await ctx.send("Rankings is currently disabled for this server!")
-                                              
-        # shows the leaderboard for invites
-        elif type == 'invites':
+        # checks if the sever has leveling enabled for Dionysus
+        diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'difficulty')
+        if diff1 is not None:
             # gets our leaderboard results
-            result = await cursor.fetch(f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC", ctx.guild.id)
+            result = await cursor.fetch("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC", ctx.guild.id)
             table = []
             for row in result:
                 user = self.bot.get_user(id=int(row[0]))
                 if user is not None:
-                    table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
+                    table.append([row[1], row[2], user.name + "#" + user.discriminator])
+
+            # puts results in a navigatable page interface and formats our data into a text table
+            class Source(menus.ListPageSource):
+                def __init__(self, data):
+                    super().__init__(data, per_page=20)
+
+                async def format_page(self, menu, entry):
+                    offset = menu.current_page * self.per_page
+                    embed = discord.Embed(title=f"Dionysus Rankings (Showing Entries {1 + offset} - {len(entry) + offset})",
+                                            description=f"```{tabulate.tabulate(entry, headers=['XP', 'LV', 'USER'], tablefmt='presto')}```")
+                    embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
+                    return embed
+
+            pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
+            await pages.start(ctx)
+        elif diff1 is None:
+            await ctx.send("Rankings is currently disabled for this server!")
+        await self.bot.db.release(cursor)
+
+    @leaderboard.command()
+    async def invited(self, ctx):
+        """Shows top member invites"""
+        cursor = await self.bot.db.acquire()
+        # gets our leaderboard results
+        tabulate.MIN_PADDING = 0
+        result = await cursor.fetch(f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC", ctx.guild.id)
+        table = []
+        for row in result:
+            user = self.bot.get_user(id=int(row[0]))
+            if user is not None:
+                table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
+
+        # puts results in a navigatable page interface and formats our data into a text table
+        class Source(menus.ListPageSource):
+            def __init__(self, data):
+                super().__init__(data, per_page=20)
+
+            async def format_page(self, menu, entry):
+                offset = menu.current_page * self.per_page
+                embed = discord.Embed(
+                    title=f"Dionysus Invites (Showing Entries {1 + offset} - {len(entry) + offset})",
+                    description=f"```{tabulate.tabulate(entry, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='presto')}```")
+                embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
+                return embed
+
+        pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
+        await pages.start(ctx)
+    
+    @leaderboard.command()
+    async def partnerships(self, ctx):
+        """Shows top completed partnerships"""
+        # shows the leaderboard for invites
+        cursor = await self.bot.db.acquire()      
+        # checks if the sever has partnerships enabled for Dionysus
+        tabulate.MIN_PADDING = 0
+        diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'partners')
+        if diff1 is not None:
+            result = await cursor.fetch("SELECT member, number FROM partner WHERE guild = $1 ORDER BY number DESC", ctx.guild.id)
+            table = []
+            for row in result:
+                user = self.bot.get_user(id=int(row[0]))
+                if user is not None:
+                    table.append([row[1], user.name + "#" + user.discriminator])
 
             # puts results in a navigatable page interface and formats our data into a text table
             class Source(menus.ListPageSource):
@@ -166,53 +324,23 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 async def format_page(self, menu, entry):
                     offset = menu.current_page * self.per_page
                     embed = discord.Embed(
-                        title=f"Dionysus Invites (Showing Entries {1 + offset} - {len(entry) + offset})",
-                        description=f"```{tabulate.tabulate(entry, headers=['JOINS', 'LEAVES', 'FAKES', 'USER'], tablefmt='presto')}```")
+                        title=f"Dionysus Partners (Showing Entries {1 + offset} - {len(entry) + offset})",
+                        description=f"```{tabulate.tabulate(entry, headers=['PARTNERS', 'USER'], tablefmt='presto')}```")
                     embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
                     return embed
 
             pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
             await pages.start(ctx)
-
-        # shows the leaderboard for invites      
-        elif type == 'partnerships':
-            # checks if the sever has partnerships enabled for Dionysus
-            diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.author.guild.id, 'partners')
-            if diff1 is not None:
-                result = await cursor.fetch("SELECT member, number FROM partner WHERE guild = $1 ORDER BY number DESC", ctx.guild.id)
-                table = []
-                for row in result:
-                    user = self.bot.get_user(id=int(row[0]))
-                    if user is not None:
-                        table.append([row[1], user.name + "#" + user.discriminator])
-
-                # puts results in a navigatable page interface and formats our data into a text table
-                class Source(menus.ListPageSource):
-                    def __init__(self, data):
-                        super().__init__(data, per_page=20)
-
-                    async def format_page(self, menu, entry):
-                        offset = menu.current_page * self.per_page
-                        embed = discord.Embed(
-                            title=f"Dionysus Partners (Showing Entries {1 + offset} - {len(entry) + offset})",
-                            description=f"```{tabulate.tabulate(entry, headers=['PARTNERS', 'USER'], tablefmt='presto')}```")
-                        embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
-                        return embed
-
-                pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
-                await pages.start(ctx)
-            elif diff1 is None:
-                await ctx.send("Partnerships is currently disabled for this server!")
-        else:
-            await ctx.send("The argument must be defined as rankings/invites/partnerships")
+        elif diff1 is None:
+            await ctx.send("Partnerships is currently disabled for this server!")
         await self.bot.db.release(cursor)
-    
+        
 
     @commands.command(aliases=['level'])
-    async def rank(self, ctx, *, user: discord.User = None):
+    async def rank(self, ctx, *, member: discord.User = None):
         """Shows your ranking status or someone else's"""
         cursor = await self.bot.db.acquire()
-        member = ctx.author if not user else user
+        member = ctx.author if not member else member
         # checks if the sever has leveling enabled for Dionysus
         difficulty = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'difficulty')
         if difficulty is not None:
@@ -223,7 +351,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             # detects if we have been ranked yet
             if result is None:
                 embed = discord.Embed(
-                    title='Level Ranking - Undefined Rank',
+                    title='Undefined Rank',
                     description='The user is not yet ranked.',
                     colour=discord.Colour.red()
                 )
@@ -241,7 +369,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 bar.update(result[0])
 
                 embed = discord.Embed(
-                    title=f'Level Ranking - {member}',
+                    title=f'{member} Rank',
                     colour=discord.Colour.blue()
                 )
 
@@ -286,6 +414,21 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
+
+    @commands.command()
+    async def partners(self, ctx, member: discord.Member = None):
+        """Shows info about how many partners you completed or someone elses"""
+        cursor = await self.bot.db.acquire()
+        diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'partners')
+        if diff1 is None:
+            await ctx.send("Partnerships is currently disabled for this server!")
+        else:
+            member = ctx.author if not member else member
+            result = await cursor.fetchval("SELECT number FROM partner WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
+            partner = result if result is not None else 0
+            embed = discord.Embed(title=f"{member} Partners", description=f"{partner} Completed")
+            await ctx.send(embed=embed)
+            await self.bot.db.release(cursor)
 
 
 def setup(bot):

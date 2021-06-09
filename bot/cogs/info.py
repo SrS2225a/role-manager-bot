@@ -20,13 +20,6 @@ class EmbedHelpCommand(commands.HelpCommand):
     def get_heading_note(self):
         return f"Type `{self.clean_prefix}help<command>` for specific command help.  e.g. `{self.clean_prefix}help support`"
 
-    # gets the command signature (I.E. prefix, name, and aliases)
-    def get_command_signature(self, command):
-        aliases = ''
-        for alias in command.aliases:
-            aliases += '({})'.format(alias)
-        return f'{self.clean_prefix}{command.qualified_name} {aliases}'
-
     # shows the items of all available commands
     async def send_bot_help(self, mapping):
         embed = discord.Embed(title='Dionysus Help', colour=self.COLOUR)
@@ -46,14 +39,34 @@ class EmbedHelpCommand(commands.HelpCommand):
 
         # shows all related info about a particuler command
     async def send_command_help(self, command):
-        embed = discord.Embed(title=f'Dionysus Help - {command.name}', color=self.COLOUR)
+        embed = discord.Embed(title=f'Dionysus Help', color=self.COLOUR)
         aliases = ''
-        filtered = await self.filter_commands([command], sort=True)
         aliases += ', '.join(alias for alias in command.aliases)
-        if command.name != 'jishaku' and filtered:
-            embed.description = command.description
-            embed.add_field(name=f'{self.clean_prefix}{command.qualified_name} {command.signature}', value=command.help or '...')
+        embed.description = command.description
+        embed.add_field(name=f'{self.clean_prefix}{command.qualified_name} {command.signature}', value=command.help or '...', inline=False)
+        if command.brief:
+            embed.add_field(name='Example', value=self.clean_prefix + command.brief)
+        if aliases != '':
             embed.set_footer(text="Aliases: " + aliases)
+
+        await self.get_destination().send(embed=embed)
+
+    async def send_group_help(self, group):
+        embed = discord.Embed(title=f"Dionysus Help", color=self.COLOUR)
+        aliases = ''
+        aliases += ', '.join(alias for alias in group.aliases)
+        if aliases != '':
+            embed.set_footer(text="Aliases: " + aliases)
+        if group.hidden:
+            embed.description = f"**{group.help}** \n\n {group.description}"
+        else:
+            embed.description = group.description
+            embed.add_field(name=f'{self.clean_prefix}{group.name} {group.signature}', value=group.help)
+
+        value = '\n'.join(f"`{self.clean_prefix}{command.qualified_name}` - {command.help}" for command in group.commands)
+        embed.add_field(name=f'Commands', value=value or '...', inline=False)
+        if group.brief:
+            embed.add_field(name='Example', value=self.clean_prefix + group.brief)
 
         await self.get_destination().send(embed=embed)
 
@@ -233,84 +246,84 @@ class Help(commands.Cog, name='Information'):
         """Shows info about a user"""
         # gets various information about a server member
         member = member or ctx.author
-        guild = ctx.guild
-        roles = [role for role in member.roles]
-        amount = len(roles) - 1
-        join_position = sorted(guild.members, key=lambda m: m.joined_at).index(member) + 1
-        booster = member.premium_since.__format__(
-            '%a %b %d %Y %I:%M:%S %p UTC') if member.premium_since is not None else 'False'
-        status = str(member.status)
-        dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
-                "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker",
-                "change_nickname"]
-        array = " "
-        for perm, value in member.guild_permissions:
-            if perm not in dont and value is True:
-                array += perm + " "
-            if perm == "administrator" and value is True:
-                array = "administrator"
-                break
-        if array == " ":
-            array = "None"
+        if not member.pending:
+            roles = [role for role in member.roles]
+            amount = len(roles) - 1
+            join_position = sorted(ctx.guild.members, key = lambda m: m.joined_at or m.created_at).index(member) + 1
+            booster = member.premium_since.__format__(
+                '%a %b %d %Y %I:%M:%S %p UTC') if member.premium_since is not None else 'False'
+            status = str(member.status)
+            dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
+                    "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker",
+                    "change_nickname"]
+            array = " "
+            for perm, value in member.guild_permissions:
+                if perm not in dont and value is True:
+                    array += perm + " "
+                if perm == "administrator" and value is True:
+                    array = "administrator"
+                    break
+            if array == " ":
+                array = "None"
 
-        flags = " "
-        for flag, value in member.public_flags:
-            if value is True:
-                flags += flag + " "
-        if flags == " ":
-            flags = "None"
+            flags = " "
+            for flag, value in member.public_flags:
+                if value is True:
+                    flags += flag + " "
+            if flags == " ":
+                flags = "None"
 
-        message = '\n'
-        if not member.activity or not member.activities:
-            message = "None"
-        for activity in member.activities:
-            if activity.type == discord.ActivityType.custom:
-                if activity.emoji is None:
-                    emoji = ''
-                else:
-                    emoji = activity.emoji
-                message += f'\n**Custom Status**\n{emoji} {"" if activity.name is None else activity.name}\n'
-            elif activity.type == discord.ActivityType.playing:
-                message += f"\n**Playing a Game**\n{activity.name}"
-                if not isinstance(activity, discord.Game):
-                    if activity.details:
-                        message += f"\n{activity.details}"
-                    if activity.state:
-                        message += f"\n{activity.state}"
-                    message += "\n"
-            elif activity.type == discord.ActivityType.streaming:
-                message += f"\n**Live on {activity.platform}**\nStreaming [{activity.name}]({activity.url})\n"
-            elif activity.type == discord.ActivityType.watching:
-                message += f"\n**Watching {activity.name}**\n"
-            elif activity.type == discord.ActivityType.listening:
-                if isinstance(activity, discord.Spotify):
-                    url = f"https://open.spotify.com/track/{activity.track_id}"
-                    message += f"\n**Listening to Spotify**\n[{activity.title}]({url})\nby {', '.join(activity.artists)}"
-                    if activity.album and not activity.album == activity.title:
-                        message += f"\non {activity.album}"
-                    message += "\n"
-                else:
-                    message += f"Listening to **{activity.name}**\n"
+            message = '\n'
+            if not member.activity or not member.activities:
+                message = "None"
+            for activity in member.activities:
+                if activity.type == discord.ActivityType.custom:
+                    if activity.emoji is None:
+                        emoji = ''
+                    else:
+                        emoji = activity.emoji
+                    message += f'\n**Custom Status**\n{emoji} {"" if activity.name is None else activity.name}\n'
+                elif activity.type == discord.ActivityType.playing:
+                    message += f"\n**Playing a Game**\n{activity.name}"
+                    if not isinstance(activity, discord.Game):
+                        if activity.details:
+                            message += f"\n{activity.details}"
+                        if activity.state:
+                            message += f"\n{activity.state}"
+                        message += "\n"
+                elif activity.type == discord.ActivityType.streaming:
+                    message += f"\n**Live on {activity.platform}**\nStreaming [{activity.name}]({activity.url})\n"
+                elif activity.type == discord.ActivityType.watching:
+                    message += f"\n**Watching {activity.name}**\n"
+                elif activity.type == discord.ActivityType.listening:
+                    if isinstance(activity, discord.Spotify):
+                        url = f"https://open.spotify.com/track/{activity.track_id}"
+                        message += f"\n**Listening to Spotify**\n[{activity.title}]({url})\nby {', '.join(activity.artists)}"
+                        if activity.album and not activity.album == activity.title:
+                            message += f"\non {activity.album}"
+                        message += "\n"
+                    else:
+                        message += f"Listening to **{activity.name}**\n"
 
-        embed = discord.Embed(title='User Info', color=member.color)
-        embed.add_field(name='Name', value=f"```{member}```")
-        embed.add_field(name='Status', value=f"```{status}```")
-        embed.add_field(name='User ID', value=f"```{member.id}```", inline=False)
-        embed.add_field(name='Activity', value=message, inline=False)
-        embed.add_field(name='Booster', value=f"```{booster}```", inline=False)
-        embed.add_field(name='Created At', value=f"```{member.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
-                        inline=False)
-        embed.add_field(name='Joined At', value=f"```{member.joined_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
-                        inline=False)
-        embed.add_field(name='Public Flags', value=f"```{flags}```", inline=False)
-        embed.add_field(name="Join Position", value=f"```{join_position}```")
-        embed.add_field(name='Color', value=f"```{member.color}```")
-        embed.add_field(name='Bot', value=f"```{member.bot}```")
-        embed.add_field(name='Key Permissions', value=f"```{array}```", inline=False)
-        if amount > 0:
-            embed.add_field(name=f'Roles [{amount}]', value=" ".join([role.mention for role in roles if role.name != "@everyone"]), inline=False)
-        embed.set_thumbnail(url=member.avatar_url)
-        await ctx.send(embed=embed)
+            embed = discord.Embed(title='User Info', color=member.color)
+            embed.add_field(name='Name', value=f"```{member}```")
+            embed.add_field(name='Status', value=f"```{status}```")
+            embed.add_field(name='User ID', value=f"```{member.id}```", inline=False)
+            embed.add_field(name='Activity', value=message, inline=False)
+            embed.add_field(name='Booster', value=f"```{booster}```", inline=False)
+            embed.add_field(name='Created At', value=f"```{member.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
+                            inline=False)
+            embed.add_field(name='Joined At', value=f"```{member.joined_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
+                            inline=False)
+            embed.add_field(name='Public Flags', value=f"```{flags}```", inline=False)
+            embed.add_field(name="Join Position", value=f"```{join_position}```")
+            embed.add_field(name='Color', value=f"```{member.color}```")
+            embed.add_field(name='Bot', value=f"```{member.bot}```")
+            embed.add_field(name='Key Permissions', value=f"```{array}```", inline=False)
+            if amount > 0:
+                embed.add_field(name=f'Roles [{amount}]', value=" ".join([role.mention for role in roles if role.name != "@everyone"]), inline=False)
+            embed.set_thumbnail(url=member.avatar_url)
+            await ctx.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(Help(bot))

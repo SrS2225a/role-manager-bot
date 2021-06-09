@@ -15,29 +15,67 @@ class Management(commands.Cog, name='Settings'):
         
     # I am too lazy to add comments for all of this. The doc strings are pretty self explanitory with what the commmands do
 
-    @commands.command()
+    @commands.group(description="""You may also supply position with a channel category to define where the custom channel will be created under if the type is an text channel/voice channel or if as a role to define what role the custom role will be created under. \n
+If you want your members to be able to give their custom role/channel to others supply amount with a limit you desire, or 0 to disable the mechanism.\n
+If you want the custom role to be deleted from them as soon as they lose the set required role, set removal to true, otherwise set it to false.""", brief="custom role booster placeholder 0 true", invoke_without_command=True, hidden=True)
     @commands.has_permissions(manage_guild=True)
-    async def custom(self, ctx, type, role: discord.Role, position: typing.Union[discord.Role, discord.CategoryChannel], amount: int, removal: bool, *, tag=None):
+    async def custom(self, ctx):
         """Sets who can create an custom role or channel upon getting the defined role"""
+        if not ctx.invoked_subcommand:
+            await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
+
+    @custom.command()
+    async def role(self, ctx, role: discord.Role, position: discord.Role, amount: int, remove: bool, *, tag=None):
+        """Allows the member to create a custom role"""
         cursor = await self.bot.db.acquire()
-        if type == 'role' and isinstance(position, discord.Role) or type == 'voice' and isinstance(position, discord.CategoryChannel) or type == 'text' and isinstance(position, discord.CategoryChannel):
-            guild = ctx.guild.id
-            role = role.id
-            position = position.id
-            result = await cursor.fetchval("SELECT role FROM custom WHERE system = $1 and guild = $2", type, guild)
-            if result is not None:
-                await cursor.execute("DELETE FROM custom WHERE system = $1 and guild = $2", type, guild)
-                await ctx.send("Custom Removed Successfully!")
-            else:
-                await cursor.execute("INSERT INTO custom(guild, role, position, amount, tag, system, remove) VALUES($1, $2, $3, $4, $5, $6, $7)", guild, role, position, amount, tag, type, removal)
-                await ctx.send("Custom Set Successfully!")
+        guild = ctx.guild.id
+        role = role.id
+        position = position.id
+        result = await cursor.fetchval("SELECT role FROM custom WHERE system = $1 and guild = $2", 'role', guild)
+        if result is not None:
+            await cursor.execute("DELETE FROM custom WHERE system = $1 and guild = $2", 'role', guild)
+            await ctx.send("Custom Removed Successfully!")
         else:
-            await ctx.send("The 'type' must be defined as role, text, or voice")
+            await cursor.execute("INSERT INTO custom(guild, role, position, amount, tag, system, remove) VALUES($1, $2, $3, $4, $5, $6, $7)", guild, role, position, amount, tag, 'role', remove)
+            await ctx.send("Custom Set Successfully!")
         await self.bot.db.release(cursor)
+
+    @custom.command()
+    async def voice(self, ctx, role: discord.Role, position: discord.CategoryChannel, amount: int, remove: bool, *, tag=None):
+        """Allows the member to create a custom voice channel"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild.id
+        role = role.id
+        position = position.id
+        result = await cursor.fetchval("SELECT role FROM custom WHERE system = $1 and guild = $2", 'voice', guild)
+        if result is not None:
+            await cursor.execute("DELETE FROM custom WHERE system = $1 and guild = $2", 'voice', guild)
+            await ctx.send("Custom Removed Successfully!")
+        else:
+            await cursor.execute("INSERT INTO custom(guild, role, position, amount, tag, system, remove) VALUES($1, $2, $3, $4, $5, $6, $7)", guild, role, position, amount, tag, 'voice', remove)
+            await ctx.send("Custom Set Successfully!")
+        await self.bot.db.release(cursor)
+
+    @custom.command()
+    async def text(self, ctx, role: discord.Role, position: discord.CategoryChannel, amount: int, remove: bool, *, tag=None):
+        """Allows the member to create a custom text channel"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild.id
+        role = role.id
+        position = position.id
+        result = await cursor.fetchval("SELECT role FROM custom WHERE system = $1 and guild = $2", 'text', guild)
+        if result is not None:
+            await cursor.execute("DELETE FROM custom WHERE system = $1 and guild = $2", 'text', guild)
+            await ctx.send("Custom Removed Successfully!")
+        else:
+            await cursor.execute("INSERT INTO custom(guild, role, position, amount, tag, system, remove) VALUES($1, $2, $3, $4, $5, $6, $7)", guild, role, position, amount, tag, 'text', remove)
+            await ctx.send("Custom Set Successfully!")
+        await self.bot.db.release(cursor)
+
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def voice(self, ctx, channel: discord.VoiceChannel, role: discord.Role):
+    async def voicerole(self, ctx, channel: discord.VoiceChannel, role: discord.Role):
         """Sets what role to give and remove depending on the user joining the set voice channel"""
         chan = str(channel.id)
         cursor = await self.bot.db.acquire()
@@ -76,72 +114,104 @@ class Management(commands.Cog, name='Settings'):
                 await ctx.send("Counting Channel Set Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command(description="To disable applications, remove the channel applications will be set to")
+    @commands.group(invoke_without_command=True, hidden=True, description="To disable applications if they have alreadly preveiously been enabled, remove the channel applications been set to", brief="applications question Some Question")
     @commands.has_permissions(manage_guild=True)
-    async def application(self, ctx, type, *, main: typing.Union[discord.Role, discord.TextChannel, str]):
+    async def application(self, ctx):
         """Lets you set up applications"""
+        if not ctx.invoked_subcommand:
+            await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
+
+    @application.command(description="You may append `--edit=<number>` at the end to edit a question; number being the question number to edit")
+    @commands.has_permissions(manage_guild=True)
+    async def question(self, ctx, question):
+        """Allows you to add a question"""
         cursor = await self.bot.db.acquire()
-        # feature to close and open applications
-        if type == "question":
-            result = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
-            print(result)
-            print(main)
-            if re.search("--edit=([0-9])", main):
-                value = re.split("--edit=([0-9])", main, 1)
-                await cursor.execute("UPDATE questions SET text = $1 WHERE guild = $2 and type = $3 and number = $4", value[0], ctx.guild.id, 'question', int(value[1]))
-                await ctx.send("Question edited successfully!")
-            elif main not in [fetch[0] for fetch in result]:
-                await cursor.execute("INSERT INTO questions(guild, type, text, number) VALUES($1, $2, $3, $4)", ctx.guild.id, 'question', main, len(result)+1)
-                await ctx.send("Question set successfully!")
-            else:
-                await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'question', main)
-                await ctx.send("Question removed successfully!")
-        elif type == "role":
-            result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'role')
-            main = str(main.id)
-            if not result == main:
-                await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'role', main)
-                await ctx.send("Role set successfully!")
-            else:
-                await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'role', main)
-                await ctx.send("Role removed successfully!")
-        elif type == "require":
-            result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'require')
-            main = str(main.id)
-            if not result == main:
-                await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'require', main)
-                await ctx.send("Requirement set successfully!")
-            else:
-                await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'require', main)
-                await ctx.send("Requirement removed successfully!")
-        elif type == "channel":
-            result = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'channel')
-            main = str(main.id)
-            if not result == main:
-                await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'channel', main)
-                await ctx.send("Channel set successfully!")
-            else:
-                await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'channel', main)
-                await ctx.send("Channel removed successfully!")
-        elif type == "accept":
-            result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'accept')
-            if not result == main:
-                await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'accept', main)
-                await ctx.send("Acceptance text set successfully!")
-            else:
-                await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'accept', main)
-                await ctx.send("Acceptance text removed successfully!")
-        elif type == "deny":
-            result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'deny')
-            if not result == main:
-                await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'deny', main)
-                await ctx.send("Denied text set successfully!")
-            else:
-                await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'deny', main)
-                await ctx.send("Denied text removed successfully!")
+        result = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
+        if re.search("--edit=([0-9])", question):
+            value = re.split("--edit=([0-9])", question, 1)
+            await cursor.execute("UPDATE questions SET text = $1 WHERE guild = $2 and type = $3 and number = $4", value[0], ctx.guild.id, 'question', int(value[1]))
+            await ctx.send("Question edited successfully!")
+        elif question not in [fetch[0] for fetch in result]:
+            await cursor.execute("INSERT INTO questions(guild, type, text, number) VALUES($1, $2, $3, $4)", ctx.guild.id, 'question', question, len(result)+1)
+            await ctx.send("Question set successfully!")
         else:
-            await ctx.send("The 'type' must be defined as question, role, require, channel, accept or deny")
+            await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'question', question)
+            await ctx.send("Question removed successfully!")
         await self.bot.db.release(cursor)
+
+    @application.command()
+    @commands.has_permissions(manage_guild=True)
+    async def give(self, ctx, role: discord.Role):
+        """The role to give when a member is accepted for their application"""
+        cursor = await self.bot.db.acquire()
+        result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'role')
+        role = str(role.id)
+        if not result == role:
+            await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'role', role)
+            await ctx.send("Role set successfully!")
+        else:
+            await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'role', role)
+            await ctx.send("Role removed successfully!")
+        await self.bot.db.release(cursor)
+
+    @application.command()
+    @commands.has_permissions(manage_guild=True)
+    async def require(self, ctx, role: discord.Role):
+        """The role needed for a member to create an application"""
+        cursor = await self.bot.db.acquire()
+        result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'require')
+        role = str(role.id)
+        if not result == role:
+            await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'require', role)
+            await ctx.send("Requirement set successfully!")
+        else:
+            await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'require', role)
+            await ctx.send("Requirement removed successfully!")
+        await self.bot.db.release(cursor)    
+
+    @application.command()
+    @commands.has_permissions(manage_guild=True)
+    async def channel(self, ctx, channel: discord.TextChannel):
+        """The channel to send applicants to"""
+        cursor = await self.bot.db.acquire()
+        result = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'channel')
+        channel = str(channel.id)
+        if not result == channel:
+            await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'channel', channel)
+            await ctx.send("Channel set successfully!")
+        else:
+            await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'channel', channel)
+            await ctx.send("Channel removed successfully!")
+        await self.bot.db.release(cursor)  
+
+    @application.command(description='"Congrats! You been accepted."')
+    @commands.has_permissions(manage_guild=True)
+    async def accept(self, ctx, text):
+        """The message to send to the user when their application is accepted"""
+        cursor = await self.bot.db.acquire()
+        result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'accept')
+        if not result == text:
+            await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'accept', text)
+            await ctx.send("Acceptance text set successfully!")
+        else:
+            await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'accept', text)
+            await ctx.send("Acceptance text removed successfully!")
+        await self.bot.db.release(cursor)
+
+    @application.command(description='Default is "Oh no! You been denied."')
+    @commands.has_permissions(manage_guild=True)
+    async def deny(self, ctx, text):
+        """The message to send to the user when their application is denied"""
+        cursor = await self.bot.db.acquire()
+        result = cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'deny')
+        if not result == text:
+            await cursor.execute("INSERT INTO questions(guild, type, text) VALUES($1, $2, $3)", ctx.guild.id, 'deny', text)
+            await ctx.send("Acceptance text set successfully!")
+        else:
+            await cursor.execute("DELETE FROM questions WHERE guild = $1 and type = $2 and text = $3", ctx.guild.id, 'deny', text)
+            await ctx.send("Acceptance text removed successfully!")
+        await self.bot.db.release(cursor)
+
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
@@ -215,7 +285,7 @@ class Management(commands.Cog, name='Settings'):
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def overwrites(self, ctx, channel: discord.TextChannel, role: discord.Role):
+    async def overwrite(self, ctx, channel: discord.TextChannel, role: discord.Role):
         """Sets if defined channel overwrites be given back if the member rejoins by a set role for selected channel"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
@@ -248,7 +318,19 @@ class Management(commands.Cog, name='Settings'):
         await self.bot.db.release(cursor)
 
 
-    @commands.command()
+    @commands.command(description="""The following flags are supported:
+`staff` - If the user is a Discord Employee
+`partner` - If the user is a Discord Partner
+`hypesquad` - If the user is a HypeSquad Events Member
+`bug_hunter` - If the user is a Bug Hunter
+`hypesquad_bravery` - If the user is a HypeSquad Bravery member
+`hypesquad_brillince` - If the user is a HypeSquad Brillince member
+`hypesquad_balance` - If the user is a HypeSquad Balance member
+`early_supporter` - If the user is a Early Suporter
+`system` - If the user is a system user (i.e. represents Discord officially)
+`bug_hunter_level_2` - If the user is a Bug Hunter Level 2
+`verified_bot` - If the user is a verified bot
+`verified_bot_developer` - If the user is a Early Verified Bot Developer """, brief="flags staff Discord Employee")
     @commands.has_permissions(manage_guild=True)
     async def flag(self, ctx, flag, *, role: discord.Role):
         """Allows you to set what role to give automatically depending on what flags the user has"""
@@ -272,10 +354,9 @@ class Management(commands.Cog, name='Settings'):
         """Allows you to set an partnership reward based on how many partnerships were completed"""
         cursor = await self.bot.db.acquire()
         role = role.id
-        reward = reward.id
         channel = channel.id
         check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, 'partners', channel)
-        reward = 0 if reward is None else reward
+        reward = 0 if reward is None else reward.id
         amount = 0 if amount is None else amount
         if check is not None:
             await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, 'partners', channel)
@@ -285,104 +366,109 @@ class Management(commands.Cog, name='Settings'):
             await ctx.send("Partner Requirement Set Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.command(description="Define 'type' as blacklist to set which role/channel cannot level, multiplier for what channel/role gains an xp bounus, or weight for how hard it is level up per voice/message/default or behavoir to change the behavoir, or ranking for what role to give upon the user reaching the level")
+    @commands.group(invoke_without_command=True, hidden=True, brief="leveling ranking 5 Level 5")
     @commands.has_permissions(manage_guild=True)
-    async def leveling(self, ctx, type, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel, str], value: typing.Union[int, bool, str]=None):
+    async def leveling(self, ctx):
         """Allows you to set up server leveling"""
-        cursor = self.bot.db.acquire()
-        if type == "blacklist":
-            if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
-                check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3", ctx.guild.id, 'blacklist', main.id)
-                if check is not None:
-                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3",  ctx.guild.id, 'blacklist', main.id)
-                    await ctx.send(f"Blacklist Deleted Successfully!")
-                else:
-                    await cursor.execute("INSERT INTO leveling(guild, system, role) VALUES($1, $2, $3)", ctx.guild.id, 'blacklist', main.id)
-                    await ctx.send(f"Blacklist Set Successfully!")
-            else:
-                await ctx.send("'main' must be defined as an role or channel")
-        elif type == "multiplier":
-            if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
-                check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main.id, value)
-                if check is not None:
-                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main.id, value)
-                    await ctx.send(f"Multiplier Deleted Successfully!")
-                else:
-                    await cursor.execute("INSERT INTO leveling(guild, system, role, difficulty) VALUES($1, $2, $3, $4)", ctx.guild.id, 'multiplier', main.id, value)
-                    await ctx.send(f"Multiplier Set Successfully!")
-            else:
-                ctx.send("'main' must be defined as an role or channel")
-        elif type == "weight":
-            if main in ('message', 'voice', 'difficulty'):
-                check = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, main)
-                if check is not None:
-                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and difficulty = $3", ctx.guild.id, main, value)
-                    await ctx.send(f"{main} Weight Deleted Successfully!")
-                else:
-                    await cursor.execute("INSERT INTO leveling(guild, system, difficulty) VALUES($1, $2, $3)", ctx.guild.id, main, value)
-                    await ctx.send(f"{main} Weight Set Successfully!")
-            else:
-                await ctx.send("'main' must be defined as message, voice difficulty")
-        elif type == "behavior":
-            if main in ("keep", "clear") and isinstance(value, bool):
-                check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, main, value)
-                if check is not None:
-                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, main, value)
-                    await ctx.send(f"{main} Deleted Successfully!")
-                else:
-                    await cursor.execute("INSERT INTO leveling(guild, system, type) VALUES($1, $2, $3)", ctx.guild.id, main, value)
-                    await ctx.send(f"{main} Set Successfully!")
-            else:
-                ctx.send("'main' must be defined as keep or clear")
-        elif type == "ranking":
-            if isinstance(main, discord.Role):
-                check = await cursor.fetchval(
-                    "SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4",
-                    ctx.guild.id, 'levels', main.id, value)
-                if check is not None:
-                    await cursor.execute(
-                        "DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4",
-                        ctx.guild.id, 'levels', main.id, value)
-                    await ctx.send("Levels Deleted Successfully!")
-                else:
-                    await cursor.execute("INSERT INTO leveling(guild, system, role, level) VALUES($1, $2, $3, $4)", ctx.guild.id, 'levels', main.id, value)
-                    await ctx.send("Levels Set Successfully!")
-        elif type == "top":
-            if value in ('day', 'week', 'year'):
-                check = cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, 'top', value)
-                if check is not None:
-                    await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and type = $4", ctx.guild.id, 'top', main, value)
-                    await ctx.send(f"{main} Deleted Successfully!")
-                else:
-                    await cursor.execute("INSERT INTO leveling(guild, system, role, type) VALUES($1, $2, $3, $4)", ctx.guild.id, 'top', main, value)
-                    await ctx.send(f"{main} Set Successfully!")
-        else:
-            await ctx.send("The 'type' must be defined as blacklist, weight, multiplier, behavior, or top")
-        await self.bot.db.release(cursor)
+        if not ctx.invoked_subcommand:
+            await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
 
-    @commands.command()
+    @leveling.command()
     @commands.has_permissions(manage_guild=True)
-    async def club(self, ctx, channel: discord.TextChannel, category: discord.CategoryChannel, role: discord.Role, give: discord.Role=None):
-        """Sets what members are allowed to create clubs"""
-        cursor = await self.bot.db.acquire()
-        category = category.id
-        level = channel.id
-        role = role.id
-        if give is not None:
-            give = give.id
-        type = await cursor.fetchval("SELECT system FROM leveling WHERE guild = $1 and system= $2", ctx.guild.id, 'points')
-        check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $6", ctx.guild.id, 'points', category, level, role, give)
-        if check is not None:
-            await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $6", ctx.guild.id, 'points', category, level, role, give)
-            await ctx.send("Clubs Requirement Deleted Successfully!")
-        elif type is None:
-            await cursor.execute("INSERT INTO leveling(guild, system, role, level, type, difficulty) VALUES($1, $2, $3, $4, $5, $6)", ctx.guild.id, 'points', category, level, role, give)
-            await ctx.send("Clubs Requirement Set Successfully!")
-        else:
-            await cursor.execute("UPDATE leveling SET role = $1, level = $2, type = $3 WHERE guild = $4 and system = $5 and difficulty = $6", category, level, role, ctx.guild.id, 'points', give)
-            await ctx.send("Clubs Requirement Updated Successfully!")
+    async def blacklist(self, ctx, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel]):
+        """Adds what channel or role cannot level up from"""
+        cursor = self.bot.db.acquire()
+        if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
+            check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3", ctx.guild.id, 'blacklist', main.id)
+            if check is not None:
+                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3",  ctx.guild.id, 'blacklist', main.id)
+                await ctx.send(f"Blacklist Deleted Successfully!")
+            else:
+                await cursor.execute("INSERT INTO leveling(guild, system, role) VALUES($1, $2, $3)", ctx.guild.id, 'blacklist', main.id)
+                await ctx.send(f"Blacklist Set Successfully!")
         await self.bot.db.release(cursor)
 
+    @leveling.command()
+    @commands.has_permissions(manage_guild=True)
+    async def multiplier(self, ctx, main: typing.Union[discord.TextChannel, discord.Role, discord.VoiceChannel, str], value: int):
+        """Sets what channel or role should gain extra XP"""
+        cursor = self.bot.db.acquire()
+        if isinstance(main, discord.TextChannel) or isinstance(main, discord.VoiceChannel) or isinstance(main, discord.Role):
+            check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main.id, value)
+            if check is not None:
+                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", ctx.guild.id, 'multiplier', main.id, value)
+                await ctx.send(f"Multiplier Deleted Successfully!")
+            else:
+                await cursor.execute("INSERT INTO leveling(guild, system, role, difficulty) VALUES($1, $2, $3, $4)", ctx.guild.id, 'multiplier', main.id, value)
+                await ctx.send(f"Multiplier Set Successfully!")
+        await self.bot.db.release(cursor)
+
+    @leveling.command(description="You can optionally set main as `difficulty` to set how hard it is to level up, and `message` for the message weight or `voice` for the voice weight")
+    @commands.has_permissions(manage_guild=True)
+    async def weight(self, ctx, main, value: int):
+        """Sets how much XP should be weighted"""
+        cursor = self.bot.db.acquire()
+        if main in ('message', 'voice', 'difficulty'):
+            check = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, main)
+            if check is not None:
+                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and difficulty = $3", ctx.guild.id, main, value)
+                await ctx.send(f"{main} Weight Deleted Successfully!")
+            else:
+                await cursor.execute("INSERT INTO leveling(guild, system, difficulty) VALUES($1, $2, $3)", ctx.guild.id, main, value)
+                await ctx.send(f"{main} Weight Set Successfully!")
+        else:
+            await ctx.send("'main' must be defined as message, voice, or difficulty")
+        await self.bot.db.release(cursor)
+
+    @leveling.command(description="You can set main to `keep` for level roles behavior or `clear` for user levels behavior")
+    @commands.has_permissions(manage_guild=True)
+    async def behavior(self, ctx, main, value: bool):
+        """Sets if level roles should "stack" on each other and/or delete the users levels upon leaving the guild."""
+        cursor = self.bot.db.acquire()
+        if main in ("keep", "clear") and isinstance(value, bool):
+            check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, main, value)
+            if check is not None:
+                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, main, value)
+                await ctx.send(f"{main} Deleted Successfully!")
+            else:
+                await cursor.execute("INSERT INTO leveling(guild, system, type) VALUES($1, $2, $3)", ctx.guild.id, main, value)
+                await ctx.send(f"{main} Set Successfully!")
+        else:
+            ctx.send("'main' must be defined as keep or clear")
+        await self.bot.db.release(cursor)
+
+    @leveling.command()
+    @commands.has_permissions(manage_guild=True)
+    async def ranking(self, ctx, main: discord.Role, value: int):
+        """Sets a level role"""
+        cursor = self.bot.db.acquire()
+        if isinstance(main, discord.Role):
+            check = await cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4", ctx.guild.id, 'levels', main.id, value)
+            if check is not None:
+                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4", ctx.guild.id, 'levels', main.id, value)
+                await ctx.send("Levels Deleted Successfully!")
+            else:
+                await cursor.execute("INSERT INTO leveling(guild, system, role, level) VALUES($1, $2, $3, $4)", ctx.guild.id, 'levels', main.id, value)
+                await ctx.send("Levels Set Successfully!")
+        await self.bot.db.release(cursor)
+
+    @leveling.command()
+    @commands.has_permissions(manage_guild=True)
+    async def top(self, ctx, main, value:discord.Role):
+        """Allows you to add support for member of the day, week, or month"""
+        cursor = self.bot.db.acquire()
+        if main in ('day', 'week', 'year'):
+            check = cursor.fetchval("SELECT role FROM leveling WHERE guild = $1 and system = $2 and type = $3", ctx.guild.id, 'top', main)
+            if check is not None:
+                await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and type = $4", ctx.guild.id, 'top', value, main)
+                await ctx.send(f"{main} Deleted Successfully!")
+            else:
+                await cursor.execute("INSERT INTO leveling(guild, system, role, type) VALUES($1, $2, $3, $4)", ctx.guild.id, 'top', value, main)
+                await ctx.send(f"{main} Set Successfully!")
+        else:
+            await ctx.send("'main' must be defied as day, week, or year")
+        
+        await self.bot.db.release(cursor)
 
 def setup(bot):
     bot.add_cog(Management(bot))
