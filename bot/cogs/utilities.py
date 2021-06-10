@@ -316,7 +316,7 @@ class Utilities(commands.Cog, name='Utilities'):
             await ctx.send("The 'type' argument should be defined as role, text, or voice")
         await self.bot.db.release(cursor)
         
-    @commands.group(description='Supply type with a channel, dm or here to set the destination of the reminder', invoke_without_command=True)
+    @commands.group(description='Supply type with a channel, dm or here to set the destination of the reminder', brief='remind here 5m do something', invoke_without_command=True)
     async def remind(self, ctx, type: typing.Union[discord.TextChannel, str], duration, *, description):
         """Sets a reminder with an given time"""
         cursor = await self.bot.db.acquire()
