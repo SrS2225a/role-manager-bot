@@ -16,7 +16,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.group(invoke_without_command=True)
+    @commands.group()
     async def members(self, ctx):
         """Displays Joins and Leaves over a 1 month period"""
         cursor = await self.bot.db.acquire()
@@ -143,7 +143,11 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`')
             embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`')
             embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`')
-            
+
+            embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
+            embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
+            embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
+
             data_stream = io.BytesIO()
             plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
             data_stream.seek(0)
@@ -233,7 +237,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
 
     @leaderboard.command()
-    async def ranks(self, ctx):
+    async def rankings(self, ctx):
         """Shows top leveling rankings"""
         cursor = await self.bot.db.acquire()
         # shows the leaderboard for leveling
@@ -268,7 +272,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         await self.bot.db.release(cursor)
 
     @leaderboard.command()
-    async def invites(self, ctx):
+    async def invited(self, ctx):
         """Shows top member invites"""
         cursor = await self.bot.db.acquire()
         # gets our leaderboard results
@@ -297,7 +301,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         await pages.start(ctx)
     
     @leaderboard.command()
-    async def partners(self, ctx):
+    async def partnerships(self, ctx):
         """Shows top completed partnerships"""
         # shows the leaderboard for invites
         cursor = await self.bot.db.acquire()      
@@ -380,7 +384,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             await ctx.send("This leveling feature is currently disabled for this bot!")
         await self.bot.db.release(cursor)
 
-    @commands.command(brief="invites @Vendron#2001")
+    @commands.command()
     async def invites(self, ctx, *, member: discord.User = None):
         """Shows info about how many members you invited, or someone else"""
         cursor = await self.bot.db.acquire()
