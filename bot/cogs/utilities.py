@@ -317,7 +317,7 @@ class Utilities(commands.Cog, name='Utilities'):
         await self.bot.db.release(cursor)
         
     @commands.group(description='Supply type with a channel, dm or here to set the destination of the reminder', invoke_without_command=True)
-    async def remind(self, ctx, type: typing.Union[discord.TextChannel, str], duration=None, *, description=None):
+    async def remind(self, ctx, type: typing.Union[discord.TextChannel, str], duration, *, description):
         """Sets a reminder with an given time"""
         cursor = await self.bot.db.acquire()
         if type == 'dm' or type == 'here' or isinstance(type, discord.TextChannel):
