@@ -49,14 +49,14 @@ with open("emojis.json", "r") as unicode:
     emojis = json.load(unicode)
     for key, value in emojis.items():
         bot.emoji.append(value['emoji'])
-
+        
 # checks if a guild has enabled or disabled a command
 @bot.check
 async def bot_check(ctx):
     async with db.acquire() as cursor:
         name = await cursor.prepare("SELECT date FROM boost WHERE guild = $1 and date = $2 and type = $3")
         name = await name.fetchval(ctx.guild.id, ctx.command.name, 'command')
-        if name is None:
+        if name is None or ctx.command.parent:
             return True
         else:
             raise commands.DisabledCommand(f"{ctx.command.name} command is disabled")

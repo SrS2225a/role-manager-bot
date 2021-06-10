@@ -16,6 +16,8 @@ class Help(commands.Cog, name='Commands'):
         command = self.bot.get_command(command)
         guild = ctx.guild
         if command is not None:
+            if command.parent is not None:
+                command = command.parent
             if argument == "enable":
                 await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
                 await ctx.send(f"Command Enabled Successfully!")
