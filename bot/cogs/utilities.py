@@ -316,68 +316,76 @@ class Utilities(commands.Cog, name='Utilities'):
             await ctx.send("The 'type' argument should be defined as role, text, or voice")
         await self.bot.db.release(cursor)
         
-    @commands.command(description='Supply type with list to list your reminders, delete to delete and reminder, or me/dm/here to set the destination of the reminder')
+    @commands.group(description='Supply type with a channel, dm or here to set the destination of the reminder', invoke_without_command=True)
     async def remind(self, ctx, type: typing.Union[discord.TextChannel, str], duration=None, *, description=None):
         """Sets a reminder with an given time"""
         cursor = await self.bot.db.acquire()
-        if type == 'list':
-            reminders = await cursor.fetch("SELECT * FROM remind WHERE account = $1", ctx.author.id)
-            embed = discord.Embed(title=f"{ctx.author} Reminders")
-            if not reminders:
-                embed.description = 'You Have No Reminders!'
-            else:
-                for remind in reminders:
-                    chan = f"{self.bot.get_guild(remind[5])} — #{self.bot.get_channel(remind[4])}" if self.bot.get_channel(remind[4]) is not None else 'dm'
-                    date = datetime.datetime.utcfromtimestamp(remind[2]).strftime('%a %b %d %Y %I:%M:%S %p UTC')
-                    embed.add_field(name=f"Reminder [`{remind[1]}`]", value=f"```Time: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
-            await ctx.send(embed=embed)
+        if type == 'dm' or type == 'here' or isinstance(type, discord.TextChannel):
+            user = ctx.author if type == 'dm' else ctx.channel if type == 'here' else type
 
-        elif type == 'delete':
-            await cursor.execute('DELETE FROM remind WHERE account = $1 and message = $2', ctx.author.id, duration)
-            await ctx.send(f"Reminder Deleted Successfully!")
+            def date_convert_seconds(s):
+                current, result = Calendar().parse(s)
+                t = datetime.datetime(*current[:6])
+                futureDate = int((t-datetime.datetime.now()).total_seconds())
+                return futureDate+1, result
+
+            def display_time(duration):
+                intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
+
+                result = []
+
+                for name, count in intervals:
+                    value = duration // count
+                    if value:
+                        duration -= value * count
+                        result.append(f'{round(value)} {name}')
+
+                return ' '.join(result)
+
+            time = date_convert_seconds(duration)
+            if time[1] < 1:
+                await ctx.send("I do not recognise that time!")
+            else:
+                time = time[0]
+                delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
+                stamp = delta.timestamp()
+                rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+                remind_id = random.choices(rand, k=5)
+                escaped = discord.utils.escape_mentions(description)
+                await cursor.execute("INSERT INTO remind(guild, message, date, win, type, account) VALUES($1, $2, $3, $4, $5, $6)", ctx.guild.id, ''.join(remind_id), stamp, description, user.id, ctx.author.id)
+                await ctx.send(f"Reminding you in {display_time(time)} about: {escaped}")
+                await asyncio.sleep(time)
+                reminders = await cursor.fetchrow("SELECT * FROM remind WHERE account = $1 and message = $2", ctx.author.id, ''.join(remind_id))
+                if reminders is not None:
+                    await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about: {escaped}")
+                    await cursor.execute("DELETE FROM remind WHERE account = $1 and message = $2", ctx.author.id, ''.join(remind_id))
         else:
-            if type == 'dm' or type == 'here' or isinstance(type, discord.TextChannel):
-                user = ctx.author if type == 'dm' else ctx.channel if type == 'here' else type
+            await ctx.send('Argument type should be dm, here or a channel')
+        await self.bot.db.release(cursor)
 
-                def date_convert_seconds(s):
-                    current, result = Calendar().parse(s)
-                    t = datetime.datetime(*current[:6])
-                    futureDate = int((t-datetime.datetime.now()).total_seconds())
-                    return futureDate+1, result
+    @remind.command()
+    async def list(self, ctx):
+        """Allows you to see a list of your reminders"""
+        cursor = await self.bot.db.acquire()
+        reminders = await cursor.fetch("SELECT * FROM remind WHERE account = $1", ctx.author.id)
+        embed = discord.Embed(title=f"{ctx.author} Reminders")
+        if not reminders:
+            embed.description = 'You Have No Reminders!'
+        else:
+            for remind in reminders:
+                chan = f"{self.bot.get_guild(remind[5])} — #{self.bot.get_channel(remind[4])}" if self.bot.get_channel(remind[4]) is not None else 'dm'
+                date = datetime.datetime.utcfromtimestamp(remind[2]).strftime('%a %b %d %Y %I:%M:%S %p UTC')
+                embed.add_field(name=f"Reminder [`{remind[1]}`]", value=f"```Time: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
+        await ctx.send(embed=embed)
+        await self.bot.db.release(cursor)
 
-                def display_time(duration):
-                    intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
-
-                    result = []
-
-                    for name, count in intervals:
-                        value = duration // count
-                        if value:
-                            duration -= value * count
-                            result.append(f'{round(value)} {name}')
-
-                    return ' '.join(result)
-
-                time = date_convert_seconds(duration)
-                if time[1] < 1:
-                    await ctx.send("I do not recognise that time!")
-                else:
-                    time = time[0]
-                    delta = datetime.datetime.utcnow() + datetime.timedelta(seconds=time)
-                    stamp = delta.timestamp()
-                    rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-                    remind_id = random.choices(rand, k=6)
-                    escaped = discord.utils.escape_mentions(description)
-                    await cursor.execute("INSERT INTO remind(guild, message, date, win, type, account) VALUES($1, $2, $3, $4, $5, $6)", ctx.guild.id, ''.join(remind_id), stamp, description, user.id, ctx.author.id)
-                    await ctx.send(f"Reminding you in {display_time(time)} about: {escaped}")
-                    await asyncio.sleep(time)
-                    reminders = await cursor.fetchrow("SELECT * FROM remind WHERE account = $1 and message = $2", ctx.author.id, ''.join(remind_id))
-                    if reminders is not None:
-                        await user.send(f"{ctx.author.mention} {display_time(time)} ago you asked me to remind you about: {escaped}")
-                        await cursor.execute("DELETE FROM remind WHERE account = $1 and message = $2", ctx.author.id, ''.join(remind_id))
-            else:
-                await ctx.send('Argument 1 should be dm, here or a channel')
-            await self.bot.db.release(cursor)
+    @remind.command()
+    async def delete(self, ctx, argument):
+        """Allows you to delete a reminder"""
+        cursor = await self.bot.db.acquire()
+        await cursor.execute('DELETE FROM remind WHERE account = $1 and message = $2', ctx.author.id, argument)
+        await ctx.send(f"Reminder Deleted Successfully!")
+        await self.bot.db.release(cursor)
 
     @commands.command(aliases=["makevote"])
     @commands.has_permissions(manage_messages=True)
