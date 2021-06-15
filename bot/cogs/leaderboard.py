@@ -196,7 +196,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                     week[1] += member[1]
 
                 x1.append(member[2].strftime('%d %m'))
-                y1.append(member[0])
+                y1.append(member[1])
 
             embed = discord.Embed(title=f"{ctx.guild}'s Member Overview")
             embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
