@@ -8,7 +8,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import datetime
 import io
-import itertools
 
 # help commands
 class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
