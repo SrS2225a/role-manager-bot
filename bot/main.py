@@ -35,6 +35,7 @@ async def get_prefix(bot, message):
 intents = discord.Intents.default()
 intents.members = True 
 intents.presences = True
+intents.messages = True
 intents.webhooks = False
 intents.integrations = False
 intents.bans = False
