@@ -187,11 +187,11 @@ class Events(commands.Cog):
                 # FOR LEVELING
                 # an handler for vc rankings
                 difficulty = await cursor.prepare("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2")
-                if await difficulty.fetchval(after.guild.id, 'difficulty') is not None:
+                if await difficulty.fetchval(member.guild.id, 'difficulty') is not None:
                     # checks if the guild has enabled ranking and user not in blacklist
                     vcchannel = 0 if after.channel is None else after.channel.id
                     blacklist = await cursor.prepare("SELECT role FROM leveling WHERE guild = $1 and system = $2")
-                    blacklist = await blacklist.fetch(after.guild.id, 'blacklist')
+                    blacklist = await blacklist.fetch(member.guild.id, 'blacklist')
                     if [no[0] for no in blacklist] != vcchannel or [no[0] for no in blacklist] not in [role.id for role in member.author.roles]:
                         if after.deaf or after.mute or after.self_mute or after.self_deaf or after.afk is True or None or after.channel is None:
                             self.bot.active.remove([member, after])
@@ -528,7 +528,7 @@ class Events(commands.Cog):
     async def vc(self):
         try:
             async with self.bot.db.acquire() as cursor:
-                async with cursor.transaction:
+                async with cursor.transaction():
                     # I'm too lazy to go into details with this
                     # all this does is do the same thing for chat leveling but for voice channels
                     # see on_message() event
@@ -540,7 +540,7 @@ class Events(commands.Cog):
                             difficulty = await cursor.prepare("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2")
                             difficulty = await difficulty.fetchval(user.guild.id, 'difficulty')
                             result1 = await cursor.prepare("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2")
-                            result1 = await result1.fetchval(user.guild.id, user.author.id)
+                            result1 = await result1.fetchrow(user.guild.id, user.id)
                             if result1 is None:
                                 await cursor.execute("INSERT INTO levels(guild_id, user_id, exp, lvl) VALUES($1,$2,$3,$4)",user.guild.id, user.id, 0, 1)
                                 result1 = [user.id, 0, 1]
