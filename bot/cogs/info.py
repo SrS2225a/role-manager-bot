@@ -109,6 +109,11 @@ class Help(commands.Cog, name='Information'):
         await ctx.send(embed=embed)
 
     @commands.command()
+    async def support(self, ctx):
+        """Gives you a link to the Dionysus support server"""
+        await ctx.send("https://discord.gg/JHkhnzDvWG")
+
+    @commands.command()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Shows info about a role"""
         # gets various information about a role
