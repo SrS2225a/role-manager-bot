@@ -66,7 +66,7 @@ class Help(commands.Cog, name='Commands'):
                     await cursor.execute("UPDATE settings SET auth = $1 WHERE guild = $2", prefix, guild)
                     await ctx.send("Custom Prefix Set Successfully!")
             else:
-                ctx.send("Error: You are missing Manage Server permission(s) to change bot's prefix.")
+                await ctx.send("Error: You are missing Manage Server permission(s) to change bot's prefix.")
         else:
             prefix = await cursor.fetchval("SELECT auth FROM settings WHERE guild = $1", guild)
             await ctx.send(f"Your current set prefix is: `{prefix or '*'}`")
