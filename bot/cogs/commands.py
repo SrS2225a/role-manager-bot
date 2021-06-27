@@ -47,30 +47,30 @@ class Help(commands.Cog, name='Commands'):
             await ctx.send("Not a valid command or cog!")
         await self.bot.db.release(cursor)
 
-@commands.command(brief="prefix &", aliases=['pre'])
-async def prefix(self, ctx, prefix=None):
-    """Views or sets a prefix"""
-    cursor = await self.bot.db.acquire()
-    guild = ctx.guild.id
-    if prefix is not None:
-        if ctx.author.guild_permissions.manage_guild:
-            result = await cursor.fetchval("SELECT auth FROM settings WHERE auth = $1 and guild = $2", prefix, guild)
-            search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
-            if result is not None:
-                await cursor.execute("UPDATE settings SET auth = NULL and guild = $1", guild)
-                await ctx.send("Custom Prefix Removed Successfully!")
-            elif search is None:
-                await cursor.execute("INSERT INTO settings(guild, auth) VALUES($1, $2)", guild, prefix)
-                await ctx.send("Custom Prefix Set Successfully!")
+    @commands.command(brief="prefix &", aliases=['pre'])
+    async def prefix(self, ctx, prefix=None):
+        """Views or sets a prefix"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild.id
+        if prefix is not None:
+            if ctx.author.guild_permissions.manage_guild:
+                result = await cursor.fetchval("SELECT auth FROM settings WHERE auth = $1 and guild = $2", prefix, guild)
+                search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
+                if result is not None:
+                    await cursor.execute("UPDATE settings SET auth = NULL and guild = $1", guild)
+                    await ctx.send("Custom Prefix Removed Successfully!")
+                elif search is None:
+                    await cursor.execute("INSERT INTO settings(guild, auth) VALUES($1, $2)", guild, prefix)
+                    await ctx.send("Custom Prefix Set Successfully!")
+                else:
+                    await cursor.execute("UPDATE settings SET auth = $1 WHERE guild = $2", prefix, guild)
+                    await ctx.send("Custom Prefix Set Successfully!")
             else:
-                await cursor.execute("UPDATE settings SET auth = $1 WHERE guild = $2", prefix, guild)
-                await ctx.send("Custom Prefix Set Successfully!")
+                ctx.send("Error: You are missing Manage Server permission(s) to change bot's prefix.")
         else:
-            ctx.send("Error: You are missing Manage Server permission(s) to change bot's prefix.")
-    else:
-        prefix = await cursor.fetchval("SELECT auth FROM settings WHERE guild = $1", guild)
-        await ctx.send(f"Your current set prefix is: `{prefix or '*'}`")
-    await self.bot.db.release(cursor)
+            prefix = await cursor.fetchval("SELECT auth FROM settings WHERE guild = $1", guild)
+            await ctx.send(f"Your current set prefix is: `{prefix or '*'}`")
+        await self.bot.db.release(cursor)
 
 def setup(bot):
     bot.add_cog(Help(bot))
