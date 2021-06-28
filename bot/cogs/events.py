@@ -487,6 +487,7 @@ class Events(commands.Cog):
                             # if the inivter is not in the datahbase, add them                
                             elif amount is None and invites.uses > 0:
                                 await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id, invites.inviter.id, invites.code, invites.uses, 0, 0)
+                                await cursor.execute("INSERT INTO invite2(guild, member, invite, timestamp) VALUES($1, $2, $3, $4)", guild.id, member.id, invites.code, member.joined_at.timestamp())
                 except discord.Forbidden:
                     pass
 
