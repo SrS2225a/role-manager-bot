@@ -41,7 +41,7 @@ class Tasks(commands.Cog):
                                     if (datetime.now()-boost.premium_since).days >= int(day[0]):
                                         if channel is not None and role.id not in [role.id for role in boost.roles]:
                                             await channel.send(f"Congrats to {boost.mention} for boosting {guild} for {(datetime.now()-boost.premium_since).days} Days!")
-                                        # await boost.add_roles(role)
+                                        await boost.add_roles(role)
 
                             # checks if the booster has stopped boosting at all and remove all of their rewards
                             roles = await connection.prepare("select member, role from owner inner join boost using (guild) where boost.type = $1 and boost.guild = $2")
