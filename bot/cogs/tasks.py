@@ -74,9 +74,9 @@ class Tasks(commands.Cog):
                                 badges = [public_flags for public_flags in member.public_flags]
                                 for flags in public:
                                     role = member.guild.get_role(flags[0])
-                                    if (flags[1], True) in badges and flags[0] not in [role.id for role in member.roles]:
+                                    if (flags[1], True) in badges and role.id not in [role.id for role in member.roles]:
                                         await member.add_roles(role, reason='User has Public_Flags')
-                                    elif (flags[1], False) in badges and flags[0] in [role.id for role in member.roles]:
+                                    elif (flags[1], False) in badges and role.id in [role.id for role in member.roles]:
                                         await member.remove_roles(role, reason='User no longer has Public_Flags')
 
         except Exception:
@@ -119,7 +119,7 @@ class Tasks(commands.Cog):
             async with self.bot.db.acquire() as cursor:
                 async with cursor.transaction():
                     for guild in self.bot.guilds:
-                        top = await cursor.prepare("SELECT role, type, level, user_id FROM leveling left join levels WHERE guild = $1 and system = $2 ORDER BY lvl DESC, exp DESC")
+                        top = await cursor.prepare("SELECT role, type, level, user_id FROM leveling left join levels ON leveling.guild=levels.guild_id WHERE guild = $1 and system = $2 ORDER BY lvl DESC, exp DESC")
                         top = await top.fetch(guild.id, 'top')
                         for top in top:
                             if top[1] == 'day' and top[2] == 1:
@@ -139,7 +139,7 @@ class Tasks(commands.Cog):
         except Exception:
             traceback.print_exc()
 
-    @position.before_loop
+    @leveling.before_loop
     async def before_printer(self):
         await self.bot.wait_until_ready()
 

@@ -487,6 +487,7 @@ class Events(commands.Cog):
                             # if the inivter is not in the datahbase, add them                
                             elif amount is None and invites.uses > 0:
                                 await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id, invites.inviter.id, invites.code, invites.uses, 0, 0)
+                                await cursor.execute("INSERT INTO invite2(guild, member, invite, timestamp) VALUES($1, $2, $3, $4)", guild.id, member.id, invites.code, member.joined_at.timestamp())
                 except discord.Forbidden:
                     pass
 
@@ -500,14 +501,14 @@ class Events(commands.Cog):
                         no = discord.Permissions(permissions=int(override[1]))
                         overrides = discord.PermissionOverwrite().from_pair(yes, no)
                         await channel.set_permissions(member, overwrite=overrides, reason='user joined back with previous channel overwrites')
-
+                        
                 # code for sticky roles
                 master = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
                 for select in await master.fetch(guild.id, member.id, 'sticky'):
                     if select[0] not in [role.id for role in member.roles] and select[0] is not None:
                         srole = guild.get_role(role_id=int(select[0]))
                         await member.add_roles(srole, reason='User had sticky roles when leaving')
-
+                    
                 # code for autoroles
                 if not member.pending:
                     auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")

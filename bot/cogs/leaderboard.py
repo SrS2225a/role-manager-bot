@@ -232,7 +232,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
         await self.bot.db.release(cursor)
 
-    @graph.command(name="messages")
+    @graph.command(name="messages", aliases=["msgs"])
     async def graph_messages(self, ctx):
         """Displays total messages sent over a 1 month period"""
         cursor = await self.bot.db.acquire()
@@ -346,7 +346,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             await ctx.send("Rankings is currently disabled for this server!")
         await self.bot.db.release(cursor)
 
-    @leaderboard.command(name='messages')
+    @leaderboard.command(name='messages', aliases=["msgs"])
     async def lb_messages(self, ctx):
         cursor = await self.bot.db.acquire()
         # gets our leaderboard results
