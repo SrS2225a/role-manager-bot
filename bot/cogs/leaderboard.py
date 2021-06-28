@@ -269,11 +269,15 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
             topUser = ""
             for messages in await cursor.fetch("SELECT member, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY member ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(days=date or 30))):
-                topUser += f"{self.bot.get_user(id=int(messages[0])).mention} - `{messages[1]}`\n"
+                user = self.bot.get_user(id=int(messages[0]))
+                if user:
+                    topUser += f"{user.mention} - `{messages[1]}`\n"
 
             topChannel = ""
             for messages in await cursor.fetch("SELECT channel, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY channel ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(days=date or 30))):
-                topChannel += f"{guild.get_channel(messages[0]).mention} - `{messages[1]}`\n"
+                channel = guild.get_channel(messages[0])
+                if channel:
+                    topChannel += f"{channel.mention} - `{messages[1]}`\n"
 
             embed = discord.Embed(title=f"{ctx.guild}'s Message Overview")
             embed.add_field(name="Last 24 Hours", value=f"Messages: `{userDay}`")
@@ -565,7 +569,9 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             user1 = []
             i = 0
             for user in messages:
-                user1.append(f"--> <#{user[0]}>: **{user[1]}** messages")
+                channel = ctx.guild.get_channel(user[0])
+                if channel:
+                    user1.append(f"--> {channel.mention}: **{user[1]}** messages")
 
             for row in rank:
                 i += 1
