@@ -240,19 +240,21 @@ class Events(commands.Cog):
                         else:
                             await after.remove_roles(role, reason='User is no longer Streaming')
 
-                # code for auto roles (for membership screening)
-                if before.pending != after.pending and not after.pending:
-                    auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
-                    execute = await auto.fetch(guild.id, "add", "remove")
-                    for auto in execute:
-                        if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
-                            await asyncio.sleep(int(auto[1]))
-                            role = guild.get_role(role_id=auto[0])
-                            await after.add_roles(role, reason='Auto role')
-                        elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
-                            await asyncio.sleep(int(auto[1]))
-                            role = guild.get_role(role_id=auto[0])
-                            await after.remove_roles(role, reason='Auto role')
+        # code for auto roles (for membership screening)
+        if before.pending != after.pending and not after.pending:
+            cursor = await self.bot.db.acquire()
+            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+            execute = await auto.fetch(guild.id, "add", "remove")
+            await self.bot.db.release(cursor)
+            for auto in execute:
+                if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
+                    await asyncio.sleep(int(auto[1]))
+                    role = guild.get_role(role_id=auto[0])
+                    await after.add_roles(role, reason='Auto role')
+                elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
+                    await asyncio.sleep(int(auto[1]))
+                    role = guild.get_role(role_id=auto[0])
+                    await after.remove_roles(role, reason='Auto role')
 
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
@@ -509,19 +511,21 @@ class Events(commands.Cog):
                         srole = guild.get_role(role_id=int(select[0]))
                         await member.add_roles(srole, reason='User had sticky roles when leaving')
                     
-                # code for autoroles
-                if not member.pending:
-                    auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
-                    execute = await auto.fetch(guild.id, "add", "remove")
-                    for auto in execute:
-                        if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
-                            await asyncio.sleep(int(auto[1]))
-                            role = guild.get_role(role_id=auto[0])
-                            await member.add_roles(role, reason='Auto role')
-                        elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
-                            await asyncio.sleep(int(auto[1]))
-                            role = guild.get_role(role_id=auto[0])
-                            await member.remove_roles(role, reason='Auto role')
+        # code for autoroles
+        if not member.pending:
+            cursor = await self.bot.db.acquire()
+            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+            execute = await auto.fetch(guild.id, "add", "remove")
+            await self.bot.db.release(cursor)
+            for auto in execute:
+                if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
+                    await asyncio.sleep(int(auto[1]))
+                    role = guild.get_role(role_id=auto[0])
+                    await member.add_roles(role, reason='Auto role')
+                elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
+                    await asyncio.sleep(int(auto[1]))
+                    role = guild.get_role(role_id=auto[0])
+                    await member.remove_roles(role, reason='Auto role')
 
     @tasks.loop()
     async def vc(self):

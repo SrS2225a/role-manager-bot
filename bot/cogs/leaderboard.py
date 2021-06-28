@@ -299,6 +299,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             await ctx.send(embed=embed, file=graph)
         else:
             await ctx.send("Data not popluated yet!")
+        await self.bot.db.release(cursor)
 
     @commands.group(aliases=['top', 'lb'], hidden=True, invoke_without_command=True)
     async def leaderboard(self, ctx):
