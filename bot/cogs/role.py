@@ -261,18 +261,19 @@ class Role(commands.Cog, name="Roles"):
             role = type + str(role)
         else:
             await ctx.send("The reaction role emoji has been incorrectly defined for this category!")
-        if unicode or mark:
-            reaction = emote[0] if mark else emoji
-            results = await cursor.fetchval("SELECT role FROM reaction WHERE role = $1 and master = $2 and guild = $3", role, main, guild)
-            if not results == role:
-                await cursor.execute("INSERT INTO reaction(guild, role, master, type, blacklist) VALUES($1, $2, $3, $4, $5)", guild, role, main, reaction, roles)
-                await message.add_reaction(emoji)
-                await ctx.send("Reaction Role Set Successfully!")
+        if type in ("r", "o", "n"):
+            if unicode or mark:
+                reaction = emote[0] if mark else emoji
+                results = await cursor.fetchval("SELECT role FROM reaction WHERE role = $1 and master = $2 and guild = $3", role, main, guild)
+                if not results == role:
+                    await cursor.execute("INSERT INTO reaction(guild, role, master, type, blacklist) VALUES($1, $2, $3, $4, $5)", guild, role, main, reaction, roles)
+                    await message.add_reaction(emoji)
+                    await ctx.send("Reaction Role Set Successfully!")
+                else:
+                    await cursor.execute("DELETE FROM reaction WHERE role = $1 and master = $2 and guild = $3", role, main, guild)
+                    await ctx.send("Reaction Role Deleted Successfully!")
             else:
-                await cursor.execute("DELETE FROM reaction WHERE role = $1 and master = $2 and guild = $3", role, main, guild)
-                await ctx.send("Reaction Role Deleted Successfully!")
-        else:
-            await ctx.send("I do not recognise that emoji!")
+                await ctx.send("I do not recognise that emoji!")
         await self.bot.db.release(cursor)
 
 
