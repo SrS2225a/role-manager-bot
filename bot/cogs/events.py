@@ -435,7 +435,7 @@ class Events(commands.Cog):
                 var = list(check) if check is not None else [0, 0]
                 
                 # detects if the leave was a fake join
-                if (datetime.datetime.now() - member.joined_at).total_seconds() < 120:
+                if (datetime.datetime.now() - member.joined_at).total_seconds() < 20:
                     var[1] += 1
                 else:
                     var[0] += 1
