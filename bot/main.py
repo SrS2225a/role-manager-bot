@@ -51,6 +51,13 @@ with open("emojis.json", "r") as unicode:
     emojis = json.load(unicode)
     for key, value in emojis.items():
         bot.emoji.append(value['emoji'])
+
+# checks if an command has been run in a dm
+@bot.check
+async def predicate(ctx):
+    if ctx.guild is None:
+        raise commands.NoPrivateMessage
+    return commands.check(predicate)
         
 # checks if a guild has enabled or disabled a command
 @bot.check

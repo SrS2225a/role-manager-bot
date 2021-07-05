@@ -23,10 +23,8 @@ class Handler(commands.Cog):
     # ERROR HANDLER
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        # finds who is is in the team and send all an error report when it happens upon a command error
         guild = self.bot.get_guild(531247629649182750)
         channel = guild.get_channel(840276875301224479)
-        error_return = f"Error: {error}"
         etype = type(error)
         trace = error.__traceback__
         verbosity = 2
@@ -37,8 +35,7 @@ class Handler(commands.Cog):
             await ctx.send(embed=embed)
             await channel.send(f"`New exception occurred in guild {ctx.guild} for command {ctx.command}`\n```py\n{traceback_text}```")
         elif not isinstance(error, commands.CommandNotFound):
-            await ctx.send(error_return)
-        return
+            await ctx.send(f"Error: {error}")
 
 
     # ERROR HANDLER

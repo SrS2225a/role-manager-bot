@@ -33,11 +33,11 @@ class Events(commands.Cog):
                 async with cursor.transaction():
 
                     # code for message graph
-                    dateVal = await cursor.prepare("SELECT joins, day, member, channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4 ORDER BY day DESC")
-                    dateVal = await dateVal.fetchrow(message.author.guild.id, message.author.id, message.channel.id, 'message')
                     date = datetime.date.today()
+                    dateVal = await cursor.prepare("SELECT joins, day, member, channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4 and day = $5")
+                    dateVal = await dateVal.fetchrow(message.author.guild.id, message.author.id, message.channel.id, 'message', date)
 
-                    if dateVal is None or (date-dateVal[1]).days > 0:
+                    if dateVal is None:
                         await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7)", message.author.guild.id, 1, 0, date, message.author.id, message.channel.id, 'message')
                     else:
                         await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and member = $4 and channel = $5 and type = $6", dateVal[0]+1, dateVal[1], message.author.guild.id, message.author.id, message.channel.id, 'message')
@@ -89,7 +89,7 @@ class Events(commands.Cog):
                                             if multi[2] == 'message' or multi[0] == message.channel.id or multi[0] in [role.id for role in message.author.roles]:
                                                 value += multi[1]
                                     else:
-                                        value = 12
+                                        value = 8
                                             
                                     await cursor.execute("UPDATE levels SET exp = $1, channel_id = $2 WHERE guild_id = $3 and user_id = $4", result[1] + random.randint(1, value), message.channel.id, message.guild.id, message.author.id)
 
@@ -269,10 +269,10 @@ class Events(commands.Cog):
                     role = guild.get_role(await recovery.fetchval(guild.id, channel.id, 'recover'))
                     users = []
                     # if an user has channel overwrites and they have the set role on them, insert the channel overwrites into the database to give back once the user rejoins the guild
-                    for perm, value in channel.overwrites.items():
-                        if role is not None and isinstance(perm, discord.Member):
-                            if role.id in [role.id for role in perm.roles]:
-                                users.append((perm.id, channel.id))
+                    if role is not None:
+                        for perm, value in channel.overwrites.items():
+                            if isinstance(perm, discord.Member) and role.id in [role.id for role in perm.roles]:
+                                users.append(perm.id)
                                 check = await cursor.fetchrow("SELECT member FROM recover WHERE guild = $1 and member = $2 and channel = $3",guild.id, perm.id, channel.id)
                                 yes = value.pair()[0].value
                                 no = value.pair()[1].value
@@ -284,8 +284,7 @@ class Events(commands.Cog):
                         # if the user has their channel overwrites removed, delete them from the database
                         member = await cursor.fetch("SELECT member, channel FROM recover WHERE guild = $1 and channel = $2", guild.id, channel.id)
                         for removed in member:
-                            member = guild.get_member(removed[0])
-                            if removed not in users and member is not None:
+                            if removed[0] not in users:
                                 await cursor.execute("DELETE FROM recover WHERE guild = $1 and member = $2 and channel = $3", guild.id, removed[0], removed[1])
 
     @commands.Cog.listener()
@@ -410,11 +409,11 @@ class Events(commands.Cog):
                     await cursor.execute("DELETE FROM levels WHERE guild_id = $1 and user_id = $2", member.guild.id, member.id)
 
                 # code for member join graph
-                dateVal = await cursor.prepare("SELECT leaves, day FROM member WHERE guild = $1 and type = $2 ORDER BY day DESC")
-                dateVal = await dateVal.fetchrow(member.guild.id, 'member')
-                date = datetime.date.today() 
+                date = datetime.date.today()
+                dateVal = await cursor.prepare("SELECT leaves, day FROM member WHERE guild = $1 and type = $2 and day = $3")
+                dateVal = await dateVal.fetchrow(member.guild.id, 'member', date)
 
-                if dateVal is None or (date-dateVal[1]).days > 0:
+                if dateVal is None:
                     await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'member', (date-datetime.timedelta(days=120)))
                     await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5)", member.guild.id, 0, 1, date, 'member')
                 else:
@@ -450,11 +449,11 @@ class Events(commands.Cog):
                 guild = member.guild
 
                 # code for member join graph
-                dateVal = await cursor.prepare("SELECT joins, day FROM member WHERE guild = $1 and type = $2 ORDER BY day DESC")
-                dateVal = await dateVal.fetchrow(guild.id, 'member')
                 date = datetime.date.today()
+                dateVal = await cursor.prepare("SELECT joins, day FROM member WHERE guild = $1 and type = $2 and day = $3")
+                dateVal = await dateVal.fetchrow(guild.id, 'member', date)
 
-                if dateVal is None or (date-dateVal[1]).days > 0:
+                if dateVal is None:
                     await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'member', (date-datetime.timedelta(days=120)))
                     await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5)", guild.id, 1, 0, date, 'member')
                 else:

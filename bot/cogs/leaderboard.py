@@ -311,8 +311,6 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         if not ctx.invoked_subcommand:
             await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
 
-        # (datetime.date.today()-datetime.timedelta(days=30)
-
     @leaderboard.command(name='ranks')
     async def lb_ranks(self, ctx):
         """Shows top leveling rankings"""
@@ -353,6 +351,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
     @leaderboard.command(name='messages', aliases=["msgs"])
     async def lb_messages(self, ctx):
+        """Shows top messages"""
         cursor = await self.bot.db.acquire()
         # gets our leaderboard results
         tabulate.MIN_PADDING = 0
@@ -500,7 +499,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         # shows various information about how many members we invited, or someone elses
         guild = ctx.guild
         member = member or ctx.author
-        full = await cursor.fetchrow("SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
+        full = await cursor.fetchrow("SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2 GROUP BY member", guild.id, member.id)
         rank = await cursor.fetch("SELECT member FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC", ctx.guild.id)
 
         full = full if full[0] is not None else [0, 0, 0]
@@ -533,6 +532,20 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             embed.add_field(name=invite[3], value=f"**{invite[0]}** joins, **{invite[1]}** leaves, **{invite[2]}** fakes", inline=False)
 
         await ctx.send(embed=embed)
+        await self.bot.db.release(cursor)
+
+    @commands.command(aliases=['getinvite'])
+    async def searchinvite(self, ctx, code):
+        """Gets information about an invite"""
+        cursor = await self.bot.db.acquire()
+        full = await cursor.fetchrow("SELECT amount, amount2, amount3, member FROM invite WHERE guild = $1 and invite = $2", ctx.guild.id, code)
+        leave = full[1] + full[2]
+        actual = full[0] - leave
+        if full is not None:
+            embed = discord.Embed(title=f"Invite Code Information For {self.bot.get_user(full[3])} - {code}", description=f"**{full[0]}** joins, **{full[1]}** leaves, **{full[2]}** (**{actual}**)")
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("I could not find that invite!")
         await self.bot.db.release(cursor)
 
     @commands.command(brief="partners @Vendron#2001")

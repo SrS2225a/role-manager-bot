@@ -4,6 +4,7 @@ import tabulate
 import re
 import asyncio
 import io
+import datetime
 
 from discord.ext import commands, menus
 
@@ -579,23 +580,90 @@ class Info(commands.Cog, name='Miscellaneous'):
             await self.bot.db.release(cursor)
 
 
-    @commands.command()
+    @commands.group(hidden=True, invoke_without_command=True)
+    async def update(self, ctx):
+        """Allows you to update a members various stats"""
+        if not ctx.invoked_subcommand:
+            await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
+
+    @update.command(brief="update rank @Antyy#4201 100")
     @commands.has_permissions(manage_guild=True)
-    async def updaterank(self, ctx, member: discord.Member, rank: int):
+    async def rank(self, ctx, member: discord.User, rank: int):
         """Updates someones rank for the leveling system"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
-        if rank < 0:
-            await ctx.send("Integer Cannot Be Less Than 0!")
+        if rank < 1:
+            await ctx.send("Integer Cannot Be Less Than 1!")
         elif member is not None:
-            mem = member.id
-            check = await cursor.fetchval("SELECT guild_id FROM levels WHERE guild_id = $1 and user_id = $2", ctx.guild.id, mem)
+            check = await cursor.fetchval("SELECT guild_id FROM levels WHERE guild_id = $1 and user_id = $2", guild, member.id)
             if check is not None:
-                await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", rank, 0, guild, mem)
+                await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", rank, 0, guild, member.id)
                 await ctx.send(f"All levels updated successfully for {member.name}!")
             else:
-                await cursor.execute("INSERT INTO levels(lvl, exp, guild_id, user_id) VALUES(?, ? ,?, ?)", rank, 0, guild, mem)
+                await cursor.execute("INSERT INTO levels(lvl, exp, guild_id, user_id) VALUES($1, $2 ,$3, $4)", rank, 0, guild, member.id)
                 await ctx.send(f"All levles updated successfully for {member.name}!")
+        else:
+            await ctx.send("I cannot find that user!")
+        await self.bot.db.release(cursor)
+
+    @update.command(brief="update messages @Antyy#4201 #general 1200")
+    @commands.has_permissions(manage_guild=True)
+    async def messages(self, ctx, member: discord.User, channel: discord.TextChannel, messages: int):
+        """Updates a members messages"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild.id
+        if messages < 0:
+            await ctx.send("Integer Cannot Be Less Than 0!")
+        elif member is not None:
+            check = await cursor.fetchval("SELECT channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4", guild.id, member.id, channel.id, 'message')
+            if check is not None:
+                await cursor.execute("UPDATE member SET joins = $1 WHERE guild = $2 and member = $3 and channel = $4 and type = $5", messages, guild.id, member.id, channel.id, 'message')
+                await ctx.send(f"All messages updated successfully for {member.name}!")
+            else:
+                await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7)", guild.id, messages, 0, datetime.date.today(), member.id, channel.id, 'message')
+                await ctx.send(f"All messages updated successfully for {member.name}!")
+        else:
+            await ctx.send("I cannot find that user!")
+        await self.bot.db.release(cursor)
+
+
+    @update.command(brief="update invites @Antyy#4201 PVdcgp36 20 0")
+    @commands.has_permissions(manage_guild=True)
+    async def invites(self, ctx, member: discord.User, invite, leaves: int, fakes: int):
+        """Updates a members invites"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild.id
+        if leaves < 0 and fakes < 0:
+            await ctx.send("Integer Cannot Be Less Than 0!")
+        elif member is not None:
+            check = await cursor.fetchval("SELECT member FROM invites WHERE guild= $1 and member = $2 and invite = $3", guild.id, member.id, invite)
+            if check is not None:
+                await cursor.execute("UPDATE invite SET amount2 = $1, amount3 = $2 WHERE guild = $3 amd member = $4 and invite = $5", leaves, fakes, guild, member.id, invite)
+                await ctx.send(f"Invite updated successfully for {member.name}!")
+            else:
+                await ctx.send(f"{member.name} does not have any invites yet or this current invite!")
+        else:
+            await ctx.send("I cannot find that user!")
+        await self.bot.db.release(cursor)
+
+    @update.command(brief="update partners @Antyy#4201 12")
+    @commands.has_permissions(manage_guild=True)
+    async def partners(self, ctx, member: discord.User, partners: int):
+        """Updates a members completed partners"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild.id
+        if partners < 0:
+            await ctx.send("Integer Cannot Be Less Than 0!")
+        elif member is not None:
+            check = await cursor.fetchval("SELECT channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4", guild.id, member.id, channel.id, 'message')
+            if check is not None:
+                await cursor.execute("UPDATE partner SET number = $1 WHERE guild = $2 and member = $3", partners, guild.id, member.id)
+                await ctx.send(f"All completed partnerships updated successfully for {member.name}!")
+            else:
+                await cursor.execute("INSERT INTO partner(guild, member, number) VALUES($1, $2, $3)", guild.id, member.id, partners)
+                await ctx.send(f"All completed partnerships updated successfully for {member.name}!")
+        else:
+            await ctx.send("I cannot find that user!")
         await self.bot.db.release(cursor)
 
     @commands.command()
