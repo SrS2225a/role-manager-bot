@@ -502,7 +502,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         full = await cursor.fetchrow("SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2 GROUP BY member", guild.id, member.id)
         rank = await cursor.fetch("SELECT member FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC", ctx.guild.id)
 
-        full = full if full[0] is not None else [0, 0, 0]
+        full = full if full is not None else [0, 0, 0]
         leave = full[1] + full[2]
         actual = full[0] - leave
         server = round((actual) * 100 / len(guild.members), 2) if full[0] != 0 else 0.0

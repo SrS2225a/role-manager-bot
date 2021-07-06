@@ -38,6 +38,7 @@ class Events(commands.Cog):
                     dateVal = await dateVal.fetchrow(message.author.guild.id, message.author.id, message.channel.id, 'message', date)
 
                     if dateVal is None:
+                        await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'message', (date-datetime.timedelta(days=120)))
                         await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7)", message.author.guild.id, 1, 0, date, message.author.id, message.channel.id, 'message')
                     else:
                         await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and member = $4 and channel = $5 and type = $6", dateVal[0]+1, dateVal[1], message.author.guild.id, message.author.id, message.channel.id, 'message')
@@ -428,14 +429,14 @@ class Events(commands.Cog):
                         await custom.delete(reason='Required Role/Channel Was Removed From Member')
 
                 # updates the inviters invite leaves if the user left the guild
-                amount = await cursor.prepare("SELECT invite FROM invite2 WHERE guild = $1 and member = $2 and timestamp = $3")
-                amount = await amount.fetchval(member.guild.id, member.id, member.joined_at.timestamp())
+                amount = await cursor.prepare("SELECT invite FROM invite2 WHERE guild = $1 and member = $2")
+                amount = await amount.fetchval(member.guild.id, member.id)
                 check = await cursor.prepare("SELECT amount2, amount3 FROM invite WHERE guild = $1 and invite = $2")
                 check = await check.fetchrow(member.guild.id, amount)
                 var = list(check) if check is not None else [0, 0]
                 
                 # detects if the leave was a fake join
-                if (datetime.datetime.now() - member.joined_at).total_seconds() < 120:
+                if (datetime.datetime.now() - member.joined_at).total_seconds() < 20:
                     var[1] += 1
                 else:
                     var[0] += 1
@@ -469,7 +470,7 @@ class Events(commands.Cog):
                             amount = await amount.fetchval(guild.id, invites.inviter.id, invites.code)
                             if amount is not None and invites.uses > amount:
                                 await cursor.execute("UPDATE invite SET amount = $1 WHERE guild = $2 and member = $3 and invite = $4", invites.uses, guild.id, invites.inviter.id, invites.code)
-                                await cursor.execute("INSERT INTO invite2(guild, member, invite, timestamp) VALUES($1, $2, $3, $4)", guild.id, member.id, invites.code, member.joined_at.timestamp())
+                                await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
                                 
                                 # if enabled congratulates the inviter if they complete a number of invites
                                 announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
@@ -488,7 +489,7 @@ class Events(commands.Cog):
                             # if the inivter is not in the datahbase, add them                
                             elif amount is None and invites.uses > 0:
                                 await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id, invites.inviter.id, invites.code, invites.uses, 0, 0)
-                                await cursor.execute("INSERT INTO invite2(guild, member, invite, timestamp) VALUES($1, $2, $3, $4)", guild.id, member.id, invites.code, member.joined_at.timestamp())
+                                await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
                 except discord.Forbidden:
                     pass
 

@@ -1,5 +1,5 @@
 import asyncio
-import datetime
+import datetime, pytz
 import random
 import re
 
@@ -33,7 +33,7 @@ class Utilities(commands.Cog, name='Utilities'):
 
     async def call_timer(self, timer):
         try:
-            msg = f'<@{timer[0]}> {self.display_time((timer[2] - timer[6]).total_seconds())} ago you asked me to remind you about: {timer[3]}'
+            msg = f'<@{timer[0]}> {self.display_time((timer[2] - timer[6]).total_seconds())} ago you asked me to remind you about: {discord.utils.escape_mentions(timer[3])}'
             if timer[4] == timer[0]:
                 user = self.bot.get_user(timer[0]) or await self.bot.fetch_user(timer[0])
                 await user.send(msg)
@@ -106,14 +106,18 @@ class Utilities(commands.Cog, name='Utilities'):
                 delta = now + datetime.timedelta(seconds=time)
                 rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
                 remind_id = random.choices(rand, k=6)
-                await cursor.execute("INSERT INTO remind(repeat, message, date, win, type, account, assigned) VALUES($1, $2, $3, $4, $5, $6, $7)", repeat, ''.join(remind_id), delta, description, thing.id, ctx.author.id, now)
                 escaped = discord.utils.escape_mentions(description)
                 if repeat:
-                    await ctx.send(f"Reminding you every {self.display_time(time)} about: {escaped}")
+                    if time < 3600 and isinstance(thing, discord.TextChannel):
+                        await ctx.send("To prevent spam in servers, repeating reminders must be more than 1 hour. Try having the reminder send to your dm or increase the remind time")
+                        return
+                    else:
+                        await ctx.send(f"Reminding you every {self.display_time(time)} about: {escaped}")
                 else:
                     await ctx.send(f"Reminding you in {self.display_time(time)} about: {escaped}")
+                await cursor.execute("INSERT INTO remind(repeat, message, date, win, type, account, assigned) VALUES($1, $2, $3, $4, $5, $6, $7)", repeat, ''.join(remind_id), delta, description, thing.id, ctx.author.id, now)
                 if self._current_timer and delta < self._current_timer[2] or self._current_timer is None:
-                    if int(delta.second) <= (86400 * 40): # 40 days
+                    if time <= (86400 * 40): # 40 days
                         self._have_data.set()
                     self._task.cancel()
                     self._task = self.bot.loop.create_task(self.dispatch_timers())
@@ -126,6 +130,7 @@ class Utilities(commands.Cog, name='Utilities'):
         """Allows you to see a list of your reminders"""
         cursor = await self.bot.db.acquire()
         reminders = await cursor.fetch("SELECT * FROM remind WHERE account = $1", ctx.author.id)
+        print(reminders)
         embed = discord.Embed(title=f"{ctx.author} Reminders")
         if not reminders:
             embed.description = 'You Have No Reminders!'
@@ -136,7 +141,7 @@ class Utilities(commands.Cog, name='Utilities'):
                     chan = f"{get.guild} — #{get}"
                 else:
                     chan = 'dm'
-                date = remind[2].utcnow().strftime('%a %b %d %Y %I:%M:%S %p UTC')
+                date = remind[2].strftime('%a %b %d %Y %I:%M:%S %p UTC')
                 embed.add_field(name=f"Reminder [`{remind[1]}`]" if remind[5] is False else f"Reminder [`{remind[1]}`] (Repeats)", value=f"```In: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
