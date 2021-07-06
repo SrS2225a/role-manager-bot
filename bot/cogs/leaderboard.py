@@ -536,7 +536,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
     @commands.command(aliases=['getinvite'])
     async def searchinvite(self, ctx, code):
-        """Gets information about an invite"""
+        """Gets information about an invite code"""
         cursor = await self.bot.db.acquire()
         full = await cursor.fetchrow("SELECT amount, amount2, amount3, member FROM invite WHERE guild = $1 and invite = $2", ctx.guild.id, code)
         leave = full[1] + full[2]
