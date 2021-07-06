@@ -1,5 +1,5 @@
 import asyncio
-import datetime, pytz
+import datetime
 import random
 import re
 
@@ -130,7 +130,6 @@ class Utilities(commands.Cog, name='Utilities'):
         """Allows you to see a list of your reminders"""
         cursor = await self.bot.db.acquire()
         reminders = await cursor.fetch("SELECT * FROM remind WHERE account = $1", ctx.author.id)
-        print(reminders)
         embed = discord.Embed(title=f"{ctx.author} Reminders")
         if not reminders:
             embed.description = 'You Have No Reminders!'
