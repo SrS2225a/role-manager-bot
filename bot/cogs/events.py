@@ -411,14 +411,14 @@ class Events(commands.Cog):
 
                 # code for member join graph
                 date = datetime.date.today()
-                dateVal = await cursor.prepare("SELECT leaves, day FROM member WHERE guild = $1 and type = $2 and day = $3")
-                dateVal = await dateVal.fetchrow(member.guild.id, 'member', date)
+                dateVal = await cursor.prepare("SELECT leaves FROM member WHERE guild = $1 and type = $2 and day = $3")
+                dateVal = await dateVal.fetchval(member.guild.id, 'member', date)
 
                 if dateVal is None:
                     await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'member', (date-datetime.timedelta(days=120)))
                     await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5)", member.guild.id, 0, 1, date, 'member')
                 else:
-                    await cursor.execute("UPDATE member SET leaves = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal[0]+1, dateVal[1], member.guild.id, 'member')
+                    await cursor.execute("UPDATE member SET leaves = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal+1, date, member.guild.id, 'member')
 
                 # removes the member custom channels / roles if they had them when leaving
                 roleauth = await cursor.prepare("SELECT role, type FROM roles WHERE guild = $1 and member = $2 and not type = $3")
@@ -451,14 +451,14 @@ class Events(commands.Cog):
 
                 # code for member join graph
                 date = datetime.date.today()
-                dateVal = await cursor.prepare("SELECT joins, day FROM member WHERE guild = $1 and type = $2 and day = $3")
-                dateVal = await dateVal.fetchrow(guild.id, 'member', date)
+                dateVal = await cursor.prepare("SELECT joins FROM member WHERE guild = $1 and type = $2 and day = $3")
+                dateVal = await dateVal.fetchval(guild.id, 'member', date)
 
                 if dateVal is None:
                     await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'member', (date-datetime.timedelta(days=120)))
                     await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5)", guild.id, 1, 0, date, 'member')
                 else:
-                    await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal[0]+1, dateVal[1], guild.id, 'member')
+                    await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal+1, date, guild.id, 'member')
 
                 # code for invite rewards
                 try:

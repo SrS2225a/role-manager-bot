@@ -141,7 +141,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 else:
                     chan = 'dm'
                 date = remind[2].strftime('%a %b %d %Y %I:%M:%S %p UTC')
-                embed.add_field(name=f"Reminder [`{remind[1]}`]" if remind[5] is False else f"Reminder [`{remind[1]}`] (Repeats)", value=f"```In: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
+                embed.add_field(name=f"Reminder [`{remind[1]}`]" if remind[5] is False else f"Reminder [`{remind[1]}`] (Repeats)", value=f"```Time: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
