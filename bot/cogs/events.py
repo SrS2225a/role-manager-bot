@@ -39,7 +39,7 @@ class Events(commands.Cog):
 
                     if dateVal is None:
                         await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'message', (date-datetime.timedelta(days=120)))
-                        await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7)", message.author.guild.id, 1, 0, date, message.author.id, message.channel.id, 'message')
+                        await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7) on conflict do nothing", message.author.guild.id, 1, 0, date, message.author.id, message.channel.id, 'message')
                     else:
                         await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and member = $4 and channel = $5 and type = $6", dateVal[0]+1, dateVal[1], message.author.guild.id, message.author.id, message.channel.id, 'message')
             
@@ -278,7 +278,7 @@ class Events(commands.Cog):
                                 yes = value.pair()[0].value
                                 no = value.pair()[1].value
                                 if check is None:
-                                    await cursor.execute("INSERT INTO recover(guild, channel, member, yes, no) VALUES($1, $2, $3, $4, $5)",guild.id, channel.id, perm.id, yes, no)
+                                    await cursor.execute("INSERT INTO recover(guild, channel, member, yes, no) VALUES($1, $2, $3, $4, $5) on conflict do nothing",guild.id, channel.id, perm.id, yes, no)
                                 else:
                                     await cursor.execute("UPDATE recover SET yes = $1, no = $2 WHERE guild = $3 and channel = $4 and member= $5", yes, no, guild.id, channel.id, perm.id)
 
@@ -301,7 +301,7 @@ class Events(commands.Cog):
 
                 if dateVal is None:
                     await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'member', (date-datetime.timedelta(days=120)))
-                    await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5)", guild.id, 1, 0, date, 'member')
+                    await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5) on conflict do nothing", guild.id, 1, 0, date, 'member')
                 else:
                     await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal+1, date, guild.id, 'member')
 
