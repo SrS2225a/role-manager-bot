@@ -539,9 +539,9 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         """Gets information about an invite code"""
         cursor = await self.bot.db.acquire()
         full = await cursor.fetchrow("SELECT amount, amount2, amount3, member FROM invite WHERE guild = $1 and invite = $2", ctx.guild.id, code)
-        leave = full[1] + full[2]
-        actual = full[0] - leave
         if full is not None:
+            leave = full[1] + full[2]
+            actual = full[0] - leave
             embed = discord.Embed(title=f"Invite Code Information For {self.bot.get_user(full[3])} - {code}", description=f"**{full[0]}** joins, **{full[1]}** leaves, **{full[2]}** (**{actual}**)")
             await ctx.send(embed=embed)
         else:
