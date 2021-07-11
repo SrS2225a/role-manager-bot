@@ -27,27 +27,10 @@ class Help(commands.Cog, name='Commands'):
                 command = command.parent
             await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
             await ctx.send(f"Command Enabled Successfully!")
-            # elif argument == "disable":
-            #     if command.name == "jishaku":
-            #         await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
-            #     elif command.name == "command":
-            #         await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
-            #     else:
-            #         await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
-            #         await ctx.send(f"Command Disabled Successfully!")
-            # else:
-            #     await ctx.send("The 'argument' arugment must be defined as enable or disable")
         elif cog is not None:
             for command in cog.get_commands():
                 await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
             await ctx.send(f"Cog Enabled Successfully!")
-            # elif argument == "disable":
-            #     for command in cog.get_commands():
-            #         if command.name != "command":
-            #             await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
-            #     await ctx.send(f"Cog Disabled Successfully!")
-            # else:
-            #     await ctx.send("The 'argument' arugment must be defined as enable or disable")
         else:
             await ctx.send("Not a valid command or cog!")
         await self.bot.db.release(cursor)
