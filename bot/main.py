@@ -24,12 +24,11 @@ db = asyncio.get_event_loop().run_until_complete(asyncpg.create_pool('postgresql
 # sets command prefix
 async def get_prefix(bot, message):
     async with db.acquire() as cursor:
-        async with cursor.transaction():
-            prefix = '*'
-            if message.guild:
-                pre = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1")
-                prefix = await pre.fetchval(message.guild.id) or prefix
-            return commands.when_mentioned_or(prefix)(bot, message) 
+        prefix = '*'
+        if message.guild:
+            pre = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1 LIMIT 1")
+            prefix = await pre.fetchval(message.guild.id) or prefix
+        return commands.when_mentioned_or(prefix)(bot, message) 
 
 # sets bot variables
 intents = discord.Intents.default()
@@ -63,13 +62,12 @@ async def predicate(ctx):
 @bot.check
 async def bot_check(ctx):
     async with db.acquire() as cursor:
-        async with cursor.transaction():
-            name = await cursor.prepare("SELECT date FROM boost WHERE guild = $1 and date = $2 and type = $3")
-            name = await name.fetchval(ctx.guild.id, ctx.command.name, 'command')
-            if name is None or ctx.command.parent:
-                return True
-            else:
-                raise commands.DisabledCommand(f"{ctx.command.name} command is disabled.")
+        name = await cursor.prepare("SELECT date FROM boost WHERE guild = $1 and date = $2 and type = $3 LIMIT 1")
+        name = await name.fetchval(ctx.guild.id, ctx.command.name, 'command')
+        if name is None or ctx.command.parent:
+            return True
+        else:
+            raise commands.DisabledCommand(f"{ctx.command.name} command is disabled.")
 
 # loads cogs
 bot.load_extension("jishaku")

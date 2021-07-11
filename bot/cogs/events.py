@@ -37,18 +37,19 @@ class Events(commands.Cog):
             if self._cleanup:
                 await self.pool.release(self._connection)
 
-    async def create_timer(self, argument):
-        async with self.bot.db.acquire() as cursor:
-            member = argument[0]
-            role = argument[1]
-            now = datetime.datetime.now()
-            delta = now + datetime.timedelta(seconds=int(argument[3]))
-            await cursor.execute("INSERT INTO autorole(guild, member, role, date, action) VALUES($1, $2, $3, $4, $5)", member.guild.id, member.id, role.id, delta, argument[2])
-            if self._current_timer and delta < self._current_timer[3] or self._current_timer is None:
-                self._task.cancel()
-                self._task = self.bot.loop.create_task(self.dispatch_timers())
-                if (delta - now).total_seconds() <= (86400 * 48): # 48 days
-                    self._have_data.set()
+    async def create_timer(self, argument, connection=None):
+        member = argument[0]
+        role = argument[1]
+        now = datetime.datetime.now()
+        delta = now + datetime.timedelta(seconds=int(argument[3]))
+        await connection.execute("INSERT INTO autorole(guild, member, role, date, action) VALUES($1, $2, $3, $4, $5)", member.guild.id, member.id, role.id, delta, argument[2])
+
+        if (delta - now).total_seconds() <= (86400 * 48): # 48 days
+            self._have_data.set()
+        
+        if self._current_timer is None or delta < self._current_timer[3]:
+            self._task.cancel()
+            self._task = self.bot.loop.create_task(self.dispatch_timers())
 
     async def wait_for_active_timers(self, *, connection=None, days=None):
         timer = await connection.fetchrow("SELECT * FROM autorole WHERE date < (CURRENT_DATE + $1::interval) ORDER BY date LIMIT 1;", datetime.timedelta(days=days))
@@ -88,7 +89,6 @@ class Events(commands.Cog):
         if timer[4]:
             await user.add_roles(role)
         else:
-            print(user)
             await user.remove_roles(role)
 
 
@@ -114,7 +114,7 @@ class Events(commands.Cog):
 
                     if dateVal is None:
                         await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'message', (date-datetime.timedelta(days=120)))
-                        await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7)", message.author.guild.id, 1, 0, date, message.author.id, message.channel.id, 'message')
+                        await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7) on conflict do nothing", message.author.guild.id, 1, 0, date, message.author.id, message.channel.id, 'message')
                     else:
                         await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and member = $4 and channel = $5 and type = $6", dateVal[0]+1, dateVal[1], message.author.guild.id, message.author.id, message.channel.id, 'message')
             
@@ -316,24 +316,6 @@ class Events(commands.Cog):
                         else:
                             await after.remove_roles(role, reason='User is no longer Streaming')
 
-        # maybe I don't need this code anymore? (at least some)
-
-        # # code for auto roles (for membership screening)
-        # if before.pending != after.pending and not after.pending:
-        #     cursor = await self.bot.db.acquire()
-        #     auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
-        #     execute = await auto.fetch(guild.id, "add", "remove")
-        #     await self.bot.db.release(cursor)
-        #     for auto in execute:
-        #         if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
-        #             await asyncio.sleep(int(auto[1]))
-        #             role = guild.get_role(role_id=auto[0])
-        #             await after.add_roles(role, reason='Auto role')
-        #         elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
-        #             await asyncio.sleep(int(auto[1]))
-        #             role = guild.get_role(role_id=auto[0])
-        #             await after.remove_roles(role, reason='Auto role')
-
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
         # OVERWRITES RECOVERY
@@ -355,7 +337,7 @@ class Events(commands.Cog):
                                 yes = value.pair()[0].value
                                 no = value.pair()[1].value
                                 if check is None:
-                                    await cursor.execute("INSERT INTO recover(guild, channel, member, yes, no) VALUES($1, $2, $3, $4, $5)",guild.id, channel.id, perm.id, yes, no)
+                                    await cursor.execute("INSERT INTO recover(guild, channel, member, yes, no) VALUES($1, $2, $3, $4, $5) on conflict do nothing",guild.id, channel.id, perm.id, yes, no)
                                 else:
                                     await cursor.execute("UPDATE recover SET yes = $1, no = $2 WHERE guild = $3 and channel = $4 and member= $5", yes, no, guild.id, channel.id, perm.id)
 
@@ -378,7 +360,7 @@ class Events(commands.Cog):
 
                 if dateVal is None:
                     await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'member', (date-datetime.timedelta(days=120)))
-                    await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5)", guild.id, 1, 0, date, 'member')
+                    await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5) on conflict do nothing", guild.id, 1, 0, date, 'member')
                 else:
                     await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal+1, date, guild.id, 'member')
 
@@ -408,12 +390,11 @@ class Events(commands.Cog):
                                                 await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
                                                 await user.add_roles(role)
                                 break
-
-                            # if the inivter is not in the database, add them                
+                                            
+                            # if the inivter is not in the datahbase, add them                
                             elif amount is None and invites.uses > 0:
                                 await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id, invites.inviter.id, invites.code, invites.uses, 0, 0)
                                 await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
-                                break
                 except discord.Forbidden:
                     pass
 
@@ -432,16 +413,14 @@ class Events(commands.Cog):
                         if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
                             if auto[1] > 0:
                                 # if we are waiting a certin amount of time to add the role, post to function
-                                print('create add')
-                                await self.create_timer([member, role, True, auto[1]])
+                                await self.create_timer([member, role, True, auto[1]], connection=cursor)
                             else:
                                 role = guild.get_role(role_id=auto[0])
                                 await member.add_roles(role, reason='Auto role')
                         elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
                             if auto[1] > 0:
                                 # if we are waiting a certin amount of time to remove the role, post to function
-                                print('create remove')
-                                await self.create_timer([member, role, False, auto[1]])
+                                await self.create_timer([member, role, False, auto[1]], connection=cursor)
                             else:
                                 role = guild.get_role(role_id=auto[0])
                                 await member.remove_roles(role, reason='Auto role')
