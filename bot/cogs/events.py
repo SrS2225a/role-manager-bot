@@ -424,7 +424,7 @@ class Events(commands.Cog):
                             else:
                                 role = guild.get_role(role_id=auto[0])
                                 await member.remove_roles(role, reason='Auto role')
-                    except discord.Forbidden:
+                    except:
                         pass
 
 
