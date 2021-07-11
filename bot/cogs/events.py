@@ -443,7 +443,7 @@ class Events(commands.Cog):
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():
                 await cursor.execute("DELETE FROM autorole WHERE guild = $1 and member = $2", member.guild.id, member.id)
-                if self._current_timer[1] == member.id:
+                if self._current_timer is not None and self._current_timer[1] == member.id:
                     self._task.cancel()
                     self._task = self.bot.loop.create_task(self.dispatch_timers())
 
