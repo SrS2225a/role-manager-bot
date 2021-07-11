@@ -539,9 +539,9 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         """Gets information about an invite code"""
         cursor = await self.bot.db.acquire()
         full = await cursor.fetchrow("SELECT amount, amount2, amount3, member FROM invite WHERE guild = $1 and invite = $2", ctx.guild.id, code)
-        leave = full[1] + full[2]
-        actual = full[0] - leave
         if full is not None:
+            leave = full[1] + full[2]
+            actual = full[0] - leave
             embed = discord.Embed(title=f"Invite Code Information For {self.bot.get_user(full[3])} - {code}", description=f"**{full[0]}** joins, **{full[1]}** leaves, **{full[2]}** (**{actual}**)")
             await ctx.send(embed=embed)
         else:
@@ -576,8 +576,9 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         """Shows info about how many messages you sent or someone elses"""
         cursor = await self.bot.db.acquire()
         member = member or ctx.author
+        # cursor.fetch("SELECT member, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY member ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(days=date or 30))):
         messages = await cursor.fetch(f"SELECT channel, SUM(joins) FROM member WHERE guild = $1 and member = $2 and type = $3 GROUP BY channel ORDER BY SUM(joins) DESC", ctx.guild.id, member.id, 'message')
-        rank = await cursor.fetch("SELECT member FROM member WHERE guild = $1 and type = $2 ORDER BY joins DESC", ctx.guild.id, 'message')
+        rank = await cursor.fetch("SELECT member FROM member WHERE guild = $1 and type = $2 GROUP BY member, joins ORDER BY joins DESC", ctx.guild.id, 'message')
         if messages:
             user1 = []
             i = 0
@@ -592,7 +593,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                     break
                 
             newLine = '\n' # put new line in a variable, otherwise python will complain
-            embed = discord.Embed(title=f"Messages Sent By {member}", description=f"Total: **{sum([user[1] for user in messages])}. **With A Ranking of **{i}** \n\n{newLine.join(user1)}")
+            embed = discord.Embed(title=f"Messages Sent By {member}", description=f"Total: **{sum([user[1] for user in messages])}**. With A Ranking of **{i}** \n\n{newLine.join(user1)}")
             await ctx.send(embed=embed)
             await self.bot.db.release(cursor)
         else:

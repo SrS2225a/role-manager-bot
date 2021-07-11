@@ -94,9 +94,7 @@ class Help(commands.Cog, name='Information'):
         os = str(platform.system() + " " + platform.release()) + " - " + "Python " + platform.python_version()
         p = psutil.Process()
         up = time.strftime("%Y-%m-%d %H:%M " + "UTC", time.gmtime(p.create_time()))
-        number = 0
-        for members in self.bot.get_all_members():
-            number += 1
+        number = len(self.bot.get_all_members())
         usage = f"CPU: {[round(x / psutil.cpu_count() * 100, 2) for x in psutil.getloadavg()]} \nRAM: {str(psutil.virtual_memory()[2])}% \nNetwork: Download {round(math.floor(psutil.net_io_counters().bytes_recv / 1073742000), 2)} GB, Upload {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB"
         stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {uses}"
         embed = discord.Embed(title="About Dionysus", color=0x0001fe)

@@ -7,10 +7,17 @@ class Help(commands.Cog, name='Commands'):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.group()
     @commands.has_permissions(manage_guild=True)
-    async def command(self, ctx, argument, *, command):
-        """Allows you to disable/enable a command or cog"""
+    async def command(self, ctx):
+        """Allows you to enable/disable a command or cog"""
+        if not ctx.invoked_subcommand:
+            await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
+
+    @command.group()
+    @commands.has_permissions(manage_guild=True)
+    async def enable(self, ctx, command):
+        """Allows you to enable command or cog"""
         cursor = await self.bot.db.acquire()
         cog = self.bot.get_cog(command)
         command = self.bot.get_command(command)
@@ -18,34 +25,59 @@ class Help(commands.Cog, name='Commands'):
         if command is not None:
             if command.parent is not None:
                 command = command.parent
-            if argument == "enable":
-                await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
-                await ctx.send(f"Command Enabled Successfully!")
-            elif argument == "disable":
-                if command.name == "jishaku":
-                    await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
-                elif command.name == "command":
-                    await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
-                else:
-                    await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
-                    await ctx.send(f"Command Disabled Successfully!")
-            else:
-                await ctx.send("The 'argument' arugment must be defined as enable or disable")
+            await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
+            await ctx.send(f"Command Enabled Successfully!")
+            # elif argument == "disable":
+            #     if command.name == "jishaku":
+            #         await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
+            #     elif command.name == "command":
+            #         await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
+            #     else:
+            #         await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
+            #         await ctx.send(f"Command Disabled Successfully!")
+            # else:
+            #     await ctx.send("The 'argument' arugment must be defined as enable or disable")
         elif cog is not None:
-            if argument == "enable":
-                for command in cog.get_commands():
-                    await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
-                await ctx.send(f"Cog Enabled Successfully!")
-            elif argument == "disable":
-                for command in cog.get_commands():
-                    if command.name != "command":
-                        await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
-                await ctx.send(f"Cog Disabled Successfully!")
-            else:
-                await ctx.send("The 'argument' arugment must be defined as enable or disable")
+            for command in cog.get_commands():
+                await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
+            await ctx.send(f"Cog Enabled Successfully!")
+            # elif argument == "disable":
+            #     for command in cog.get_commands():
+            #         if command.name != "command":
+            #             await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
+            #     await ctx.send(f"Cog Disabled Successfully!")
+            # else:
+            #     await ctx.send("The 'argument' arugment must be defined as enable or disable")
         else:
             await ctx.send("Not a valid command or cog!")
         await self.bot.db.release(cursor)
+
+    async def disable(self, ctx, command):
+        """Allows you to disable a command or cog"""
+        cursor = await self.bot.db.acquire()
+        cog = self.bot.get_cog(command)
+        command = self.bot.get_command(command)
+        guild = ctx.guild
+        if command is not None:
+            if command.parent is not None:
+                command = command.parent
+            if command.name == "jishaku":
+                await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
+            elif command.name == "command":
+                await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
+            else:
+                await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
+                await ctx.send(f"Command Disabled Successfully!")
+        elif cog is not None:
+            for command in cog.get_commands():
+                if command.name == "command":
+                    await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
+                else:
+                    await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
+            await ctx.send(f"Cog Disabled Successfully!")
+        else:
+            await ctx.send("Not a valid command or cog!")
+
 
     @commands.command(brief="prefix &", aliases=['pre'])
     async def prefix(self, ctx, prefix=None):

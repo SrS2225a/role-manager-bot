@@ -16,6 +16,81 @@ class Events(commands.Cog):
         self._cd = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.member)
         self.__cd = commands.CooldownMapping.from_cooldown(1.0, 80.0, commands.BucketType.default)
 
+        self._have_data = asyncio.Event(loop=bot.loop)
+        self._current_timer = None
+        self._task = bot.loop.create_task(self.dispatch_timers())
+
+    class MaybeAcquire:
+        def __init__(self, connection, *, pool):
+            self.connection = connection
+            self.pool = pool
+            self._cleanup = False
+
+        async def __aenter__(self):
+            if self.connection is None:
+                self._cleanup = True
+                self._connection = c = await self.pool.acquire()
+                return c
+            return self.connection
+
+        async def __aexit__(self, *args):
+            if self._cleanup:
+                await self.pool.release(self._connection)
+
+    async def create_timer(self, argument):
+        async with self.bot.db.acquire() as cursor:
+            member = argument[0]
+            role = argument[1]
+            now = datetime.datetime.now()
+            delta = now + datetime.timedelta(seconds=int(argument[3]))
+            await cursor.execute("INSERT INTO autorole(guild, member, role, date, action) VALUES($1, $2, $3, $4, $5)", member.guild.id, member.id, role.id, delta, argument[2])
+            if self._current_timer and delta < self._current_timer[3] or self._current_timer is None:
+                self._task.cancel()
+                self._task = self.bot.loop.create_task(self.dispatch_timers())
+                if (delta - now).total_seconds() <= (86400 * 48): # 48 days
+                    self._have_data.set()
+
+    async def wait_for_active_timers(self, *, connection=None, days=None):
+        timer = await connection.fetchrow("SELECT * FROM autorole WHERE date < (CURRENT_DATE + $1::interval) ORDER BY date LIMIT 1;", datetime.timedelta(days=days))
+        if timer is not None:
+            self._have_data.set()
+            return timer
+        
+        self._have_data.clear()
+        self._current_timer = None
+        await self._have_data.wait()
+
+
+    async def dispatch_timers(self):
+        try:
+            while not self.bot.is_closed():
+                async with self.MaybeAcquire(connection=self.bot.db, pool=self.bot.db) as con:
+                    now = datetime.datetime.now()
+                    timer = self._current_timer = await self.wait_for_active_timers(connection=con, days=48)
+                    if timer[3] > now:
+                        to_sleep = (timer[3] - now).total_seconds()
+                        await asyncio.sleep(to_sleep)
+
+                    await con.execute("DELETE FROM autorole WHERE member = $1 and guild = $2", timer[1], timer[0])
+
+                    await self.call_timers(timer)
+
+        except asyncio.CancelledError:
+            raise
+        except (OSError, discord.ConnectionClosed, asyncpg.PostgresConnectionError):
+            self._task.cancel()
+            self._task = self.bot.loop.create_task(self.dispatch_timers())
+
+    async def call_timers(self, timer):
+        server = self.bot.get_guild(timer[0])
+        user = await server.fetch_member(timer[1])
+        role = server.get_role(timer[2])
+        if timer[4]:
+            await user.add_roles(role)
+        else:
+            print(user)
+            await user.remove_roles(role)
+
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -34,7 +109,7 @@ class Events(commands.Cog):
 
                     # code for message graph
                     date = datetime.date.today()
-                    dateVal = await cursor.prepare("SELECT joins, day, member, channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4 and day = $5")
+                    dateVal = await cursor.prepare("SELECT joins, day, member, channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4 and day = $5 LIMIT 1")
                     dateVal = await dateVal.fetchrow(message.author.guild.id, message.author.id, message.channel.id, 'message', date)
 
                     if dateVal is None:
@@ -54,7 +129,7 @@ class Events(commands.Cog):
                             blacklist = await cursor.prepare("SELECT role FROM leveling WHERE guild = $1 and system = $2")
                             blacklist = await blacklist.fetch(message.author.guild.id, 'blacklist')
                             if [no[0] for no in blacklist] != message.channel.id or [no[0] for no in blacklist] not in [role.id for role in message.author.roles]:
-                                result = await cursor.prepare("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2")
+                                result = await cursor.prepare("SELECT user_id, exp, lvl FROM levels WHERE guild_id = $1 and user_id = $2 LIMIT 1")
                                 result = await result.fetchrow(message.author.guild.id, message.author.id)
                                 if result is None:
                                     await cursor.execute("INSERT INTO levels(guild_id, user_id, channel_id, exp, lvl) VALUES($1,$2,$3,$4,$5)", message.author.guild.id, message.author.id, message.channel.id, 0, 1)
@@ -68,7 +143,7 @@ class Events(commands.Cog):
                                     await message.channel.send(embed=embed)
                                     await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", lvl_start, 0, message.guild.id, message.author.id)
                                     levels = await cursor.fetch("SELECT level, role FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'levels')
-                                    check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'keep')
+                                    check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 LIMIT 1", message.author.guild.id, 'keep')
                                     for level in levels:
                                         check or 1
                                         if lvl_start >= level[0] and check == 1:
@@ -95,7 +170,7 @@ class Events(commands.Cog):
                                     await cursor.execute("UPDATE levels SET exp = $1, channel_id = $2 WHERE guild_id = $3 and user_id = $4", result[1] + random.randint(1, value), message.channel.id, message.guild.id, message.author.id)
 
                     # FOR COUNTING
-                    count = await cursor.prepare("SELECT channel, role, member, number, count, delay FROM count WHERE guild = $1")
+                    count = await cursor.prepare("SELECT channel, role, member, number, count, delay FROM count WHERE guild = $1 LIMIT 1")
                     current = await count.fetchrow(message.guild.id)
                     
                     # checks if we have counted in the correct channel and contunie
@@ -127,7 +202,7 @@ class Events(commands.Cog):
 
 
                     # FOR PARTNERSHIPS
-                    allowed = await cursor.prepare("SELECT type, role, level, difficulty, number, announce FROM leveling FULL JOIN partner USING (guild) JOIN settings USING (guild) WHERE guild = $1 and system = $2")
+                    allowed = await cursor.prepare("SELECT type, role, level, difficulty, number, announce FROM leveling FULL JOIN partner USING (guild) JOIN settings USING (guild) WHERE guild = $1 and system = $2 LIMIT 1")
                     partner = await allowed.fetchrow(message.guild.id, 'partners')
                     # checks if partnerships tracking been enabled
                     if partner is not None:
@@ -187,7 +262,7 @@ class Events(commands.Cog):
 
                 # FOR LEVELING
                 # an handler for vc rankings
-                difficulty = await cursor.prepare("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2")
+                difficulty = await cursor.prepare("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2 LIMIT 1")
                 if await difficulty.fetchval(member.guild.id, 'difficulty') is not None:
                     # checks if the guild has enabled ranking and user not in blacklist
                     vcchannel = 0 if after.channel is None else after.channel.id
@@ -233,7 +308,7 @@ class Events(commands.Cog):
 
                 # detects if an user is streaming and gives them the set role accordingly, else remove it
                 if before.activities != after.activities:
-                    stream = await cursor.prepare("SELECT live FROM settings WHERE guild = $1")
+                    stream = await cursor.prepare("SELECT live FROM settings WHERE guild = $1 LIMIT 1")
                     role = guild.get_role(await stream.fetchval(guild.id))
                     if role is not None:
                         if discord.Streaming in [type(x) for x in after.activities]:
@@ -241,21 +316,23 @@ class Events(commands.Cog):
                         else:
                             await after.remove_roles(role, reason='User is no longer Streaming')
 
-        # code for auto roles (for membership screening)
-        if before.pending != after.pending and not after.pending:
-            cursor = await self.bot.db.acquire()
-            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
-            execute = await auto.fetch(guild.id, "add", "remove")
-            await self.bot.db.release(cursor)
-            for auto in execute:
-                if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
-                    await asyncio.sleep(int(auto[1]))
-                    role = guild.get_role(role_id=auto[0])
-                    await after.add_roles(role, reason='Auto role')
-                elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
-                    await asyncio.sleep(int(auto[1]))
-                    role = guild.get_role(role_id=auto[0])
-                    await after.remove_roles(role, reason='Auto role')
+        # maybe I don't need this code anymore? (at least some)
+
+        # # code for auto roles (for membership screening)
+        # if before.pending != after.pending and not after.pending:
+        #     cursor = await self.bot.db.acquire()
+        #     auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+        #     execute = await auto.fetch(guild.id, "add", "remove")
+        #     await self.bot.db.release(cursor)
+        #     for auto in execute:
+        #         if auto[0] not in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "add":
+        #             await asyncio.sleep(int(auto[1]))
+        #             role = guild.get_role(role_id=auto[0])
+        #             await after.add_roles(role, reason='Auto role')
+        #         elif auto[0] in [role.id for role in after.roles] and auto[0] is not None and auto[2] == "remove":
+        #             await asyncio.sleep(int(auto[1]))
+        #             role = guild.get_role(role_id=auto[0])
+        #             await after.remove_roles(role, reason='Auto role')
 
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
@@ -266,7 +343,7 @@ class Events(commands.Cog):
                 async with cursor.transaction():
                     guild = after.guild
                     channel = after
-                    recovery = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
+                    recovery = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3 LIMIT 1")
                     role = guild.get_role(await recovery.fetchval(guild.id, channel.id, 'recover'))
                     users = []
                     # if an user has channel overwrites and they have the set role on them, insert the channel overwrites into the database to give back once the user rejoins the guild
@@ -274,7 +351,7 @@ class Events(commands.Cog):
                         for perm, value in channel.overwrites.items():
                             if isinstance(perm, discord.Member) and role.id in [role.id for role in perm.roles]:
                                 users.append(perm.id)
-                                check = await cursor.fetchrow("SELECT member FROM recover WHERE guild = $1 and member = $2 and channel = $3",guild.id, perm.id, channel.id)
+                                check = await cursor.fetchrow("SELECT member FROM recover WHERE guild = $1 and member = $2 and channel = $3 LIMIT 1",guild.id, perm.id, channel.id)
                                 yes = value.pair()[0].value
                                 no = value.pair()[1].value
                                 if check is None:
@@ -296,7 +373,7 @@ class Events(commands.Cog):
 
                 # code for member join graph
                 date = datetime.date.today()
-                dateVal = await cursor.prepare("SELECT joins FROM member WHERE guild = $1 and type = $2 and day = $3")
+                dateVal = await cursor.prepare("SELECT joins FROM member WHERE guild = $1 and type = $2 and day = $3 LIMIT 1")
                 dateVal = await dateVal.fetchval(guild.id, 'member', date)
 
                 if dateVal is None:
@@ -311,17 +388,17 @@ class Events(commands.Cog):
                         # checks if we are not the same user that created the invite
                         if invites.inviter.id != member.id:
                             # sets our invites if the inviters invites increased and puts the member that joined into our database for leave detection
-                            amount = await cursor.prepare("SELECT amount FROM invite WHERE guild = $1 and member = $2 and invite = $3")
+                            amount = await cursor.prepare("SELECT amount FROM invite WHERE guild = $1 and member = $2 and invite = $3 LIMIT 1")
                             amount = await amount.fetchval(guild.id, invites.inviter.id, invites.code)
                             if amount is not None and invites.uses > amount:
                                 await cursor.execute("UPDATE invite SET amount = $1 WHERE guild = $2 and member = $3 and invite = $4", invites.uses, guild.id, invites.inviter.id, invites.code)
                                 await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
                                 
                                 # if enabled congratulates the inviter if they complete a number of invites
-                                announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
+                                announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1 LIMIT 1", guild.id)
                                 if announcement:
-                                    total = await cursor.fetchval("SELECT SUM(amount) FROM invite WHERE guild = $1 and member = $2", guild.id, invites.inviter.id)
-                                    check = await cursor.fetch("SELECT date::int8, role FROM boost WHERE guild = $1 and type = $2 ORDER BY date DESC", guild.id, 'invite')
+                                    total = await cursor.fetchval("SELECT SUM(amount) FROM invite WHERE guild = $1 and member = $2 LIMIT 1", guild.id, invites.inviter.id)
+                                    check = await cursor.fetch("SELECT date::int8, role FROM boost WHERE guild = $1 and type = $2 ORDER BY date", guild.id, 'invite')
                                     for day in check:
                                         role = guild.get_role(day[1])
                                         if total >= day[0]:
@@ -330,60 +407,75 @@ class Events(commands.Cog):
                                             if (channel, user) is not None and role.id not in [role.id for role in user.roles]:
                                                 await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
                                                 await user.add_roles(role)
-                                            
-                            # if the inivter is not in the datahbase, add them                
+                                break
+
+                            # if the inivter is not in the database, add them                
                             elif amount is None and invites.uses > 0:
                                 await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id, invites.inviter.id, invites.code, invites.uses, 0, 0)
                                 await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
+                                break
                 except discord.Forbidden:
                     pass
 
-                # code for channel overwrites recovery
-                for channel in guild.channels:
-                    override = await cursor.prepare("SELECT yes, no FROM recover WHERE guild = $1 and member = $2 and channel = $3")
-                    override = await override.fetchrow(guild.id, member.id, channel.id)
-                    # checks if we should give back the member that joined their previous channel overwrites
-                    if override is not None:
-                        yes = discord.Permissions(permissions=int(override[0]))
-                        no = discord.Permissions(permissions=int(override[1]))
-                        overrides = discord.PermissionOverwrite().from_pair(yes, no)
-                        await channel.set_permissions(member, overwrite=overrides, reason='user joined back with previous channel overwrites')
-                        
                 # code for sticky roles
                 master = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
                 for select in await master.fetch(guild.id, member.id, 'sticky'):
                     if select[0] not in [role.id for role in member.roles] and select[0] is not None:
                         srole = guild.get_role(role_id=int(select[0]))
                         await member.add_roles(srole, reason='User had sticky roles when leaving')
-                    
-        # code for autoroles
-        if not member.pending:
-            cursor = await self.bot.db.acquire()
-            auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
-            execute = await auto.fetch(guild.id, "add", "remove")
-            await self.bot.db.release(cursor)
-            for auto in execute:
-                if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
-                    await asyncio.sleep(int(auto[1]))
-                    role = guild.get_role(role_id=auto[0])
-                    await member.add_roles(role, reason='Auto role')
-                elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
-                    await asyncio.sleep(int(auto[1]))
-                    role = guild.get_role(role_id=auto[0])
-                    await member.remove_roles(role, reason='Auto role')
+                
+                # code for autoroles
+                auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+                execute = await auto.fetch(guild.id, "add", "remove")
+                for auto in execute:
+                    try:
+                        if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
+                            if auto[1] > 0:
+                                # if we are waiting a certin amount of time to add the role, post to function
+                                print('create add')
+                                await self.create_timer([member, role, True, auto[1]])
+                            else:
+                                role = guild.get_role(role_id=auto[0])
+                                await member.add_roles(role, reason='Auto role')
+                        elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
+                            if auto[1] > 0:
+                                # if we are waiting a certin amount of time to remove the role, post to function
+                                print('create remove')
+                                await self.create_timer([member, role, False, auto[1]])
+                            else:
+                                role = guild.get_role(role_id=auto[0])
+                                await member.remove_roles(role, reason='Auto role')
+                    except discord.Forbidden:
+                        pass
 
+
+                # code for channel overwrites recovery
+                override = await cursor.prepare("SELECT yes, no, channel FROM recover WHERE guild = $1 and member = $2")
+                for override in await override.fetch(guild.id, member.id):
+                    # gets channel, members previous channel overwrites for channel, and then set channel permissions for that member
+                    channel = guild.get_channel(override[2])
+                    yes = discord.Permissions(permissions=int(override[0]))
+                    no = discord.Permissions(permissions=int(override[1]))
+                    overrides = discord.PermissionOverwrite().from_pair(yes, no)
+                    await channel.set_permissions(member, overwrite=overrides, reason='user joined back with previous channel overwrites')
+                
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():
+                await cursor.execute("DELETE FROM autorole WHERE guild = $1 and member = $2", member.guild.id, member.id)
+                if self._current_timer[1] == member.id:
+                    self._task.cancel()
+                    self._task = self.bot.loop.create_task(self.dispatch_timers())
+
                 # if enabled deletes the user from leveling if they left the guild
-                clear = await cursor.prepare("SELECT type FROM leveling WHERE guild = $1 and system = $2")
+                clear = await cursor.prepare("SELECT type FROM leveling WHERE guild = $1 and system = $2 LIMIT 1")
                 if await clear.fetchval(member.guild.id, 'clear') == 1:
                     await cursor.execute("DELETE FROM levels WHERE guild_id = $1 and user_id = $2", member.guild.id, member.id)
 
                 # code for member join graph
                 date = datetime.date.today()
-                dateVal = await cursor.prepare("SELECT leaves FROM member WHERE guild = $1 and type = $2 and day = $3")
+                dateVal = await cursor.prepare("SELECT leaves FROM member WHERE guild = $1 and type = $2 and day = $3 LIMIT 1")
                 dateVal = await dateVal.fetchval(member.guild.id, 'member', date)
 
                 if dateVal is None:
@@ -392,18 +484,10 @@ class Events(commands.Cog):
                 else:
                     await cursor.execute("UPDATE member SET leaves = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal+1, date, member.guild.id, 'member')
 
-                # removes the member custom channels / roles if they had them when leaving
-                roleauth = await cursor.prepare("SELECT role, type FROM roles WHERE guild = $1 and member = $2 and not type = $3")
-                for roleauth in await roleauth.fetch(member.guild.id, member.id, 'sticky'):
-                    custom = member.guild.get_role(roleauth[0]) if roleauth[1] == 'role' else member.guild.get_channel(roleauth[0])
-                    if custom is not None:
-                        await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", member.guild.id, custom.id, member.id, roleauth[1])
-                        await custom.delete(reason='Required Role/Channel Was Removed From Member')
-
                 # updates the inviters invite leaves if the user left the guild
-                amount = await cursor.prepare("SELECT invite FROM invite2 WHERE guild = $1 and member = $2")
+                amount = await cursor.prepare("SELECT invite FROM invite2 WHERE guild = $1 and member = $2 LIMIT 1")
                 amount = await amount.fetchval(member.guild.id, member.id)
-                check = await cursor.prepare("SELECT amount2, amount3 FROM invite WHERE guild = $1 and invite = $2")
+                check = await cursor.prepare("SELECT amount2, amount3 FROM invite WHERE guild = $1 and invite = $2 LIMIT 1")
                 check = await check.fetchrow(member.guild.id, amount)
                 var = list(check) if check is not None else [0, 0]
                 
@@ -415,7 +499,13 @@ class Events(commands.Cog):
                 await cursor.execute("DELETE FROM invite2 WHERE member = $1 and guild = $2", member.id, member.guild.id)
                 await cursor.execute("UPDATE invite SET amount2 = $1, amount3 = $2 WHERE guild = $3 and invite = $4", var[0], var[1], member.guild.id, amount)
 
-
+                # removes the member custom channels / roles if they had them when leaving
+                roleauth = await cursor.prepare("SELECT role, type FROM roles WHERE guild = $1 and member = $2 and not type = $3")
+                for roleauth in await roleauth.fetch(member.guild.id, member.id, 'sticky'):
+                    custom = member.guild.get_role(roleauth[0]) if roleauth[1] == 'role' else member.guild.get_channel(roleauth[0])
+                    if custom is not None:
+                        await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", member.guild.id, custom.id, member.id, roleauth[1])
+                        await custom.delete(reason='Required Role/Channel Was Removed From Member')
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -477,7 +567,7 @@ class Events(commands.Cog):
                         elif "c" in role[0]:
                             role = role[0].replace("c", "")
                             mroles = guild.get_role(role_id=int(role))
-                            cblacklist = await cursor.fetchval("SELECT message FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild_id, user_id, message_id, 'club')
+                            cblacklist = await cursor.fetchval("SELECT message FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4 LIMIT 1", guild_id, user_id, message_id, 'club')
                             if cblacklist is not None:
                                 channel = guild.get_channel(channel_id)
                                 message = await channel.fetch_message(message_id)
@@ -487,7 +577,7 @@ class Events(commands.Cog):
 
                 # for polls
                 # if set to single voting automatically removes the voters reaction role if they try to vote for more than one thing
-                multi = await cursor.prepare("SELECT win FROM vote WHERE guild = $1 and message = $2 and type = $3")
+                multi = await cursor.prepare("SELECT win FROM vote WHERE guild = $1 and message = $2 and type = $3 LIMIT 1")
                 multi = await multi.fetchval(guild_id, message_id, 'poll')
                 if multi == 0:
                     emoji = self.bot.emoji[1648:1668][::-1]
@@ -519,7 +609,7 @@ class Events(commands.Cog):
                 if emote:
                     emoji = emote[0]
 
-                role = await cursor.fetchval("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3", main, emoji, guild_id)
+                role = await cursor.fetchval("SELECT role FROM reaction WHERE master = $1 and type = $2 and guild = $3 LIMIT 1", main, emoji, guild_id)
                 if role is not None:
                     # splits reaction role types into code readable format anmd checks if we can remove role
                     guild = self.bot.get_guild(guild_id)
