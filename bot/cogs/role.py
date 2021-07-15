@@ -109,7 +109,7 @@ class Role(commands.Cog, name="Roles"):
     @autorole.command()
     @commands.has_permissions(manage_guild=True)
     async def add(self, ctx, role: discord.Role, delay=None):
-        """Adds a role upon the user joiningthe guild"""
+        """Adds a role upon the user joining the guild"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
         result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and guild = $2 and type = $3", role.id, guild, 'add')

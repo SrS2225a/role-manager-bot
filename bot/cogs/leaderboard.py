@@ -24,6 +24,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     @graph.group(invoke_without_command=True)
     async def members(self, ctx):
         """Displays Joins and Leaves over a 1 month period"""
+        global embed, graph
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
         month = [0, 0]
@@ -39,7 +40,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         ax.xaxis.set_major_locator(plt.MaxNLocator(20))
         ax.tick_params(axis='x', labelrotation=45)
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
-        members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and type = $2 and day > $3 ORDER BY day ASC", guild.id, 'member', (datetime.date.today()-datetime.timedelta(days=date or 30)))
+        members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 ORDER BY day ASC", guild.id, (datetime.date.today()-datetime.timedelta(days=date or 30)))
 
         if members:
             max = members[-1][2]
@@ -102,6 +103,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     @members.command()
     async def joins(self, ctx):
         """Displays Joins over a 1 month peroid"""
+        global embed, graph
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
         month = [0, 0]
@@ -118,7 +120,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         ax.tick_params(axis='x', labelrotation=45)
 
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
-        members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and type = $2 and day > $3 ORDER BY day ASC", guild.id, 'member', (datetime.date.today()-datetime.timedelta(days=date or 30)))
+        members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 ORDER BY day ASC", guild.id, (datetime.date.today()-datetime.timedelta(days=date or 30)))
 
         if members:
             max = members[-1][2]
@@ -168,6 +170,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     @members.command()
     async def leaves(self, ctx):
         """Displays Leaves over a 1 month peroid"""
+        global embed, graph
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
         month = [0, 0]
@@ -184,7 +187,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         ax.tick_params(axis='x', labelrotation=45)
 
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
-        members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and type = $2 and day > $3 ORDER BY day ASC", guild.id, 'member', (datetime.date.today()-datetime.timedelta(days=date or 30)))
+        members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 ORDER BY day ASC", guild.id, (datetime.date.today()-datetime.timedelta(days=date or 30)))
 
         if members:
             max = members[-1][2]
@@ -235,6 +238,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     @graph.command(name="messages", aliases=["msgs"])
     async def graph_messages(self, ctx):
         """Displays total messages sent over a 1 month period"""
+        global embed, graph
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
         userDay = 0
@@ -250,7 +254,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         ax.tick_params(axis='x', labelrotation=45)
 
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
-        members = await cursor.fetch("SELECT day, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY day ORDER BY day ASC", guild.id, 'message', (datetime.date.today()-datetime.timedelta(days=date or 30)))
+        members = await cursor.fetch("SELECT day, SUM(messages) FROM message WHERE guild = $1 and day > $2 GROUP BY day ORDER BY day ASC", guild.id, (datetime.date.today()-datetime.timedelta(days=date or 30)))
 
         if members:
             max = members[-1][0]
@@ -268,13 +272,13 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 y1.append(messages[1])
 
             topUser = ""
-            for messages in await cursor.fetch("SELECT member, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY member ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(days=date or 30))):
+            for messages in await cursor.fetch("SELECT member, SUM(messages) FROM message WHERE guild = $1 and day > $2 GROUP BY member ORDER BY SUM(messages) DESC LIMIT 5", guild.id, (datetime.date.today()-datetime.timedelta(days=date or 30))):
                 user = self.bot.get_user(id=int(messages[0]))
                 if user:
                     topUser += f"{user.mention} - `{messages[1]}`\n"
 
             topChannel = ""
-            for messages in await cursor.fetch("SELECT channel, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY channel ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(days=date or 30))):
+            for messages in await cursor.fetch("SELECT channel, SUM(messages) FROM message WHERE guild = $1 and day > $2 GROUP BY channel ORDER BY SUM(messages) DESC LIMIT 5", guild.id, (datetime.date.today()-datetime.timedelta(days=date or 30))):
                 channel = guild.get_channel(messages[0])
                 if channel:
                     topChannel += f"{channel.mention} - `{messages[1]}`\n"
@@ -577,8 +581,8 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         cursor = await self.bot.db.acquire()
         member = member or ctx.author
         # cursor.fetch("SELECT member, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY member ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(days=date or 30))):
-        messages = await cursor.fetch(f"SELECT channel, SUM(joins) FROM member WHERE guild = $1 and member = $2 and type = $3 GROUP BY channel ORDER BY SUM(joins) DESC", ctx.guild.id, member.id, 'message')
-        rank = await cursor.fetch("SELECT member FROM member WHERE guild = $1 and type = $2 GROUP BY member, joins ORDER BY joins DESC", ctx.guild.id, 'message')
+        messages = await cursor.fetch(f"SELECT channel, SUM(messages) FROM message WHERE guild = $1 and member = $2 GROUP BY channel ORDER BY SUM(messages) DESC", ctx.guild.id, member.id)
+        rank = await cursor.fetch("SELECT member FROM message WHERE guild = $1 GROUP BY member, messages ORDER BY messages DESC", ctx.guild.id)
         if messages:
             user1 = []
             i = 0
