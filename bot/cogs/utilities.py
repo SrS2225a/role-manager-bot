@@ -10,8 +10,17 @@ import asyncpg
 from parsedatetime import Calendar
 from discord.ext import commands
 
+
+def date_convert_seconds(s):
+    current, result = Calendar().parse(s)
+    t = datetime.datetime(*current[:6])
+    futureDate = int((t - datetime.datetime.now()).total_seconds())
+    return futureDate + 1, result
+
+
 class Utilities(commands.Cog, name='Utilities'):
     """[Utilites found within the bot](https://github.com/SrS2225a/role-manager-bot/wiki/Utilities)"""
+
     def __init__(self, bot):
         self.bot = bot
         self._have_data = asyncio.Event(loop=bot.loop)
@@ -34,7 +43,6 @@ class Utilities(commands.Cog, name='Utilities'):
             if self.connection is None:
                 self._cleanup = True
                 self._connection = c = await self.pool.acquire()
-                print(c)
                 return c
             return self.connection
 
@@ -43,19 +51,20 @@ class Utilities(commands.Cog, name='Utilities'):
                 await self.pool.release(self._connection)
 
     async def wait_for_active_reminders(self, *, connection=None, days=None):
-            timer = await connection.fetchrow("SELECT * FROM remind WHERE date < (CURRENT_DATE + $1::interval) ORDER BY date LIMIT 1;", datetime.timedelta(days=days))
-            if timer is not None:
-                self._have_data.set()
-                return timer
-            
-            self._have_data.clear()
-            self._current_timer = None
-            await self._have_data.wait()
+        timer = await connection.fetchrow(
+            "SELECT * FROM remind WHERE date < (CURRENT_DATE + $1::interval) ORDER BY date LIMIT 1;",
+            datetime.timedelta(days=days))
+        if timer is not None:
+            self._have_data.set()
+            return timer
 
+        self._have_data.clear()
+        self._current_timer = None
+        await self._have_data.wait()
 
     async def call_remind(self, timer):
         try:
-            msg = f'<@{timer[0]}> {self.display_time((timer[2] - timer[6]).total_seconds())} ago you asked me to remind you about: {discord.utils.escape_mentions(timer[3])}'
+            msg = f'<@{timer[0]}> <t:{round(timer[6].timestamp())}:R> you asked me to remind you about: {discord.utils.escape_mentions(timer[3])}'
             if timer[4] == timer[0]:
                 user = self.bot.get_user(timer[0]) or await self.bot.fetch_user(timer[0])
                 await user.send(msg)
@@ -64,7 +73,6 @@ class Utilities(commands.Cog, name='Utilities'):
                 await channel.send(msg)
         except (discord.HTTPException, discord.Forbidden):
             return
-
 
     async def dispatch_remind(self):
         try:
@@ -81,7 +89,10 @@ class Utilities(commands.Cog, name='Utilities'):
                         await con.execute("DELETE FROM remind WHERE message = $1 and account = $2", timer[1], timer[0])
                     else:
                         time = (timer[2] - timer[6]).total_seconds()
-                        await con.execute("UPDATE remind SET date = $1, assigned = $2 WHERE message = $3 and account = $4", timer[2] + datetime.timedelta(seconds=time), timer[6] + datetime.timedelta(seconds=time), timer[1], timer[0])
+                        await con.execute(
+                            "UPDATE remind SET date = $1, assigned = $2 WHERE message = $3 and account = $4",
+                            timer[2] + datetime.timedelta(seconds=time), timer[6] + datetime.timedelta(seconds=time),
+                            timer[1], timer[0])
 
                     await self.call_remind(timer)
 
@@ -92,11 +103,13 @@ class Utilities(commands.Cog, name='Utilities'):
             self._task = self.bot.loop.create_task(self.dispatch_remind())
 
     async def wait_for_active_polls(self, *, connection=None, days=None):
-        timer = await connection.fetchrow("SELECT * FROM vote WHERE date < (CURRENT_DATE + $1::interval)  and type = $2 ORDER BY date LIMIT 1", datetime.timedelta(days=days), 'poll')
+        timer = await connection.fetchrow(
+            "SELECT * FROM vote WHERE date < (CURRENT_DATE + $1::interval)  and type = $2 ORDER BY date LIMIT 1",
+            datetime.timedelta(days=days), 'poll')
         if timer is not None:
             self.__have_data.set()
             return timer
-        
+
         self.__have_data.clear()
         self.__current_timer = None
         await self.__have_data.wait()
@@ -112,7 +125,8 @@ class Utilities(commands.Cog, name='Utilities'):
                         to_sleep = (timer[4] - now).total_seconds()
                         await asyncio.sleep(to_sleep)
 
-                    await con.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", timer[0], timer[1], "poll")
+                    await con.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", timer[0],
+                                      timer[1], "poll")
                     await self.call_poll(timer)
 
         except asyncio.CancelledError:
@@ -133,7 +147,8 @@ class Utilities(commands.Cog, name='Utilities'):
             result = 0
             for reaction in sent.reactions:
                 if reaction.emoji in name:
-                    embed.add_field(name=questions[result], value=f"{reaction.count - 1} - {round((reaction.count - 1) * 100 / votes, 2) if votes != 0 else 0.0}%")
+                    embed.add_field(name=questions[result],
+                                    value=f"{reaction.count - 1} - {round((reaction.count - 1) * 100 / votes, 2) if votes != 0 else 0.0}%")
                     result += 1
             await sent.edit(embed=embed)
             await sent.clear_reactions()
@@ -141,11 +156,13 @@ class Utilities(commands.Cog, name='Utilities'):
             return
 
     async def wait_for_active_giveaways(self, *, connection=None, days=None):
-        timer = await connection.fetchrow("SELECT * FROM vote WHERE date < (CURRENT_DATE + $1::interval)  and type = $2 ORDER BY date LIMIT 1", datetime.timedelta(days=days), 'giveaway')
+        timer = await connection.fetchrow(
+            "SELECT * FROM vote WHERE date < (CURRENT_DATE + $1::interval)  and type = $2 ORDER BY date LIMIT 1",
+            datetime.timedelta(days=days), 'giveaway')
         if timer is not None:
             self.have_data.set()
             return timer
-        
+
         self.have_data.clear()
         self.current_timer = None
         await self.have_data.wait()
@@ -162,7 +179,8 @@ class Utilities(commands.Cog, name='Utilities'):
                         print(to_sleep)
                         await asyncio.sleep(to_sleep)
 
-                    await con.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", "giveaway end", timer[0], timer[1], "giveaway")
+                    await con.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4",
+                                      "giveaway end", timer[0], timer[1], "giveaway")
                     await self.call_giveaway(timer)
 
         except asyncio.CancelledError:
@@ -180,13 +198,15 @@ class Utilities(commands.Cog, name='Utilities'):
             if reaction.emoji == '🎉':
                 users = await reaction.users().flatten()
                 if reaction.count <= timer[2]:
-                    embed = discord.Embed(title=data.title, description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners: No Winnders!")
+                    embed = discord.Embed(title=data.title,
+                                          description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners: No Winnders!")
                     embed.set_footer(text=f"Ended At: {ends}")
                     await sent.edit(embed=embed)
                 else:
                     winner = random.choices([winner.mention for winner in users if not winner.bot], k=timer[2])
                     winner = "\n".join(winner)
-                    embed = discord.Embed(title=data.title, description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners:{winner}")
+                    embed = discord.Embed(title=data.title,
+                                          description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners:{winner}")
                     embed.set_footer(text=f"Ended At: {ends}")
                     winAlert = await channel.send(winner)
                     try:
@@ -196,33 +216,27 @@ class Utilities(commands.Cog, name='Utilities'):
                     await sent.edit(embed=embed)
                 break
 
-
-
-    def display_time(self, duration):
-        intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
-
-        result = []
-
-        for name, count in intervals:
-            value = duration // count
-            if value:
-                duration -= value * count
-                result.append(f'{round(value)} {name}')
-
-        return ' '.join(result)
-
-    @commands.group(description='Supply type with a channel, dm or here to set the destination of the reminder', brief='remind here 5m false do something', invoke_without_command=True)
-    async def remind(self, ctx, type: typing.Union[discord.TextChannel, str],  duration, repeat: bool, *, description):
+    @commands.group(description='Supply type with a channel, dm or here to set the destination of the reminder',
+                    brief='remind here 5m false do something', invoke_without_command=True)
+    async def remind(self, ctx, type: typing.Union[discord.TextChannel, str], duration, repeat: bool, *, description):
         """Sets a reminder with an given time"""
         cursor = await self.bot.db.acquire()
         if type == 'dm' or type == 'here' or isinstance(type, discord.TextChannel):
             thing = ctx.author if type == 'dm' else ctx.channel if type == 'here' else type
 
-            def date_convert_seconds(s):
-                current, result = Calendar().parse(s)
-                t = datetime.datetime(*current[:6])
-                futureDate = int((t-datetime.datetime.now()).total_seconds())
-                return futureDate+1, result
+            def display_time(duration):
+                intervals = (
+                    ('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
+
+                result = []
+
+                for name, count in intervals:
+                    value = duration // count
+                    if value:
+                        duration -= value * count
+                        result.append(f'{round(value)} {name}')
+
+                return ' '.join(result)
 
             time = date_convert_seconds(duration)
             if time[1] < 1:
@@ -238,15 +252,17 @@ class Utilities(commands.Cog, name='Utilities'):
                 escaped = discord.utils.escape_mentions(description)
                 if repeat:
                     if time < 3600 and isinstance(thing, discord.TextChannel):
-                        await ctx.send("To prevent spam in servers, repeating reminders must be more than 1 hour. Try having the reminder send to your dm or increase the remind time")
+                        await ctx.send(
+                            "To prevent spam in servers, repeating reminders must be more than 1 hour. Try having the reminder send to your dm or increase the remind time")
                         return
                     else:
-                        await ctx.send(f"Reminding you every {self.display_time(time)} about: {escaped}")
+                        await ctx.send(f"Ok, reminding you every {display_time(time)} about: {escaped}")
                 else:
-                    await ctx.send(f"Reminding you in {self.display_time(time)} about: {escaped}")
-                await cursor.execute("INSERT INTO remind(repeat, message, date, win, type, account, assigned) VALUES($1, $2, $3, $4, $5, $6, $7)", repeat, ''.join(remind_id), delta, description, thing.id, ctx.author.id, now)
+                    await ctx.send(f"Ok, reminding you at <t:{round(delta.timestamp())}> about: {escaped}")
+                await cursor.execute("INSERT INTO remind(repeat, message, date, win, type, account, assigned) VALUES($1, $2, $3, $4, $5, $6, $7)",
+                    repeat, ''.join(remind_id), delta, description, thing.id, ctx.author.id, now)
                 if self._current_timer and delta < self._current_timer[2] or self._current_timer is None:
-                    if (delta - now).total_seconds() <= (86400 * 48): # 48 days
+                    if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
                         self._have_data.set()
                     self._task.cancel()
                     self._task = self.bot.loop.create_task(self.dispatch_remind())
@@ -266,11 +282,10 @@ class Utilities(commands.Cog, name='Utilities'):
             for remind in reminders:
                 get = self.bot.get_channel(remind[4])
                 if get is not None:
-                    chan = f"{get.guild} — #{get}"
+                    chan = f"{get.guild} — {get.mention}"
                 else:
                     chan = 'dm'
-                date = remind[2].strftime('%a %b %d %Y %I:%M:%S %p UTC')
-                embed.add_field(name=f"Reminder [`{remind[1]}`]" if remind[5] is False else f"Reminder [`{remind[1]}`] (Repeats)", value=f"```Time: {date}\nWhere: {chan}\nReason: {remind[3]}```", inline=False)
+                embed.add_field(name=f"Reminder [`{remind[1]}`]" if remind[5] is False else f"Reminder [`{remind[1]}`] (Repeats)", value=f"Time: <t:{round(remind[2].timestamp())}>\nWhere: {chan}\nReason: {remind[3]}", inline=False)
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
@@ -298,13 +313,7 @@ class Utilities(commands.Cog, name='Utilities'):
         except discord.Forbidden:
             pass
 
-        def convert_to_seconds(s):
-            current, result = Calendar().parse(s)
-            t = datetime.datetime(*current[:6])
-            futureDate = int((t - datetime.datetime.now()).total_seconds())
-            return futureDate + 1, result
-
-        time = convert_to_seconds(duration)
+        time = date_convert_seconds(duration)
         if time[1] < 1:
             await ctx.send("I do not recognise that time!")
         elif time[0] < 1:
@@ -314,14 +323,15 @@ class Utilities(commands.Cog, name='Utilities'):
             now = datetime.datetime.now()
             delta = now + datetime.timedelta(seconds=time)
             ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
-            embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winners}")
+            embed = discord.Embed(title=name,
+                                  description=f"**React With 🎉 To Enter** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winners}")
             embed.set_footer(text=f"Ends At: {ends}")
             sent = await ctx.send(embed=embed)
             await sent.add_reaction('🎉')
             await cursor.execute("INSERT INTO vote(guild, message, date, win, type, channel) VALUES($1, $2, $3, $4, $5, $6)", ctx.guild.id, sent.id, delta, winners, "giveaway", ctx.channel.id)
+            if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
+                self.have_data.set()
             if self.current_timer and delta < self.current_timer[4] or self.current_timer is None:
-                if (delta - now).total_seconds() <= (86400 * 48): # 48 days
-                    self.have_data.set()
                 self.task.cancel()
                 self.task = self.bot.loop.create_task(self.dispatch_giveaway())
             await self.bot.db.release(cursor)
@@ -373,7 +383,8 @@ class Utilities(commands.Cog, name='Utilities'):
             await ctx.send("This Giveaway Does Not Exist!")
         await self.bot.db.release(cursor)
 
-    @commands.command(aliases=["makevote"], brief='createpoll true "Whats your favorite color?" 4h red blue green orange purple')
+    @commands.command(aliases=["makevote"],
+                      brief='createpoll true "Whats your favorite color?" 4h red blue green orange purple')
     @commands.has_permissions(manage_messages=True)
     async def createpoll(self, ctx, multiple: bool, topic, duration, *questions):
         """Allows you to create a poll"""
@@ -385,13 +396,7 @@ class Utilities(commands.Cog, name='Utilities'):
         if len(questions) > 20:
             await ctx.send("You can only have a maximum of 20 questions!")
         else:
-            def convert_to_seconds(s):
-                current, result = Calendar().parse(s)
-                t = datetime.datetime(*current[:6])
-                futureDate = int((t - datetime.datetime.now()).total_seconds())
-                return futureDate + 1, result
-
-            time = convert_to_seconds(duration)
+            time = date_convert_seconds(duration)
             if time[1] < 1:
                 await ctx.send("I do not recognise that time!")
             elif time[0] < 1:
@@ -407,11 +412,13 @@ class Utilities(commands.Cog, name='Utilities'):
                 for item, feilds in enumerate(questions):
                     embed.add_field(name=indicators[item], value=feilds)
                 sent = await ctx.send(embed=embed)
-                await cursor.execute("INSERT INTO vote(guild, message, win, type, date, channel) VALUES($1, $2, $3, $4, $5, $6)", ctx.guild.id, sent.id, multiple, "poll", delta, ctx.channel.id)
+                await cursor.execute(
+                    "INSERT INTO vote(guild, message, win, type, date, channel) VALUES($1, $2, $3, $4, $5, $6)",
+                    ctx.guild.id, sent.id, multiple, "poll", delta, ctx.channel.id)
                 for button in range(len(questions)):
                     await sent.add_reaction(indicators[button])
                 if self.__current_timer and delta < self.__current_timer[4] or self.__current_timer is None:
-                    if (delta - now).total_seconds() <= (86400 * 48): # 48 days
+                    if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
                         self.__have_data.set()
                     self.__task.cancel()
                     self.__task = self.bot.loop.create_task(self.dispatch_poll())
@@ -427,9 +434,12 @@ class Utilities(commands.Cog, name='Utilities'):
         except discord.Forbidden:
             pass
         sent = await ctx.channel.fetch_message(message)
-        execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "poll")
+        execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and type = $3",
+                                        ctx.guild.id, sent.id, "poll")
         if execute is not None:
-            await cursor.execute("UPDATE vote SET date = $1 WHERE guild = $2 and message = $3 and type = $4", datetime.datetime.now(), ctx.guild.id, sent.id, "poll") # update this instead to trigger the endpoll and reload task
+            await cursor.execute("UPDATE vote SET date = $1 WHERE guild = $2 and message = $3 and type = $4",
+                                 datetime.datetime.now(), ctx.guild.id, sent.id,
+                                 "poll")  # update this instead to trigger the endpoll and reload task
             self.__task.cancel()
             self.__task = self.bot.loop.create_task(self.dispatch_poll())
         else:
@@ -455,10 +465,12 @@ class Utilities(commands.Cog, name='Utilities'):
         missing = ctx.guild.get_role(roleauth)
         if roleauth in [role.id for role in ctx.author.roles]:
             # checks if we alreadly have a custom role
-            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'role')
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                           guildid, memID, 'role')
             if result is None:
                 # checks where the newly created custom role should be placed in hierarchy
-                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
+                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2",
+                                                guildid, 'role')
                 custom = f"{name} ({default[1]})" if default[1] is not None else name
                 # checks if all arguments are correct
                 if not re.search("#([0-9a-fA-F]{6})", color):
@@ -467,16 +479,19 @@ class Utilities(commands.Cog, name='Utilities'):
                     await ctx.send(f"The role name cannot be over 50 characters!")
                 else:
                     # creates custom role and inserts role information into our database for future use
-                    role = await guild.create_role(reason='User created an custom role', name=custom, color=discord.Colour(int(color[1:], 16)))
+                    role = await guild.create_role(reason='User created an custom role', name=custom,
+                                                   color=discord.Colour(int(color[1:], 16)))
                     pos = guild.get_role(role_id=default[0])
                     await role.edit(position=pos.position)
                     await author.add_roles(role)
-                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, memID, role.id, 'role')
+                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid,
+                                         memID, role.id, 'role')
                     await ctx.send("Custom Role created successfully!")
             else:
                 await ctx.send(f"You already have a custom role!")
         else:
-            raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(f'Creating custom roles have not been set up yet by server owner!')
+            raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(
+                f'Creating custom roles have not been set up yet by server owner!')
         await self.bot.db.release(cursor)
 
     @createcustom.command(name='text')
@@ -491,10 +506,12 @@ class Utilities(commands.Cog, name='Utilities'):
         roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
         missing = ctx.guild.get_role(roleauth)
         if roleauth in [role.id for role in ctx.author.roles]:
-            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                           guildid, memID, 'text')
             if result is None:
                 # checks which channel catagorey the newly created custom text channel should be placed
-                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, 'text')
+                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2",
+                                                guildid, 'text')
                 custom = f"{topic} __**({default[1]})**__" if default[1] is not None else topic
                 # checks if all arguments are correct
                 if len(custom) > 1024:
@@ -504,14 +521,20 @@ class Utilities(commands.Cog, name='Utilities'):
                 else:
                     # creates custom text channel and inserts channel information into our database for future use
                     category = guild.get_channel(default[0])
-                    permissions = {guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False), author: discord.PermissionOverwrite(read_messages=True, send_messages=True)}
-                    channel = await guild.create_text_channel(name, topic=custom, overwrites=permissions, category=category, reason='User Created Custom Text Channel')
-                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, memID, channel.id, 'text')
+                    permissions = {
+                        guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False),
+                        author: discord.PermissionOverwrite(read_messages=True, send_messages=True)}
+                    channel = await guild.create_text_channel(name, topic=custom, overwrites=permissions,
+                                                              category=category,
+                                                              reason='User Created Custom Text Channel')
+                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid,
+                                         memID, channel.id, 'text')
                     await ctx.send("Custom Text Channel Created Successfully!")
             else:
                 await ctx.send("You already have a custom text channel!")
         else:
-            raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(f'Creating custom text channels have not been set up yet by server owner!')
+            raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(
+                f'Creating custom text channels have not been set up yet by server owner!')
         await self.bot.db.release(cursor)
 
     @createcustom.command(name='voice')
@@ -520,16 +543,18 @@ class Utilities(commands.Cog, name='Utilities'):
         author = ctx.message.author
         memID = ctx.message.author.id
         guild = ctx.guild
-        guildid = ctx.guild.id  
+        guildid = ctx.guild.id
 
         roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
         missing = ctx.guild.get_role(roleauth)
-        if roleauth in [role.id for role in ctx.author.roles]:           
+        if roleauth in [role.id for role in ctx.author.roles]:
             # checks if we alreadly have a custom voice channel
-            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
+            result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                           guildid, memID, 'voice')
             if result is None:
                 # checks which channel catagorey the newly created custom voice channel should be placed
-                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
+                default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2",
+                                                guildid, 'voice')
                 custom = f"{name} ({default[1]})" if default[1] is not None else name
                 # checks if all arguments are correct
                 if len(name) > 100:
@@ -537,16 +562,22 @@ class Utilities(commands.Cog, name='Utilities'):
                 elif int(limit) > 99:
                     await ctx.send("The user limit cannot be over 99 members!")
                 else:
-                   # creates custom voice channel and inserts channel information into our database for future use
+                    # creates custom voice channel and inserts channel information into our database for future use
                     category = guild.get_channel(default[0])
-                    permissions = {guild.default_role: discord.PermissionOverwrite(view_channel=False, connect=False), author: discord.PermissionOverwrite(view_channel=True, connect=True, move_members=True)}
-                    channel = await guild.create_voice_channel(custom, user_limit=limit, overwrites=permissions, category=category, reason='User Created Custom Voice Channel')
-                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid, memID, channel.id, 'voice')
+                    permissions = {guild.default_role: discord.PermissionOverwrite(view_channel=False, connect=False),
+                                   author: discord.PermissionOverwrite(view_channel=True, connect=True,
+                                                                       move_members=True)}
+                    channel = await guild.create_voice_channel(custom, user_limit=limit, overwrites=permissions,
+                                                               category=category,
+                                                               reason='User Created Custom Voice Channel')
+                    await cursor.execute("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", guildid,
+                                         memID, channel.id, 'voice')
                     await ctx.send("Custom Voice Channel Created Successfully!")
             else:
                 await ctx.send("You already have a custom voice channel!")
         else:
-            raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(f'Creating custom voice channels have not been set up yet by server owner!')
+            raise commands.MissingRole(missing.name) if missing is not None else commands.CommandError(
+                f'Creating custom voice channels have not been set up yet by server owner!')
         await self.bot.db.release(cursor)
 
     @commands.group(hidden=True, invoke_without_command=True)
@@ -562,12 +593,14 @@ class Utilities(commands.Cog, name='Utilities'):
         memID = ctx.message.author.id
         guild = ctx.guild
         guildid = ctx.guild.id
-        
+
         # checks if the custom role does not exist
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'role')
+        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                       guildid, memID, 'role')
         if result is not None:
             # gets our custom role
-            role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'role')
+            role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID,
+                                         guildid, 'role')
             default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
             custom = f"{name} ({default})" if default is not None else name
             # checks if all arguments are correct
@@ -592,10 +625,12 @@ class Utilities(commands.Cog, name='Utilities'):
         guild = ctx.guild
         guildid = ctx.guild.id
         # checks if the custom text channel does not exist
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
+        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                       guildid, memID, 'text')
         if result is not None:
             # gets our custom text channel
-            channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'text')
+            channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3",
+                                            memID, guildid, 'text')
             default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'text')
             custom = f"{topic} __**({default})**__" if default is not None else topic
             # checks if all arguments are correct
@@ -609,9 +644,10 @@ class Utilities(commands.Cog, name='Utilities'):
                 await cchannel.edit(name=name, topic=custom)
                 await ctx.send("Custom Text Channel Edited Successfully!")
         else:
-            await ctx.send(f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
+            await ctx.send(
+                f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
         await self.bot.db.release(cursor)
-    
+
     @editcustom.command(name='voice')
     async def edit_voice(self, ctx, name, *, limit):
         """Allows you to edit your own cusotm voice channel"""
@@ -620,10 +656,12 @@ class Utilities(commands.Cog, name='Utilities'):
         guild = ctx.guild
         guildid = ctx.guild.id
         # checks if the custom voice channel does not exist
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
+        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                       guildid, memID, 'voice')
         if result is not None:
             # gets our custom voice channel
-            channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'voice')
+            channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3",
+                                            memID, guildid, 'voice')
             default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
             custom = f"{name} ({default})" if default is not None else name
             # checks if all arguments are correct
@@ -637,7 +675,8 @@ class Utilities(commands.Cog, name='Utilities'):
                 await cchannel.edit(name=name, user_limit=limit)
                 await ctx.send("Custom Voice Channel Edited Successfully!")
         else:
-            await ctx.send(f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
+            await ctx.send(
+                f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
         await self.bot.db.release(cursor)
 
     @commands.group()
@@ -654,13 +693,16 @@ class Utilities(commands.Cog, name='Utilities'):
         guild = ctx.guild
         guildid = ctx.guild.id
         # checks if the custom role exists           
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'role')
+        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                       guildid, memID, 'role')
         if result is not None:
             # deletes our custom role
-            role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'role')
+            role = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID,
+                                         guildid, 'role')
             crole = guild.get_role(role)
             await crole.delete()
-            await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guildid, role, memID, 'role')
+            await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4",
+                                 guildid, role, memID, 'role')
             await ctx.send(f"Custom Role Deleted Successfully!")
         else:
             await ctx.send(f"You need to have a custom role first! Use `{ctx.prefix}createcustom` to create one!")
@@ -673,16 +715,20 @@ class Utilities(commands.Cog, name='Utilities'):
         guild = ctx.guild
         guildid = ctx.guild.id
         # checks if the custom text channel exists
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
+        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                       guildid, memID, 'text')
         if result is not None:
             # deletes our custom text channel
-            channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'text')
+            channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3",
+                                            memID, guildid, 'text')
             cchannel = guild.get_channel(channel)
             await cchannel.delete()
-            await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guildid, channel, memID, 'text')
+            await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4",
+                                 guildid, channel, memID, 'text')
             await ctx.send(f"Custom Text Channel Deleted Successfully!")
         else:
-            await ctx.send(f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
+            await ctx.send(
+                f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
         await self.bot.db.release(cursor)
 
     @deletecustom.command(name='voice')
@@ -693,19 +739,24 @@ class Utilities(commands.Cog, name='Utilities'):
         guild = ctx.guild
         guildid = ctx.guild.id
         # checks if the custom voice channel exists
-        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
+        result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
+                                       guildid, memID, 'voice')
         if result is not None:
             # deletes our custom voice channel
-            channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3", memID, guildid, 'voice')
+            channel = await cursor.fetchval("SELECT role FROM roles WHERE member = $1 and guild = $2 and type = $3",
+                                            memID, guildid, 'voice')
             cchannel = guild.get_channel(channel)
             await cchannel.delete()
-            await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4", guildid, channel, memID, 'voice')
+            await cursor.execute("DELETE FROM roles WHERE guild = $1 and role = $2 and member = $3 and type = $4",
+                                 guildid, channel, memID, 'voice')
             await ctx.send(f"Custom Text Channel Deleted Successfully!")
         else:
-            await ctx.send(f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
+            await ctx.send(
+                f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
         await self.bot.db.release(cursor)
 
-    @commands.group(description='Supply action with role/text/voice to give that custom and type with add/remove to add or remove an custom role')
+    @commands.group(
+        description='Supply action with role/text/voice to give that custom and type with add/remove to add or remove an custom role')
     async def givecustom(self, ctx):
         """Allows you to add or remove your custom role, text channel or voice channel to someone"""
         if not ctx.invoked_subcommand:
@@ -719,7 +770,8 @@ class Utilities(commands.Cog, name='Utilities'):
         guild = ctx.guild
         guildid = ctx.guild.id
         number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
-        result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'role')
+        result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid,
+                                       memID, 'role')
         if result is not None:
             crole = guild.get_role(result)
             if action not in ("add", "remove"):
@@ -747,7 +799,8 @@ class Utilities(commands.Cog, name='Utilities'):
         guild = ctx.guild
         guildid = ctx.guild.id
         number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'text')
-        result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'text')
+        result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid,
+                                       memID, 'text')
         if result is not None:
             cchannel = guild.get_channel(result)
             if action not in ("add", "remove"):
@@ -758,7 +811,8 @@ class Utilities(commands.Cog, name='Utilities'):
             else:
                 if not member.bot and not cchannel.permissions_for(member).read_messages and action == "add":
                     if len(cchannel.members) > number:
-                        await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
+                        await ctx.send(
+                            f"You can only give this custom text channel access to an max of {number} members")
                         return
                     else:
                         await cchannel.set_permissions(member, read_messages=True, send_messages=True)
@@ -766,7 +820,8 @@ class Utilities(commands.Cog, name='Utilities'):
                     await cchannel.set_permissions(member, overwrite=None)
                 await ctx.send(content=f"Successfully {action} custom text channel access to {member.name}")
         else:
-            await ctx.send(f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
+            await ctx.send(
+                f"You need to have a custom text channel first! Use `{ctx.prefix}createcustom` to create one!")
         await self.bot.db.release(cursor)
 
     @givecustom.command()
@@ -777,7 +832,8 @@ class Utilities(commands.Cog, name='Utilities'):
         guild = ctx.guild
         guildid = ctx.guild.id
         number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
-        result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid, memID, 'voice')
+        result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid,
+                                       memID, 'voice')
         if result is not None:
             cchannel = guild.get_channel(result)
             if action not in ("add", "remove"):
@@ -787,16 +843,19 @@ class Utilities(commands.Cog, name='Utilities'):
             else:
                 if not member.bot and not cchannel.permissions_for(member).view_channel and action == "add":
                     if len(cchannel.members) > number:
-                        await ctx.send(f"You can only give this custom text channel access to an max of {number} members")
-                        return 
+                        await ctx.send(
+                            f"You can only give this custom text channel access to an max of {number} members")
+                        return
                     else:
                         await cchannel.set_permissions(member, view_channel=True, connect=True)
                 elif not member.bot and cchannel.permissions_for(member).view_channel and action in "remove":
                     await cchannel.set_permissions(member, overwrite=None)
                 await ctx.send(content=f"Successfully {action} custom voice channel access to {member.name}")
         else:
-            await ctx.send(f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
+            await ctx.send(
+                f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")
         await self.bot.db.release(cursor)
+
 
 def setup(bot):
     bot.add_cog(Utilities(bot))

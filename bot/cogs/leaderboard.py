@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import datetime
 import io
 
-# help commands
+
 class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     """[These Commands Lets You View Dionysus's Various Leaderboards And Counters](https://github.com/SrS2225a/role-manager-bot/wiki/Leaderboards-&-Counters)"""
     def __init__(self, bot):
@@ -21,7 +21,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         if not ctx.invoked_subcommand:
             await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
 
-    @graph.group(invoke_without_command=True)
+    @graph.group(aliases=['mem'])
     async def members(self, ctx):
         """Displays Joins and Leaves over a 1 month period"""
         global embed, graph
@@ -359,7 +359,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         cursor = await self.bot.db.acquire()
         # gets our leaderboard results
         tabulate.MIN_PADDING = 0
-        result = await cursor.fetch(f"SELECT member, SUM(joins) FROM member WHERE guild = $1 and type = $2 GROUP BY member ORDER BY SUM(joins) DESC", ctx.guild.id, 'message')
+        result = await cursor.fetch(f"SELECT member, SUM(joins) FROM member WHERE guild = $1 GROUP BY member ORDER BY SUM(joins) DESC", ctx.guild.id)
         table = []
         for row in result:
             user = self.bot.get_user(id=int(row[0]))
@@ -563,7 +563,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             member = member or ctx.author
             result = await cursor.fetchval("SELECT number FROM partner WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
             rank = await cursor.fetch("SELECT member FROM partner WHERE guild = $1 ORDER BY number DESC", ctx.guild.id)
-            result or 0
+            result = result or 0
 
             i = 0
             for row in rank:
