@@ -37,19 +37,17 @@ class Events(commands.Cog):
             if self._cleanup:
                 await self.pool.release(self._connection)
 
-    async def create_timer(self, argument, connection=None):
-        member = argument[0]
-        role = argument[1]
-        now = datetime.datetime.now()
-        delta = now + datetime.timedelta(seconds=int(argument[3]))
-        await connection.execute("INSERT INTO autorole(guild, member, role, date, action) VALUES($1, $2, $3, $4, $5)", member.guild.id, member.id, role.id, delta, argument[2])
-
-        if (delta - now).total_seconds() <= (86400 * 48): # 48 days
-            self._have_data.set()
-        
-        if self._current_timer is None or delta < self._current_timer[3]:
-            self._task.cancel()
-            self._task = self.bot.loop.create_task(self.dispatch_timers())
+    async def create_timer(self, argument):
+        async with self.bot.db.acquire() as cursor:
+            member = argument[0]
+            now = datetime.datetime.now()
+            delta = now + datetime.timedelta(seconds=int(argument[3]))
+            await cursor.execute("INSERT INTO autorole(guild, member, role, date, action) VALUES($1, $2, $3, $4, $5)", member.guild.id, member.id, argument[1], delta, argument[2])
+            if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
+                self._have_data.set()
+            if self._current_timer and delta < self._current_timer[3] or self._current_timer is None:
+                self._task.cancel()
+                self._task = self.bot.loop.create_task(self.dispatch_timers())
 
     async def wait_for_active_timers(self, *, connection=None, days=None):
         timer = await connection.fetchrow("SELECT * FROM autorole WHERE date < (CURRENT_DATE + $1::interval) ORDER BY date LIMIT 1;", datetime.timedelta(days=days))
@@ -60,19 +58,19 @@ class Events(commands.Cog):
         self._have_data.clear()
         self._current_timer = None
         await self._have_data.wait()
-
+        return timer
 
     async def dispatch_timers(self):
         try:
             while not self.bot.is_closed():
-                async with self.MaybeAcquire(connection=self.bot.db, pool=self.bot.db) as con:
+                async with self.MaybeAcquire(connection=None, pool=self.bot.db) as con:
                     now = datetime.datetime.now()
                     timer = self._current_timer = await self.wait_for_active_timers(connection=con, days=48)
                     if timer[3] > now:
                         to_sleep = (timer[3] - now).total_seconds()
                         await asyncio.sleep(to_sleep)
 
-                    await con.execute("DELETE FROM autorole WHERE member = $1 and guild = $2", timer[1], timer[0])
+                    await con.execute("DELETE FROM autorole WHERE member = $1 and guild = $2 and role = $3", timer[1], timer[0], timer[2])
 
                     await self.call_timers(timer)
 
@@ -91,7 +89,6 @@ class Events(commands.Cog):
         else:
             await user.remove_roles(role)
 
-
     @commands.Cog.listener()
     async def on_ready(self):
         # set the bots custom status
@@ -109,14 +106,14 @@ class Events(commands.Cog):
 
                     # code for message graph
                     date = datetime.date.today()
-                    dateVal = await cursor.prepare("SELECT joins, day, member, channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4 and day = $5 LIMIT 1")
-                    dateVal = await dateVal.fetchrow(message.author.guild.id, message.author.id, message.channel.id, 'message', date)
+                    dateVal = await cursor.prepare("SELECT messages, day, member, channel FROM message WHERE guild = $1 and member = $2 and channel = $3 and day = $4 LIMIT 1")
+                    dateVal = await dateVal.fetchrow(message.author.guild.id, message.author.id, message.channel.id, date)
 
                     if dateVal is None:
-                        await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'message', (date-datetime.timedelta(days=120)))
-                        await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7) on conflict do nothing", message.author.guild.id, 1, 0, date, message.author.id, message.channel.id, 'message')
+                        await cursor.execute("DELETE FROM message WHERE day < $1", (date-datetime.timedelta(days=120)))
+                        await cursor.execute("INSERT INTO message(guild, messages, day, member, channel) VALUES($1, $2, $3, $4, $5) on conflict do nothing", message.author.guild.id, 1, date, message.author.id, message.channel.id)
                     else:
-                        await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and member = $4 and channel = $5 and type = $6", dateVal[0]+1, dateVal[1], message.author.guild.id, message.author.id, message.channel.id, 'message')
+                        await cursor.execute("UPDATE message SET messages = $1 WHERE day = $2 and guild = $3 and member = $4 and channel = $5", dateVal[0]+1, dateVal[1], message.author.guild.id, message.author.id, message.channel.id)
             
                     # ranking cooldown ratelimiter
                     retry_after = self._cd.update_rate_limit(message)
@@ -143,9 +140,8 @@ class Events(commands.Cog):
                                     await message.channel.send(embed=embed)
                                     await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", lvl_start, 0, message.guild.id, message.author.id)
                                     levels = await cursor.fetch("SELECT level, role FROM leveling WHERE guild = $1 and system = $2", message.author.guild.id, 'levels')
-                                    check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 LIMIT 1", message.author.guild.id, 'keep')
+                                    check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 LIMIT 1", message.author.guild.id, 'keep') or 1
                                     for level in levels:
-                                        check or 1
                                         if lvl_start >= level[0] and check == 1:
                                             lvl_role = message.guild.get_role(level[1])
                                             await message.author.add_roles(lvl_role, reason='User leveled up')
@@ -225,7 +221,7 @@ class Events(commands.Cog):
                                             await message.author.add_roles(reward)
 
                     # FOR AFK
-                    afk = await cursor.prepare("SELECT member, message FROM afk WHERE guild = $1")
+                    afk = await cursor.prepare("SELECT member, message FROM afk WHERE guild = $1 LIMIT 1")
                     channel = message.channel
                     member = message.author
                     for user in await afk.fetch(message.guild.id):
@@ -277,7 +273,6 @@ class Events(commands.Cog):
                             self.vc.start()
                         elif not self.bot.active:
                             self.vc.cancel()
-
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -355,14 +350,14 @@ class Events(commands.Cog):
 
                 # code for member join graph
                 date = datetime.date.today()
-                dateVal = await cursor.prepare("SELECT joins FROM member WHERE guild = $1 and type = $2 and day = $3 LIMIT 1")
-                dateVal = await dateVal.fetchval(guild.id, 'member', date)
+                dateVal = await cursor.prepare("SELECT joins FROM member WHERE guild = $1 and day = $2 LIMIT 1")
+                dateVal = await dateVal.fetchval(guild.id, date)
 
                 if dateVal is None:
-                    await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'member', (date-datetime.timedelta(days=120)))
-                    await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5) on conflict do nothing", guild.id, 1, 0, date, 'member')
+                    await cursor.execute("DELETE FROM member WHERE day < $1", (date-datetime.timedelta(days=120)))
+                    await cursor.execute("INSERT INTO member(guild, joins, leaves, day) VALUES($1, $2, $3, $4) on conflict do nothing", guild.id, 1, 0, date)
                 else:
-                    await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal+1, date, guild.id, 'member')
+                    await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3", dateVal+1, date, guild.id)
 
                 # code for invite rewards
                 try:
@@ -382,19 +377,18 @@ class Events(commands.Cog):
                                     total = await cursor.fetchval("SELECT SUM(amount) FROM invite WHERE guild = $1 and member = $2 LIMIT 1", guild.id, invites.inviter.id)
                                     check = await cursor.fetch("SELECT date::int8, role FROM boost WHERE guild = $1 and type = $2 ORDER BY date", guild.id, 'invite')
                                     for day in check:
-                                        role = guild.get_role(day[1])
                                         if total >= day[0]:
                                             channel = guild.get_channel(announcement)
                                             user = guild.get_member(invites.inviter.id)
+                                            role = guild.get_role(day[1])
                                             if (channel, user) is not None and role.id not in [role.id for role in user.roles]:
                                                 await channel.send(f"Congrats to {user.mention} for inviting {total} users to {guild}!")
                                                 await user.add_roles(role)
                                 break
-                                            
-                            # if the inivter is not in the datahbase, add them                
                             elif amount is None and invites.uses > 0:
                                 await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id, invites.inviter.id, invites.code, invites.uses, 0, 0)
                                 await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
+                                break
                 except discord.Forbidden:
                     pass
 
@@ -409,24 +403,20 @@ class Events(commands.Cog):
                 auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
                 execute = await auto.fetch(guild.id, "add", "remove")
                 for auto in execute:
-                    try:
-                        if auto[0] not in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "add":
+                    role = guild.get_role(role_id=auto[0])
+                    if role is not None:
+                        if role.id not in [role.id for role in member.roles] and auto[2] == "add":
                             if auto[1] > 0:
-                                # if we are waiting a certin amount of time to add the role, post to function
-                                await self.create_timer([member, role, True, auto[1]], connection=cursor)
+                                # if we are waiting a certain amount of time to add the role, post to function
+                                await self.create_timer([member, auto[0], True, auto[1]])
                             else:
-                                role = guild.get_role(role_id=auto[0])
                                 await member.add_roles(role, reason='Auto role')
-                        elif auto[0] in [role.id for role in member.roles] and auto[0] is not None and auto[2] == "remove":
+                        elif role.id in [role.id for role in member.roles] and auto[2] == "remove":
                             if auto[1] > 0:
-                                # if we are waiting a certin amount of time to remove the role, post to function
-                                await self.create_timer([member, role, False, auto[1]], connection=cursor)
+                                # if we are waiting a certain amount of time to remove the role, post to function
+                                await self.create_timer([member, auto[0], False, auto[1]])
                             else:
-                                role = guild.get_role(role_id=auto[0])
                                 await member.remove_roles(role, reason='Auto role')
-                    except:
-                        pass
-
 
                 # code for channel overwrites recovery
                 override = await cursor.prepare("SELECT yes, no, channel FROM recover WHERE guild = $1 and member = $2")
@@ -454,14 +444,14 @@ class Events(commands.Cog):
 
                 # code for member join graph
                 date = datetime.date.today()
-                dateVal = await cursor.prepare("SELECT leaves FROM member WHERE guild = $1 and type = $2 and day = $3 LIMIT 1")
-                dateVal = await dateVal.fetchval(member.guild.id, 'member', date)
+                dateVal = await cursor.prepare("SELECT leaves FROM member WHERE guild = $1 and day = $2 LIMIT 1")
+                dateVal = await dateVal.fetchval(member.guild.id, date)
 
                 if dateVal is None:
-                    await cursor.execute("DELETE FROM member WHERE type = $1 and day < $2", 'member', (date-datetime.timedelta(days=120)))
-                    await cursor.execute("INSERT INTO member(guild, joins, leaves, day, type) VALUES($1, $2, $3, $4, $5)", member.guild.id, 0, 1, date, 'member')
+                    await cursor.execute("DELETE FROM member WHERE day < $1", (date-datetime.timedelta(days=120)))
+                    await cursor.execute("INSERT INTO member(guild, joins, leaves, day) VALUES($1, $2, $3, $4)", member.guild.id, 0, 1, date)
                 else:
-                    await cursor.execute("UPDATE member SET leaves = $1 WHERE day = $2 and guild = $3 and type = $4", dateVal+1, date, member.guild.id, 'member')
+                    await cursor.execute("UPDATE member SET leaves = $1 WHERE day = $2 and guild = $3", dateVal+1, date, member.guild.id)
 
                 # updates the inviters invite leaves if the user left the guild
                 amount = await cursor.prepare("SELECT invite FROM invite2 WHERE guild = $1 and member = $2 LIMIT 1")
@@ -628,9 +618,8 @@ class Events(commands.Cog):
                                     await channel.send(embed=embed)
                                 await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", lvl_start, 0, user.guild.id, user.id)
                                 levels = await cursor.fetchrow("SELECT level FROM leveling WHERE guild = $1 and system = $2", user.guild.id, 'levels')
-                                check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", user.guild.id, 'keep')
+                                check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2", user.guild.id, 'keep') or 1
                                 for level in levels:
-                                    check or 1
                                     if lvl_start >= level[0] and check == 1:
                                         await cursor.execute("SELECT role FROM leveling WHERE guild = $1 and level = $2 and system = $3", user.guild.id, lvl_start, 'levels')
                                         lvl_roles = cursor.fetchone()
