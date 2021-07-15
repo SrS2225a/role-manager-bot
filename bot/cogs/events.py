@@ -405,13 +405,13 @@ class Events(commands.Cog):
                 for auto in execute:
                     role = guild.get_role(role_id=auto[0])
                     if role is not None:
-                        if role.id not in [role.id for role in member.roles] and auto[2] == "add":
+                        if auto[2] == "add":
                             if auto[1] > 0:
                                 # if we are waiting a certain amount of time to add the role, post to function
                                 await self.create_timer([member, auto[0], True, auto[1]])
                             else:
                                 await member.add_roles(role, reason='Auto role')
-                        elif role.id in [role.id for role in member.roles] and auto[2] == "remove":
+                        elif auto[2] == "remove":
                             if auto[1] > 0:
                                 # if we are waiting a certain amount of time to remove the role, post to function
                                 await self.create_timer([member, auto[0], False, auto[1]])

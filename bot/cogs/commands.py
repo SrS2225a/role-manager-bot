@@ -35,6 +35,8 @@ class Help(commands.Cog, name='Commands'):
             await ctx.send("Not a valid command or cog!")
         await self.bot.db.release(cursor)
 
+    @command.group()
+    @commands.has_permissions(manage_guild=True)
     async def disable(self, ctx, command):
         """Allows you to disable a command or cog"""
         cursor = await self.bot.db.acquire()

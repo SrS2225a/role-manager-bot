@@ -51,8 +51,6 @@ class Tasks(commands.Cog):
                                 if member is not None and member.premium_since is None:
                                     await member.remove_roles(role)
                                     await connection.execute(f"DELETE FROM owner WHERE guild = $1 and member = $2 and type = $3", guild.id, member.id, 'boost')
-
-
         except Exception:
             traceback.print_exc()
 
