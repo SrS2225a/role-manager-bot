@@ -115,6 +115,11 @@ class Help(commands.Cog, name='Information'):
         await ctx.send("https://discord.gg/JHkhnzDvWG")
 
     @commands.command()
+    async def invite(self, ctx):
+        """Give you a link to invite the bot"""
+        ctx.send("https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot")
+
+    @commands.command()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Shows info about a role"""
         # gets various information about a role

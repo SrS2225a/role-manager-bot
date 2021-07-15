@@ -11,6 +11,12 @@ class Role(commands.Cog, name="Roles"):
     def __init__(self, bot):
         self.bot = bot
 
+    def date_convert_seconds(self, s):
+        current, result = Calendar().parse(s)
+        t = datetime.datetime(*current[:6])
+        futureDate = int((t - datetime.datetime.now()).total_seconds())
+        return futureDate + 1, result
+
     @commands.command(description='Supply type with add/remove to add or remove that role and to with everyone to execute for everyone in the guild, members to execute for all members, bots to execute for all bots, or an user')
     @commands.has_permissions(manage_roles=True)
     async def giverole(self, ctx, type, role: discord.Role, to):
@@ -114,13 +120,7 @@ class Role(commands.Cog, name="Roles"):
         guild = ctx.guild.id
         result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and guild = $2 and type = $3", role.id, guild, 'add')
         if result is None:
-            def date_convert_seconds(s):
-                current, result = Calendar().parse(s)
-                t = datetime.datetime(*current[:6])
-                futureDate = int((t - datetime.datetime.now()).total_seconds())
-                return futureDate + 1, result
-
-            time = (0, 2) if delay is None else date_convert_seconds(delay)
+            time = (0, 2) if delay is None else self.date_convert_seconds(delay)
             if time[1] < 1:
                 await ctx.send("I do not recognise that time!")
             else:
@@ -140,13 +140,7 @@ class Role(commands.Cog, name="Roles"):
         guild = ctx.guild.id
         result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and guild = $2 and type = $3", role.id, guild, 'remove')
         if result is None:
-            def date_convert_seconds(s):
-                current, result = Calendar().parse(s)
-                t = datetime.datetime(*current[:6])
-                futureDate = int((t - datetime.datetime.now()).total_seconds())
-                return futureDate + 1, result
-
-            time = (0, 2) if delay is None else date_convert_seconds(delay)
+            time = (0, 2) if delay is None else self.date_convert_seconds(delay)
             if time[1] < 1:
                 await ctx.send("I do not recognise that time!")
             else:
@@ -177,7 +171,7 @@ class Role(commands.Cog, name="Roles"):
 
     @commands.group(aliases=['autopn'], invoke_without_command=True, hidden=True)
     @commands.has_permissions(manage_guild=True)
-    async def autoposition(self, ctx, type, role: discord.Role, delay):
+    async def autoposition(self, ctx):
         """Allows you to automatically add roles based on someones account creation or server join date"""
         if not ctx.invoked_subcommand:
             await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
@@ -190,13 +184,7 @@ class Role(commands.Cog, name="Roles"):
         guild = ctx.guild.id
         result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and type = $2 and guild = $3", role.id, type, 'create')
         if result is None:
-            def date_convert_seconds(s):
-                current, result = Calendar().parse(s)
-                t = datetime.datetime(*current[:6])
-                futureDate = int((t - datetime.datetime.now()).total_seconds())
-                return futureDate + 1, result
-
-            time = date_convert_seconds(delay)
+            time = self.date_convert_seconds(delay)
             if time[1] < 1:
                 await ctx.send("I do not recognise that time!")
             else:
@@ -216,13 +204,7 @@ class Role(commands.Cog, name="Roles"):
         guild = ctx.guild.id
         result = await cursor.fetchval("SELECT role FROM roles WHERE role = $1 and type = $2 and guild = $3", role.id, type, 'join')
         if result is None:
-            def date_convert_seconds(s):
-                current, result = Calendar().parse(s)
-                t = datetime.datetime(*current[:6])
-                futureDate = int((t - datetime.datetime.now()).total_seconds())
-                return futureDate + 1, result
-
-            time = date_convert_seconds(delay)
+            time = self.date_convert_seconds(delay)
             if time[1] < 1:
                 await ctx.send("I do not recognise that time!")
             else:

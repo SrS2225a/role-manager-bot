@@ -270,7 +270,7 @@ If you want the custom role to be deleted from them as soon as they lose the set
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)
-    async def invite(self, ctx, amount: int, *, role: discord.Role):
+    async def inviter(self, ctx, amount: int, *, role: discord.Role):
         """Allows you to set an invite reward based on how many users were invited by the inviter"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
