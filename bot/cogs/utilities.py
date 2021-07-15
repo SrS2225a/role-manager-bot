@@ -51,9 +51,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 await self.pool.release(self._connection)
 
     async def wait_for_active_reminders(self, *, connection=None, days=None):
-        timer = await connection.fetchrow(
-            "SELECT * FROM remind WHERE date < (CURRENT_DATE + $1::interval) ORDER BY date LIMIT 1;",
-            datetime.timedelta(days=days))
+        timer = await connection.fetchrow("SELECT * FROM remind WHERE date < (CURRENT_DATE + $1::interval) ORDER BY date LIMIT 1;", datetime.timedelta(days=days))
         if timer is not None:
             self._have_data.set()
             return timer
@@ -103,9 +101,7 @@ class Utilities(commands.Cog, name='Utilities'):
             self._task = self.bot.loop.create_task(self.dispatch_remind())
 
     async def wait_for_active_polls(self, *, connection=None, days=None):
-        timer = await connection.fetchrow(
-            "SELECT * FROM vote WHERE date < (CURRENT_DATE + $1::interval)  and type = $2 ORDER BY date LIMIT 1",
-            datetime.timedelta(days=days), 'poll')
+        timer = await connection.fetchrow("SELECT * FROM vote WHERE date < (CURRENT_DATE + $1::interval)  and type = $2 ORDER BY date LIMIT 1", datetime.timedelta(days=days), 'poll')
         if timer is not None:
             self.__have_data.set()
             return timer
@@ -125,8 +121,7 @@ class Utilities(commands.Cog, name='Utilities'):
                         to_sleep = (timer[4] - now).total_seconds()
                         await asyncio.sleep(to_sleep)
 
-                    await con.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", timer[0],
-                                      timer[1], "poll")
+                    await con.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", timer[0], timer[1], "poll")
                     await self.call_poll(timer)
 
         except asyncio.CancelledError:
@@ -225,8 +220,7 @@ class Utilities(commands.Cog, name='Utilities'):
             thing = ctx.author if type == 'dm' else ctx.channel if type == 'here' else type
 
             def display_time(duration):
-                intervals = (
-                    ('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
+                intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
 
                 result = []
 
@@ -252,8 +246,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 escaped = discord.utils.escape_mentions(description)
                 if repeat:
                     if time < 3600 and isinstance(thing, discord.TextChannel):
-                        await ctx.send(
-                            "To prevent spam in servers, repeating reminders must be more than 1 hour. Try having the reminder send to your dm or increase the remind time")
+                        await ctx.send("To prevent spam in servers, repeating reminders must be more than 1 hour. Try having the reminder send to your dm or increase the remind time")
                         return
                     else:
                         await ctx.send(f"Ok, reminding you every {display_time(time)} about: {escaped}")
@@ -323,8 +316,7 @@ class Utilities(commands.Cog, name='Utilities'):
             now = datetime.datetime.now()
             delta = now + datetime.timedelta(seconds=time)
             ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
-            embed = discord.Embed(title=name,
-                                  description=f"**React With 🎉 To Enter** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winners}")
+            embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winners}")
             embed.set_footer(text=f"Ends At: {ends}")
             sent = await ctx.send(embed=embed)
             await sent.add_reaction('🎉')
