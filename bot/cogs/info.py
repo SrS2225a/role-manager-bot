@@ -102,7 +102,7 @@ class Help(commands.Cog, name='Information'):
         stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {uses}"
         embed = discord.Embed(title="About Dionysus", color=0x0001fe)
         embed.add_field(name='Credits', value='**Main Devs**\n<@!270848136006729728> <@!508455796783317002>\n**Contributors**\n<@!332180997653135383>')
-        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here](https://github.com/SrS2225a/role-manager-bot)\nSupport: [Click Here](https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here](https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here](https://trello.com/b/Y86Q7qKA/dionysus-bot)\ntop.gg: [Click Here](https://top.gg/bot/437447118127366154)")
+        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here](https://github.com/SrS2225a/role-manager-bot/tree/master)\nSupport: [Click Here](https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here](https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here](https://trello.com/b/Y86Q7qKA/dionysus-bot)\ntop.gg: [Click Here](https://top.gg/bot/437447118127366154)")
         embed.add_field(name='Stats', value=stats)
         embed.add_field(name='Usage', value=usage)
         embed.add_field(name='Uptime', value="Since " + up)
@@ -118,7 +118,11 @@ class Help(commands.Cog, name='Information'):
     async def invite(self, ctx):
         """Give you a link to invite the bot"""
         ctx.send("https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot")
-
+    
+    @command.command(aliases=['github'])
+    async def opensource(self, ctx):
+        await ctx.send("https://github.com/SrS2225a/role-manager-bot/tree/master")
+    
     @commands.command()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Shows info about a role"""
