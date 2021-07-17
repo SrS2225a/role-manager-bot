@@ -14,7 +14,7 @@ class Info(commands.Cog, name='Miscellaneous'):
 
     def __init__(self, bot):
         self.bot = bot
-    
+
     @commands.command()
     @commands.has_permissions(manage_guild=True)
     async def settings(self, ctx, setting=None):
@@ -33,7 +33,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 position = guild.get_role(custom[3])
                 custom_table.append([custom[1], role, position, custom[4], custom[5], custom[6]])
             if custom_table:
-                message += f"**Custom Settings**\n```{tabulate.tabulate(custom_table, headers=['Type', 'Role', 'Position', 'Amount', 'Tag', 'Remove'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                message += f"**Custom Settings**\n```" \
+                           f"{tabulate.tabulate(custom_table, headers=['Type', 'Role', 'Position', 'Amount', 'Tag', 'Remove'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting == "count" or ident_flag:
             count = await cursor.fetch("SELECT channel, role, count, delay FROM count WHERE guild = $1", guild.id)
@@ -44,9 +45,10 @@ class Info(commands.Cog, name='Miscellaneous'):
                 count_table.append([channel, role, count[2], count[3]])
             if count_table:
                 message += f"**Counter Settings**\n```{tabulate.tabulate(count_table, headers=['Channel', 'Role', 'Count', 'Delay'], tablefmt='presto', disable_numparse=True)}```\n\n"
-            
+
         if setting == "booster" or ident_flag:
-            booster = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'boost')
+            booster = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2",
+                                         guild.id, 'boost')
             boost_table = []
             for booster in booster:
                 role = guild.get_role(booster[0])
@@ -55,7 +57,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 message += f"**Booster Reward Settings**\n```{tabulate.tabulate(boost_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting == "invite" or ident_flag:
-            invite = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'invite')
+            invite = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2",
+                                        guild.id, 'invite')
             invite_table = []
             for invite in invite:
                 role = guild.get_role(invite[0])
@@ -64,7 +67,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 message += f"**Invite Reward Settings**\n```{tabulate.tabulate(invite_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting == "overwrite" or ident_flag:
-            overwrite = await cursor.fetch("SELECT member, role FROM roles WHERE guild = $1 and type = $2", guild.id, 'recover')
+            overwrite = await cursor.fetch("SELECT member, role FROM roles WHERE guild = $1 and type = $2",
+                                           guild.id, 'recover')
             overwrite_table = []
             for overwrite in overwrite:
                 channel = guild.get_channel(overwrite[0])
@@ -74,22 +78,24 @@ class Info(commands.Cog, name='Miscellaneous'):
                 message += f"**Channel Overwrites Settings**\n```{tabulate.tabulate(overwrite_table, headers=['Channel', 'Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting == "position" or ident_flag:
-            position = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or type = $3", guild.id, 'create', 'join')
+            position = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or "
+                                          "type = $3", guild.id, 'create', 'join')
             position_table = []
             for position in position:
                 role = guild.get_role(position[1])
-                position_table.append(position[0], role, position[2])
+                position_table.append([position[0], role, position[2]])
             if position_table:
                 message += f"**Auto Position Settings**\n```{tabulate.tabulate(position_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting == "autorole" or ident_flag:
-            autorole = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or type = $3", guild.id, 'add', 'remove')
+            autorole = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or "
+                                          "type = $3", guild.id, 'add', 'remove')
             autorole_table = []
             for autorole in autorole:
                 role = guild.get_role(autorole[1])
                 autorole_table.append([autorole[0], role, autorole[2]])
             if autorole_table:
-                 message += f"**Auto Role Settings**\n```{tabulate.tabulate(autorole_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                message += f"**Auto Role Settings**\n```{tabulate.tabulate(autorole_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting == "sticky" or ident_flag:
             sticky = await cursor.fetch("SELECT role FROM reward WHERE guild = $1 and type = $2", guild.id, 'sticky')
@@ -99,7 +105,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                 sticky_table.append(role)
             if sticky_table:
                 message += f"**Sticky Role Settings**\n```{tabulate.tabulate(sticky_table, headers=['Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
-        
+
         if setting == "announce" or ident_flag:
             announce = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
             announce = guild.get_channel(announce)
@@ -128,7 +134,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 message += f"**Flag Settings**\n```{tabulate.tabulate(flags_table, headers=['Role', 'Flag'], tablefmt='presto', disable_numparse=True)}```"
 
         if setting == "partnership" or ident_flag:
-            partnership = await cursor.fetch("SELECT level, difficulty, type, role FROM leveling WHERE guild = $1 and system = $2", guild.id, 'partners')
+            partnership = await cursor.fetch("SELECT level, difficulty, type, role FROM leveling WHERE guild = $1 and "
+                                             "system = $2", guild.id, 'partners')
             partnership_table = []
             for partnership in partnership:
                 channel = guild.get_channel(partnership[2])
@@ -139,10 +146,10 @@ class Info(commands.Cog, name='Miscellaneous'):
                 message += f"**Partnership Settings**\n```{tabulate.tabulate(partnership_table, headers=['Channel', 'Role', 'Reward', 'Amount'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting == "leveling" or ident_flag:
-            leveling = await cursor.fetch("SELECT * FROM leveling WHERE guild = $1 AND not system = $2 AND not system = $3", guild.id, 'partners', 'points')
+            leveling = await cursor.fetch("SELECT * FROM leveling WHERE guild = $1 AND not system = $2 AND not system "
+                                          "= $3", guild.id, 'partners', 'points')
             leveling_table = []
             for leveling in leveling:
-                converter = commands.RoleConverter()
                 if leveling[1] == 'blacklist':
                     main = guild.get_role(leveling[3])
                     main2 = guild.get_channel(leveling[3])
@@ -172,7 +179,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                     type = 'once'
                 else:
                     add = False
-                
+
                 if add:
                     role = guild.get_role(int(re.findall(r'\d*', reaction[1])[1]))
                     blacklist = guild.get_role(reaction[4])
@@ -181,7 +188,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 message += f"**Reaction Settings**\n```{tabulate.tabulate(reaction_table, headers=['Type', 'Role', 'Message', 'Emoji', 'Blacklist'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
         if setting == "clubs" or ident_flag:
-            clubs = await cursor.fetch("SELECT role, level, type, difficulty FROM leveling WHERE guild = $1 AND system = $2", guild.id, 'points')
+            clubs = await cursor.fetch("SELECT role, level, type, difficulty FROM leveling WHERE guild = $1 AND "
+                                       "system = $2", guild.id, 'points')
             clubs_table = []
             for clubs in clubs:
                 catagorey = guild.get_channel(clubs[0])
@@ -192,8 +200,11 @@ class Info(commands.Cog, name='Miscellaneous'):
             if clubs_table:
                 message += f"**Club Settings**\n```{tabulate.tabulate(clubs_table, headers=['Catagorey', 'Channel', 'Role', 'Give'], tablefmt='presto', disable_numparse=True)}```\n\n"
 
-        if setting not in ("clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "overwrite", "invite", "booster", "count", "custom") and ident_flag is False:
-            await ctx.send('The setting option must be defined as "clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "postiion", "sticky", "overwrite", "invite", "booster", "count", "custom"; or none')
+        if setting not in ("clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "position",
+                           "overwrite", "invite", "booster", "count", "custom") and ident_flag is False:
+            await ctx.send('The setting option must be defined as "clubs", "leveling", "partnership", "flags", '
+                           '"announce", "suggest", "livestream", "postiion", "sticky", "overwrite", "invite", '
+                           '"booster", "count", "custom"; or none')
         else:
             await ctx.send(message)
 
@@ -207,38 +218,47 @@ class Info(commands.Cog, name='Miscellaneous'):
 
     @club.command(brief='club setup clubs general staff')
     @commands.has_permissions(manage_guild=True)
-    async def setup(self, ctx, channel: discord.TextChannel, category: discord.CategoryChannel, role: discord.Role=None):
+    async def setup(self, ctx, channel: discord.TextChannel, category: discord.CategoryChannel,
+                    role: discord.Role = None):
         """Sets what members are allowed to create clubs"""
         cursor = await self.bot.db.acquire()
         category = category.id
         level = channel.id
         if role is not None:
             role = role.id
-        type = await cursor.fetchval("SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
-        check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $5", ctx.guild.id, 'points', category, level, role)
+        type = await cursor.fetchval("SELECT system FROM leveling WHERE guild = $1 and system = $2",
+                                     ctx.guild.id, 'points')
+        check = await cursor.fetchval("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and "
+                                      "level = $4 and type = $5 and difficulty = $5", ctx.guild.id, 'points',
+                                      category, level, role)
         if check is not None:
-            await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and difficulty = $5", ctx.guild.id, 'points', category, level, role)
+            await cursor.execute("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 "
+                                 "and difficulty = $5", ctx.guild.id, 'points', category, level, role)
             await ctx.send("Clubs Requirement Deleted Successfully!")
         elif type is None:
-            await cursor.execute("INSERT INTO leveling(guild, system, role, level, difficulty) VALUES($1, $2, $3, $4, $5)", ctx.guild.id, 'points', category, level, role)
+            await cursor.execute("INSERT INTO leveling(guild, system, role, level, difficulty) VALUES($1, $2, $3, $4, "
+                                 "$5)", ctx.guild.id, 'points', category, level, role)
             await ctx.send("Clubs Requirement Set Successfully!")
         else:
-            await cursor.execute("UPDATE leveling SET role = $1, level = $2, difficulty = $3 WHERE guild = $4 and system = $5", category, level, role, ctx.guild.id, 'points')
+            await cursor.execute("UPDATE leveling SET role = $1, level = $2, difficulty = $3 WHERE guild = $4 and "
+                                 "system = $5", category, level, role, ctx.guild.id, 'points')
             await ctx.send("Clubs Requirement Updated Successfully!")
         await self.bot.db.release(cursor)
 
-    @club.command(brief='club create #art-&-drawing "Art & Design" "A place to design and draw art" https://example.com/link/to-image.jpg "Wensdays 2:00 PM"')
+    @club.command(brief='club create #art-&-drawing "Art & Design" "A place to design and draw art" '
+                        'https://example.com/link/to-image.jpg "Wensdays 2:00 PM"')
     @commands.has_permissions(manage_messages=True)
     async def create(self, ctx, name, description, graphic, time, *owners: discord.Member):
         """Allows you to create your very own club"""
         cursor = await self.bot.db.acquire()
         # checks if the user creating the club did not hit the limit and notify us
-        if len(owners) > 3+1:
+        if len(owners) > 3 + 1:
             await ctx.send('You can only set up to 3 Representatives!')
         else:
             guild = ctx.guild
             # gets our settings for how the club should be created
-            club = await cursor.fetchrow("SELECT level, role, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
+            club = await cursor.fetchrow(
+                "SELECT level, role, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
             chan = guild.get_channel(club[0])
             category = guild.get_channel(club[1])
             give = guild.get_role(club[2])
@@ -246,38 +266,49 @@ class Info(commands.Cog, name='Miscellaneous'):
             mention = ' '.join([owner.mention for owner in owners])
             loading = await ctx.send(f"Creating The Club With The Name {name}!")
             emote = '☑'
-            embed = discord.Embed(title=f"{name} Club", description=f"{description} \n\n**Representatives:** {mention} \n\n**Weekly Events:** {time}\n\nReact With {emote} To Join")
+            embed = discord.Embed(title=f"{name} Club", description=f"{description} \n\n**Representatives:** {mention}"
+                                                                    f" \n\n**Weekly Events:** {time}\n\n"
+                                                                    f"React With {emote} To Join")
             embed.set_image(url=graphic)
             # creates the club
-            created = await guild.create_role(name=name, colour=discord.Colour(int('fffdd0', 16)), reason="Newly Created Club")
-            overwrites = {created: discord.PermissionOverwrite(read_messages=True, send_messages=True), ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False)}
+            created = await guild.create_role(name=name, reason="Newly Created Club")
+            overwrites = {created: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+                          ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False)}
             for owner in owners:
                 await owner.add_roles(created)
                 if give is not None:
                     await owner.add_roles(give)
                 overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True, manage_messages=True)})
-            channel = await guild.create_text_channel(name, category=category, overwrites=overwrites, topic=description, reason="Newly Created Club")
+            channel = await guild.create_text_channel(name, category=category, overwrites=overwrites, topic=description,
+                                                      reason="Newly Created Club")
             sent = await chan.send(embed=embed)
             await sent.add_reaction(emote)
             # inserts our club information into the database for future use later
             message = sent.channel.id + sent.id
             master = 'c' + str(created.id)
-            await cursor.execute("INSERT INTO points(guild_id, channel, exp, lvl) VALUES($1, $2, $3, $4)", guild.id, channel.id, sent.id, created.id)
-            await cursor.execute("INSERT INTO reaction(guild, role, master, type, blacklist) VALUES($1, $2, $3, $4, $5)", guild.id, master, message, emote, 0)
-            started = await channel.send(f"Welcome to your club {mention}! To get started please read the instructions in {chan.mention}. Have fun!")
+            await cursor.execute("INSERT INTO points(guild_id, channel, exp, lvl) VALUES($1, $2, $3, $4)", guild.id,
+                                 channel.id, sent.id, created.id)
+            await cursor.execute(
+                "INSERT INTO reaction(guild, role, master, type, blacklist) VALUES($1, $2, $3, $4, $5)",
+                guild.id, master, message, emote, 0)
+            started = await channel.send(f"Welcome to your club {mention}! To get started please read the "
+                                         f"instructions in {chan.mention}. Have fun!")
             await started.pin()
             await loading.edit(content=f"Club {name} created successfully!")
         await self.bot.db.release(cursor)
 
-    @club.command(brief='club edit #art-&-drawing "Art & Design" "A place to discuss, design and draw art" https://example.com/link/to-image.jpg "Wensdays 2:00 PM"')
+    @club.command(brief='club edit #art-&-drawing "Art & Design" "A place to discuss, design and draw art" '
+                        'https://example.com/link/to-image.jpg "Wensdays 2:00 PM"')
     @commands.has_permissions(manage_messages=True)
     async def edit(self, ctx, channel: discord.TextChannel, name, description, graphic, time, *owners: discord.Member):
         """Allows you to edit your very own club"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
         # checks if the channel is a club from our database
-        club = await cursor.fetchrow("SELECT channel, exp, lvl FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id, channel.id)
-        channel = await cursor.fetchrow("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
+        club = await cursor.fetchrow("SELECT channel, exp, lvl FROM points WHERE guild_id = $1 and channel = $2",
+                                     ctx.guild.id, channel.id)
+        channel = await cursor.fetchrow("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2",
+                                        ctx.guild.id, 'points')
         # edits the message that shows information about the club itself and how to join it
         mention = ' '.join([owner.mention for owner in owners])
         chan = guild.get_channel(channel[0])
@@ -287,7 +318,8 @@ class Info(commands.Cog, name='Miscellaneous'):
         give = guild.get_role(channel[1])
         search = re.findall(r"<@(!?)([0-9]*)>", message.embeds[0].description)
         # edits the club
-        overwrites = {role: discord.PermissionOverwrite(read_messages=True, send_messages=True), ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False)}
+        overwrites = {role: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+                      ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False, send_messages=False)}
         loading = await ctx.send(f"Editing The Club With The Name {name}")
         for host in search:
             user = guild.get_member(int(host[1]))
@@ -300,7 +332,9 @@ class Info(commands.Cog, name='Miscellaneous'):
                 overwrites.update({owner: discord.PermissionOverwrite(mention_everyone=True, manage_messages=True)})
         await role.edit(name=name)
         await new.edit(name=name, topic=description, overwrites=overwrites)
-        embed = discord.Embed(title=f'{name} Club', description=f"{description} \n\n**Representatives:** {mention} \n\n**Weekly Events:** {time} UTC \n\nReact With {'☑'} To Join")
+        embed = discord.Embed(title=f'{name} Club', description=f"{description} \n\n**Representatives:** {mention} "
+                                                                f"\n\n**Weekly Events:** {time} UTC \n\n"
+                                                                f"React With {'☑'} To Join")
         embed.set_image(url=graphic)
         await message.edit(embed=embed)
         await loading.edit(content=f"Club {name} edited successfully!")
@@ -313,11 +347,13 @@ class Info(commands.Cog, name='Miscellaneous'):
         cursor = await self.bot.db.acquire()
         # checks if the channel is a club from our database
         guild = ctx.guild
-        owner = await cursor.fetchrow("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id, 'points')
+        owner = await cursor.fetchrow("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2",
+                                      ctx.guild.id, 'points')
         main = guild.get_channel(owner[0])
         give = guild.get_role(owner[1])
         loading = await ctx.send(f"Deleting The Club With The Name {channel}")
-        delete = await cursor.fetchrow(f"SELECT channel, exp, lvl FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id, channel.id)
+        delete = await cursor.fetchrow(f"SELECT channel, exp, lvl FROM points WHERE guild_id = $1 and channel = $2",
+                                       ctx.guild.id, channel.id)
         if delete is None:
             await ctx.send(f"This club does not exist! Create One With `{ctx.prefix}createclub`")
         # deletes the club
@@ -333,7 +369,8 @@ class Info(commands.Cog, name='Miscellaneous'):
         await message.delete()
         master = "r" + str(menu.id)
         await cursor.execute("DELETE FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id, channel.id)
-        await cursor.execute("DELETE FROM reaction WHERE role = $1 and master = $2 and guild = $3", master, main, ctx.guild.id)
+        await cursor.execute("DELETE FROM reaction WHERE role = $1 and master = $2 and guild = $3", master, main,
+                             ctx.guild.id)
         await loading.edit(content=f"Club {category.name} deleted successfully!")
         await self.bot.db.release(cursor)
 
@@ -344,25 +381,34 @@ class Info(commands.Cog, name='Miscellaneous'):
         cursor = await self.bot.db.acquire()
         # checks if the channel is a club from our database
         guild = ctx.guild
-        club = await cursor.fetchrow(f"SELECT lvl, exp FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id, channel.id)
+        club = await cursor.fetchrow(f"SELECT lvl, exp FROM points WHERE guild_id = $1 and channel = $2", ctx.guild.id,
+                                     channel.id)
         if club is None:
             await ctx.send("The channel specified is not a valid Club!")
         else:
-            # checks if the member was blacklisted from our club alreadly, and if they were remove them from the blacklist
-            check = await cursor.fetchval("SELECT member FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild.id, member.id, club[1], 'club')
+            # checks if the member was blacklisted from our club alreadly, and if they were remove them from the
+            # blacklist
+            check = await cursor.fetchval(
+                "SELECT member FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild.id,
+                member.id, club[1], 'club')
             if check is None:
                 # blacklists a member from a club
                 give = guild.get_role(club[0])
                 await member.remove_roles(give)
-                await cursor.execute("INSERT INTO owner(guild, member, message, type) VALUES($1, $2, $3, $4)", guild.id, member.id, club[1], 'club')
-                isIn = 'You have automatically been removed from this club.' if give.id in [role.id for role in ctx.author.roles] else ''
-                await member.send(f"You have been Blacklisted from joining the Club {channel.mention} in the server {guild} for the reason: {reason}. {isIn}")
+                await cursor.execute("INSERT INTO owner(guild, member, message, type) VALUES($1, $2, $3, $4)", guild.id,
+                                     member.id, club[1], 'club')
+                isIn = 'You have automatically been removed from this club.' if give.id in \
+                                                                                [role.id for role in ctx.author.roles] \
+                    else ''
+                await member.send(f"You have been Blacklisted from joining the Club {channel.mention} in the server "
+                                  f"{guild} for the reason: {reason}. {isIn}")
                 await ctx.send(f"User blacklisted successfully from club {channel}")
             else:
-                await cursor.execute("DELETE FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild.id, member.id, club[1], 'club')
+                await cursor.execute(
+                    "DELETE FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild.id,
+                    member.id, club[1], 'club')
                 await ctx.send(f"User unblacklisted successfully from club {channel}")
         await self.bot.db.release(cursor)
-
 
     @commands.command()
     async def roles(self, ctx):
@@ -372,7 +418,7 @@ class Info(commands.Cog, name='Miscellaneous'):
         for role in ctx.guild.roles[::-1]:
             roles.append(role.name + " " + str(role.id))
 
-        # puts results in a navigatable page interface
+        # puts results in a navigable page interface
         class Source(menus.ListPageSource):
             def __init__(self, data):
                 super().__init__(data, per_page=20)
@@ -394,7 +440,7 @@ class Info(commands.Cog, name='Miscellaneous'):
             for member in ctx.guild.members:
                 if len(member.roles) == 1:
                     members.append(member.name + "#" + member.discriminator)
-                    
+
         # finds members without the specified role
         elif role.find("--none") > -1:
             role = await commands.RoleConverter().convert(ctx, role.split(" --none")[0])
@@ -402,15 +448,15 @@ class Info(commands.Cog, name='Miscellaneous'):
             for member in ctx.guild.members:
                 if role.id not in [role.id for role in member.roles]:
                     members.append(member.name + "#" + member.discriminator + " " + str(member.id))
-        # finds members with the specifed role
+        # finds members with the specified role
         else:
             role = await commands.RoleConverter().convert(ctx, role)
             members = []
             for member in ctx.guild.members:
                 if role.id in [role.id for role in member.roles]:
                     members.append(member.name + "#" + member.discriminator + " " + str(member.id))
-                    
-        # puts results in a navigatable page interface
+
+        # puts results in a navigable page interface
         class Source(menus.ListPageSource):
             def __init__(self, data):
                 super().__init__(data, per_page=20)
@@ -427,7 +473,7 @@ class Info(commands.Cog, name='Miscellaneous'):
             await pages.start(ctx)
 
     @commands.command()
-    async def afk(self, ctx, *, reason = None):
+    async def afk(self, ctx, *, reason=None):
         """Marks you as AFK"""
         cursor = await self.bot.db.acquire()
         reason = 'AFK' if not reason else reason
@@ -443,14 +489,15 @@ class Info(commands.Cog, name='Miscellaneous'):
                 pass
             await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
         else:
-           # marks us as AFK if we are
+            # marks us as AFK if we are
             try:
                 nick = member.display_name + ' [AFK]'
                 if len(nick) < 32:
                     await member.edit(nick=nick)
             except discord.Forbidden:
                 pass
-            await cursor.execute("INSERT INTO afk(guild, member, message) VALUES($1, $2, $3)", ctx.guild.id, member.id, reason)
+            await cursor.execute("INSERT INTO afk(guild, member, message) VALUES($1, $2, $3)", ctx.guild.id, member.id,
+                                 reason)
             await ctx.send(f"{member.mention} I marked you as AFK!")
         await self.bot.db.release(cursor)
 
@@ -461,8 +508,10 @@ class Info(commands.Cog, name='Miscellaneous'):
         # gets settings for applications
         member = ctx.author
         guild = ctx.guild
-        check = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'require')
-        channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'channel')
+        check = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id,
+                                      'require')
+        channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id,
+                                        'channel')
         role = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'role')
         # checks if the user can create an application
         if channel is None:
@@ -471,7 +520,8 @@ class Info(commands.Cog, name='Miscellaneous'):
             await ctx.send("You are not allowed to create Applications!")
         else:
             # feteches questions
-            questions = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
+            questions = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id,
+                                           'question')
             questions = [questions[0] for questions in questions]
             q = '\n'.join(f'{i}. **{v}**' for i, v in enumerate(questions, start=1))
             embed = discord.Embed(title=f"{ctx.guild} Current Questions", description=q)
@@ -482,12 +532,16 @@ class Info(commands.Cog, name='Miscellaneous'):
                     await member.send(embed=embed)
                     await ctx.send("The Application is ready to be started in your dm's")
                 except discord.Forbidden:
-                    await ctx.send("The Application could not be sent in your dm's! Ensure Dionysus can send you dm's then try again")
+                    await ctx.send(
+                        "The Application could not be sent in your dm's! Ensure Dionysus can send you dm's then try "
+                        "again")
                 else:
                     responses = []
                     send = True
+
                     def check(m: discord.Message):
                         return m.guild is None and m.author.id == member.id
+
                     try:
                         # asks the user to confirm the application proccess then records responses
                         confirm = await self.bot.wait_for('message', check=check, timeout=60)
@@ -504,12 +558,17 @@ class Info(commands.Cog, name='Miscellaneous'):
                         send = False
                     if send:
                         # sends and tells the bot where to send finished applicants
-                        yes = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'accept')
-                        no = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'deny')
-                        channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2", guild.id, 'channel')
+                        yes = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2",
+                                                    guild.id, 'accept')
+                        no = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2",
+                                                   guild.id, 'deny')
+                        channel = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2",
+                                                        guild.id, 'channel')
                         complete = guild.get_channel(int(channel))
-                        await member.send("Your response has been recorded! You will receive a response soon letting you know if you have been accepted or not")
-                        
+                        await member.send(
+                            "Your response has been recorded! You will receive a response soon letting you know if "
+                            "you have been accepted or not")
+
                         # creates a simple aceppt/deny reaction menu
                         class Menu(menus.Menu):
                             def __init__(self, data):
@@ -523,12 +582,14 @@ class Info(commands.Cog, name='Miscellaneous'):
                                 if payload.user_id == self.bot.user.id:
                                     return False
                                 return payload.emoji in self.buttons
-                            
-                            #sends the application as a text file
-                            async def send_initial_message(self, ctx, channel):
-                                joined = '\n'.join(f"**{v[0]}**\n{i}. {v[1]}\n\n" for i, v in enumerate(self.data, start=1))
+
+                            # sends the application as a text file
+                            async def send_initial_message(self, ctx, chan):
+                                joined = '\n'.join(
+                                    f"**{v[0]}**\n{i}. {v[1]}\n\n" for i, v in enumerate(self.data, start=1))
                                 file = io.StringIO(joined)
-                                return await channel.send(f"New Applicant From {member} [{member.id}]", file=discord.File(file, filename=f"{member}-applicant.txt"))
+                                return await chan.send(f"New Applicant From {member} [{member.id}]",
+                                                       file=discord.File(file, filename=f"{member}-applicant.txt"))
 
                             # adds reaction for accepting the application
                             @menus.button('\N{WHITE HEAVY CHECK MARK}')
@@ -536,23 +597,27 @@ class Info(commands.Cog, name='Miscellaneous'):
                                 if role is not None:
                                     staff = guild.get_role(int(role))
                                     await member.add_roles(staff)
-                                embed = discord.Embed(title=f"Your application been accepted from {guild}!", description=yes or "Congrats! You been accepted", color=discord.Colour.green())
-                                await member.send(embed=embed)
+                                em = discord.Embed(title=f"Your application been accepted from {guild}!",
+                                                   description=yes or "Congrats! You been accepted",
+                                                   color=discord.Colour.green())
+                                await member.send(embed=em)
                                 await complete.send("This Response Has Been Sent!", delete_after=3.4)
                                 self.stop()
-    
-                            # adds reaction for denying an applcation
+
+                            # adds reaction for denying an application
                             @menus.button('\N{CROSS MARK}')
                             async def on_deny(self, _):
-                                embed = discord.Embed(title=f"Your application been denied from {guild}!", description=no or "Oh no! You been denied", color=discord.Colour.red())
-                                await member.send(embed=embed)
+                                em = discord.Embed(title=f"Your application been denied from {guild}!",
+                                                   description=no or "Oh no! You been denied",
+                                                   color=discord.Colour.red())
+                                await member.send(embed=em)
                                 await complete.send("This Response Has Been Sent!", delete_after=3.4)
                                 self.stop()
 
                         pages = Menu(responses)
                         await pages.start(ctx, channel=complete)
             else:
-                await ctx.send("Cannot start your application. Questions have not been set yet by an administator!")
+                await ctx.send("Cannot start your application. Questions have not been set yet by an administrator!")
         await self.bot.db.release(cursor)
 
     @apply.command(aliases=['view', 'questions'])
@@ -560,12 +625,12 @@ class Info(commands.Cog, name='Miscellaneous'):
         """Allows you to view current application questions"""
         # allows the user to see a list of questions for applying
         cursor = await self.bot.db.acquire()
-        list = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
+        lists = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
 
-        if not list:
+        if not lists:
             await ctx.send("No results!")
         else:
-            # puts results in a navigatable page interface
+            # puts results in a navigable page interface
             class Source(menus.ListPageSource):
                 def __init__(self, data):
                     super().__init__(data, per_page=10)
@@ -575,10 +640,9 @@ class Info(commands.Cog, name='Miscellaneous'):
                     joined = '\n'.join(f'{i}. {v}' for i, v in enumerate(entry, start=1 + offset))
                     return f'```{joined}```\nPage {menu.current_page + 1}/{self.get_max_pages()}'
 
-            pages = menus.MenuPages(source=Source([view[0] for view in list]), clear_reactions_after=True)
+            pages = menus.MenuPages(source=Source([view[0] for view in lists]), clear_reactions_after=True)
             await pages.start(ctx)
             await self.bot.db.release(cursor)
-
 
     @commands.group(hidden=True, invoke_without_command=True)
     async def update(self, ctx):
@@ -595,13 +659,16 @@ class Info(commands.Cog, name='Miscellaneous'):
         if rank < 1:
             await ctx.send("Integer Cannot Be Less Than 1!")
         elif member is not None:
-            check = await cursor.fetchval("SELECT guild_id FROM levels WHERE guild_id = $1 and user_id = $2", guild, member.id)
+            check = await cursor.fetchval("SELECT guild_id FROM levels WHERE guild_id = $1 and user_id = $2", guild,
+                                          member.id)
             if check is not None:
-                await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", rank, 0, guild, member.id)
+                await cursor.execute("UPDATE levels SET lvl = $1, exp = $2 WHERE guild_id = $3 and user_id = $4", rank,
+                                     0, guild, member.id)
                 await ctx.send(f"All levels updated successfully for {member.name}!")
             else:
-                await cursor.execute("INSERT INTO levels(lvl, exp, guild_id, user_id) VALUES($1, $2 ,$3, $4)", rank, 0, guild, member.id)
-                await ctx.send(f"All levles updated successfully for {member.name}!")
+                await cursor.execute("INSERT INTO levels(lvl, exp, guild_id, user_id) VALUES($1, $2 ,$3, $4)", rank, 0,
+                                     guild, member.id)
+                await ctx.send(f"All levels updated successfully for {member.name}!")
         else:
             await ctx.send("I cannot find that user!")
         await self.bot.db.release(cursor)
@@ -615,17 +682,22 @@ class Info(commands.Cog, name='Miscellaneous'):
         if messages < 0:
             await ctx.send("Integer Cannot Be Less Than 0!")
         elif member is not None:
-            check = await cursor.fetchval("SELECT channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4", guild.id, member.id, channel.id, 'message')
+            check = await cursor.fetchval(
+                "SELECT channel FROM message WHERE guild = $1 and member = $2 and channel = $3", guild.id, member.id,
+                channel.id)
             if check is not None:
-                await cursor.execute("UPDATE member SET joins = $1 WHERE guild = $2 and member = $3 and channel = $4 and type = $5", messages, guild.id, member.id, channel.id, 'message')
+                await cursor.execute(
+                    "UPDATE message SET messages = $1 WHERE guild = $2 and member = $3 and channel = $4",
+                    messages, guild.id, member.id, channel.id)
                 await ctx.send(f"All messages updated successfully for {member.name}!")
             else:
-                await cursor.execute("INSERT INTO member(guild, joins, leaves, day, member, channel, type) VALUES($1, $2, $3, $4, $5, $6, $7)", guild.id, messages, 0, datetime.date.today(), member.id, channel.id, 'message')
+                await cursor.execute(
+                    "INSERT INTO message(guild, messages, day, member, channel) VALUES($1, $2, $3, $4, $5)",
+                    guild.id, messages, 0, datetime.date.today(), member.id, channel.id, 'message')
                 await ctx.send(f"All messages updated successfully for {member.name}!")
         else:
             await ctx.send("I cannot find that user!")
         await self.bot.db.release(cursor)
-
 
     @update.command(brief="update invites @Antyy#4201 PVdcgp36 20 0")
     @commands.has_permissions(manage_guild=True)
@@ -636,9 +708,12 @@ class Info(commands.Cog, name='Miscellaneous'):
         if leaves < 0 and fakes < 0:
             await ctx.send("Integer Cannot Be Less Than 0!")
         elif member is not None:
-            check = await cursor.fetchval("SELECT member FROM invites WHERE guild= $1 and member = $2 and invite = $3", guild.id, member.id, invite)
+            check = await cursor.fetchval("SELECT member FROM invite WHERE guild = $1 and member = $2 and invite = $3",
+                                          guild.id, member.id, invite)
             if check is not None:
-                await cursor.execute("UPDATE invite SET amount2 = $1, amount3 = $2 WHERE guild = $3 amd member = $4 and invite = $5", leaves, fakes, guild, member.id, invite)
+                await cursor.execute(
+                    "UPDATE invite SET amount2 = $1, amount3 = $2 WHERE guild = $3 and member = $4 and invite = $5",
+                    leaves, fakes, guild, member.id, invite)
                 await ctx.send(f"Invite updated successfully for {member.name}!")
             else:
                 await ctx.send(f"{member.name} does not have any invites yet or this current invite!")
@@ -655,12 +730,15 @@ class Info(commands.Cog, name='Miscellaneous'):
         if partners < 0:
             await ctx.send("Integer Cannot Be Less Than 0!")
         elif member is not None:
-            check = await cursor.fetchval("SELECT channel FROM member WHERE guild = $1 and member = $2 and channel = $3 and type = $4", guild.id, member.id, channel.id, 'message')
+            check = await cursor.fetchval(
+                "SELECT number FROM partner WHERE guild = $1 and member = $2", guild.id, member.id)
             if check is not None:
-                await cursor.execute("UPDATE partner SET number = $1 WHERE guild = $2 and member = $3", partners, guild.id, member.id)
+                await cursor.execute("UPDATE partner SET number = $1 WHERE guild = $2 and member = $3", partners,
+                                     guild.id, member.id)
                 await ctx.send(f"All completed partnerships updated successfully for {member.name}!")
             else:
-                await cursor.execute("INSERT INTO partner(guild, member, number) VALUES($1, $2, $3)", guild.id, member.id, partners)
+                await cursor.execute("INSERT INTO partner(guild, member, number) VALUES($1, $2, $3)", guild.id,
+                                     member.id, partners)
                 await ctx.send(f"All completed partnerships updated successfully for {member.name}!")
         else:
             await ctx.send("I cannot find that user!")
@@ -685,7 +763,6 @@ class Info(commands.Cog, name='Miscellaneous'):
         else:
             await ctx.send("Suggestions are currently not enabled for this guild!")
         await self.bot.db.release(cursor)
-
 
     @commands.command()
     @commands.has_permissions(manage_guild=True)

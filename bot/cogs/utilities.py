@@ -19,7 +19,7 @@ def date_convert_seconds(s):
 
 
 class Utilities(commands.Cog, name='Utilities'):
-    """[Utilites found within the bot](https://github.com/SrS2225a/role-manager-bot/wiki/Utilities)"""
+    """[Utilities found within the bot](https://github.com/SrS2225a/role-manager-bot/wiki/Utilities)"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -51,7 +51,8 @@ class Utilities(commands.Cog, name='Utilities'):
                 await self.pool.release(self._connection)
 
     async def wait_for_active_reminders(self, *, connection=None, days=None):
-        timer = await connection.fetchrow("SELECT * FROM remind WHERE date < (CURRENT_DATE + $1::interval) ORDER BY date LIMIT 1;", datetime.timedelta(days=days))
+        timer = await connection.fetchrow("SELECT * FROM remind WHERE date < (CURRENT_DATE + $1::interval) ORDER BY "
+                                          "date LIMIT 1;", datetime.timedelta(days=days))
         if timer is not None:
             self._have_data.set()
             return timer
@@ -62,7 +63,8 @@ class Utilities(commands.Cog, name='Utilities'):
 
     async def call_remind(self, timer):
         try:
-            msg = f'<@{timer[0]}> <t:{round(timer[6].timestamp())}:R> you asked me to remind you about: {discord.utils.escape_mentions(timer[3])}'
+            msg = f'<@{timer[0]}> <t:{round(timer[6].timestamp())}:R> you asked me to remind you about: ' \
+                  f'{discord.utils.escape_mentions(timer[3])}'
             if timer[4] == timer[0]:
                 user = self.bot.get_user(timer[0]) or await self.bot.fetch_user(timer[0])
                 await user.send(msg)
@@ -101,7 +103,8 @@ class Utilities(commands.Cog, name='Utilities'):
             self._task = self.bot.loop.create_task(self.dispatch_remind())
 
     async def wait_for_active_polls(self, *, connection=None, days=None):
-        timer = await connection.fetchrow("SELECT * FROM vote WHERE date < (CURRENT_DATE + $1::interval)  and type = $2 ORDER BY date LIMIT 1", datetime.timedelta(days=days), 'poll')
+        timer = await connection.fetchrow("SELECT * FROM vote WHERE date < (CURRENT_DATE + $1::interval) and type = "
+                                          "$2 ORDER BY date LIMIT 1", datetime.timedelta(days=days), 'poll')
         if timer is not None:
             self.__have_data.set()
             return timer
@@ -121,7 +124,8 @@ class Utilities(commands.Cog, name='Utilities'):
                         to_sleep = (timer[4] - now).total_seconds()
                         await asyncio.sleep(to_sleep)
 
-                    await con.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", timer[0], timer[1], "poll")
+                    await con.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3",
+                                      timer[0], timer[1], "poll")
                     await self.call_poll(timer)
 
         except asyncio.CancelledError:
@@ -143,7 +147,8 @@ class Utilities(commands.Cog, name='Utilities'):
             for reaction in sent.reactions:
                 if reaction.emoji in name:
                     embed.add_field(name=questions[result],
-                                    value=f"{reaction.count - 1} - {round((reaction.count - 1) * 100 / votes, 2) if votes != 0 else 0.0}%")
+                                    value=f"{reaction.count - 1} - "
+                                          f"{round((reaction.count - 1) * 100 / votes, 2) if votes != 0 else 0.0}%")
                     result += 1
             await sent.edit(embed=embed)
             await sent.clear_reactions()
@@ -194,14 +199,18 @@ class Utilities(commands.Cog, name='Utilities'):
                 users = await reaction.users().flatten()
                 if reaction.count <= timer[2]:
                     embed = discord.Embed(title=data.title,
-                                          description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners: No Winnders!")
+                                          description=f"**Giveaway Ended** \nHost: "
+                                                      f"{re.search(r'<@(!?)([0-9]*)>', data.description)[0]}"
+                                                      f"\nWinners: No Winners!")
                     embed.set_footer(text=f"Ended At: {ends}")
                     await sent.edit(embed=embed)
                 else:
                     winner = random.choices([winner.mention for winner in users if not winner.bot], k=timer[2])
                     winner = "\n".join(winner)
                     embed = discord.Embed(title=data.title,
-                                          description=f"**Giveaway Ended** \nHost: {re.search(r'<@(!?)([0-9]*)>', data.description)[0]}\nWinners:{winner}")
+                                          description=f"**Giveaway Ended** \nHost: "
+                                                      f"{re.search(r'<@(!?)([0-9]*)>', data.description)[0]}"
+                                                      f"\nWinners:{winner}")
                     embed.set_footer(text=f"Ended At: {ends}")
                     winAlert = await channel.send(winner)
                     try:
@@ -220,7 +229,8 @@ class Utilities(commands.Cog, name='Utilities'):
             thing = ctx.author if type == 'dm' else ctx.channel if type == 'here' else type
 
             def display_time(duration):
-                intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400), ('hours', 3600), ('minutes', 60), ('seconds', 1))
+                intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400),
+                             ('hours', 3600), ('minutes', 60), ('seconds', 1))
 
                 result = []
 
@@ -241,18 +251,21 @@ class Utilities(commands.Cog, name='Utilities'):
                 time = time[0]
                 now = datetime.datetime.now()
                 delta = now + datetime.timedelta(seconds=time)
-                rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+                rand = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+                        'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
                 remind_id = random.choices(rand, k=6)
                 escaped = discord.utils.escape_mentions(description)
                 if repeat:
                     if time < 3600 and isinstance(thing, discord.TextChannel):
-                        await ctx.send("To prevent spam in servers, repeating reminders must be more than 1 hour. Try having the reminder send to your dm or increase the remind time")
+                        await ctx.send("To prevent spam in servers, repeating reminders must be more than 1 hour. Try "
+                                       "having the reminder send to your dm or increase the remind time")
                         return
                     else:
                         await ctx.send(f"Ok, reminding you every {display_time(time)} about: {escaped}")
                 else:
                     await ctx.send(f"Ok, reminding you at <t:{round(delta.timestamp())}> about: {escaped}")
-                await cursor.execute("INSERT INTO remind(repeat, message, date, win, type, account, assigned) VALUES($1, $2, $3, $4, $5, $6, $7)",
+                await cursor.execute("INSERT INTO remind(repeat, message, date, win, type, account, assigned) VALUES("
+                                     "$1, $2, $3, $4, $5, $6, $7)",
                     repeat, ''.join(remind_id), delta, description, thing.id, ctx.author.id, now)
                 if self._current_timer and delta < self._current_timer[2] or self._current_timer is None:
                     if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
@@ -278,7 +291,10 @@ class Utilities(commands.Cog, name='Utilities'):
                     chan = f"{get.guild} — {get.mention}"
                 else:
                     chan = 'dm'
-                embed.add_field(name=f"Reminder [`{remind[1]}`]" if remind[5] is False else f"Reminder [`{remind[1]}`] (Repeats)", value=f"Time: <t:{round(remind[2].timestamp())}>\nWhere: {chan}\nReason: {remind[3]}", inline=False)
+                embed.add_field(name=f"Reminder [`{remind[1]}`]" if remind[5] is False else f"Reminder [`{remind[1]}`] "
+                                                                                            f"(Repeats)",
+                                value=f"Time: <t:{round(remind[2].timestamp())}>\nWhere: {chan}\nReason: {remind[3]}",
+                                inline=False)
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
@@ -316,11 +332,13 @@ class Utilities(commands.Cog, name='Utilities'):
             now = datetime.datetime.now()
             delta = now + datetime.timedelta(seconds=time)
             ends = datetime.datetime.strftime(delta, '%a %b %d %Y %I:%M:%S %p UTC')
-            embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Host: {ctx.author.mention} \nRequirement: {requirement} \n Winners: {winners}")
+            embed = discord.Embed(title=name, description=f"**React With 🎉 To Enter** \n Host: {ctx.author.mention} "
+                                                          f"\nRequirement: {requirement} \n Winners: {winners}")
             embed.set_footer(text=f"Ends At: {ends}")
             sent = await ctx.send(embed=embed)
             await sent.add_reaction('🎉')
-            await cursor.execute("INSERT INTO vote(guild, message, date, win, type, channel) VALUES($1, $2, $3, $4, $5, $6)", ctx.guild.id, sent.id, delta, winners, "giveaway", ctx.channel.id)
+            await cursor.execute("INSERT INTO vote(guild, message, date, win, type, channel) VALUES($1, $2, $3, $4, "
+                                 "$5, $6)", ctx.guild.id, sent.id, delta, winners, "giveaway", ctx.channel.id)
             if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
                 self.have_data.set()
             if self.current_timer and delta < self.current_timer[4] or self.current_timer is None:
@@ -338,14 +356,16 @@ class Utilities(commands.Cog, name='Utilities'):
         except discord.Forbidden:
             pass
         sent = await ctx.channel.fetch_message(message.id)
-        execute = await cursor.fetchrow("SELECT date FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "giveaway")
+        execute = await cursor.fetchrow("SELECT date FROM vote WHERE guild = $1 and message = $2 and type = $3",
+                                        ctx.guild.id, sent.id, "giveaway")
         if execute is not None:
             vote = sent.reactions
             for reaction in vote:
                 if reaction.emoji == '🎉':
                     time = datetime.datetime.now()
                     if time < execute[0]:
-                        await cursor.execute("UPDATE vote SET date = $1 WHERE guild = $2 and message = $3 and type = $4", time, ctx.guild.id, sent.id, "giveaway")
+                        await cursor.execute("UPDATE vote SET date = $1 WHERE guild = $2 and message = $3 and type = $4",
+                                             time, ctx.guild.id, sent.id, "giveaway")
                         self.task.cancel()
                         self.task = self.bot.loop.create_task(self.dispatch_giveaway())
                         break
@@ -365,7 +385,8 @@ class Utilities(commands.Cog, name='Utilities'):
         except discord.Forbidden:
             pass
         sent = await ctx.channel.fetch_message(message)
-        execute = await cursor.fetchrow("SELECT * FROM vote WHERE guild = $1 and message = $2 and type = $3", ctx.guild.id, sent.id, "giveaway end")
+        execute = await cursor.fetchrow("SELECT * FROM vote WHERE guild = $1 and message = $2 and type = $3",
+                                        ctx.guild.id, sent.id, "giveaway end")
         if execute is not None:
             vote = sent.reactions
             for reaction in vote:
@@ -456,7 +477,7 @@ class Utilities(commands.Cog, name='Utilities'):
         roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
         missing = ctx.guild.get_role(roleauth)
         if roleauth in [role.id for role in ctx.author.roles]:
-            # checks if we alreadly have a custom role
+            # checks if we already have a custom role
             result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
                                            guildid, memID, 'role')
             if result is None:
@@ -494,14 +515,14 @@ class Utilities(commands.Cog, name='Utilities'):
         memID = ctx.message.author.id
         guild = ctx.guild
         guildid = ctx.guild.id
-        # checks if we alreadly have a custom text channel
+        # checks if we already have a custom text channel
         roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
         missing = ctx.guild.get_role(roleauth)
         if roleauth in [role.id for role in ctx.author.roles]:
             result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
                                            guildid, memID, 'text')
             if result is None:
-                # checks which channel catagorey the newly created custom text channel should be placed
+                # checks which channel category the newly created custom text channel should be placed
                 default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2",
                                                 guildid, 'text')
                 custom = f"{topic} __**({default[1]})**__" if default[1] is not None else topic
@@ -540,7 +561,7 @@ class Utilities(commands.Cog, name='Utilities'):
         roleauth = await cursor.fetchval("SELECT role FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
         missing = ctx.guild.get_role(roleauth)
         if roleauth in [role.id for role in ctx.author.roles]:
-            # checks if we alreadly have a custom voice channel
+            # checks if we already have a custom voice channel
             result = await cursor.fetchval("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3",
                                            guildid, memID, 'voice')
             if result is None:

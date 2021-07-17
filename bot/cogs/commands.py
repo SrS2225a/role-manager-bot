@@ -1,9 +1,10 @@
-import discord
-from discord.ext import commands, menus
+from discord.ext import commands
+
 
 # help commands
 class Help(commands.Cog, name='Commands'):
     """[These Commands sets the behavoir of other commands](https://github.com/SrS2225a/role-manager-bot/wiki/Commands)"""
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -25,11 +26,13 @@ class Help(commands.Cog, name='Commands'):
         if command is not None:
             if command.parent is not None:
                 command = command.parent
-            await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
+            await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id,
+                                 command.name, 'command')
             await ctx.send(f"Command Enabled Successfully!")
         elif cog is not None:
             for command in cog.get_commands():
-                await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id, command.name, 'command')
+                await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id,
+                                     command.name, 'command')
             await ctx.send(f"Cog Enabled Successfully!")
         else:
             await ctx.send("Not a valid command or cog!")
@@ -49,20 +52,25 @@ class Help(commands.Cog, name='Commands'):
             if command.name == "jishaku":
                 await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
             elif command.name == "command":
-                await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
+                await ctx.send(
+                    "Disabling this command will prevent you from enabling/disabing any more commands, and thus "
+                    "cannot be turned off!")
             else:
-                await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
+                await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name,
+                                     'command')
                 await ctx.send(f"Command Disabled Successfully!")
         elif cog is not None:
             for command in cog.get_commands():
                 if command.name == "command":
-                    await ctx.send("Disabling this command will prevent you from enabling/disabing any more commands, and thus cannot be turned off!")
+                    await ctx.send(
+                        "Disabling this command will prevent you from enabling/disabing any more commands, and thus "
+                        "cannot be turned off!")
                 else:
-                    await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name, 'command')
+                    await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id,
+                                         command.name, 'command')
             await ctx.send(f"Cog Disabled Successfully!")
         else:
             await ctx.send("Not a valid command or cog!")
-
 
     @commands.command(brief="prefix &", aliases=['pre'])
     async def prefix(self, ctx, prefix=None):
@@ -71,7 +79,8 @@ class Help(commands.Cog, name='Commands'):
         guild = ctx.guild.id
         if prefix is not None:
             if ctx.author.guild_permissions.manage_guild:
-                result = await cursor.fetchval("SELECT auth FROM settings WHERE auth = $1 and guild = $2", prefix, guild)
+                result = await cursor.fetchval("SELECT auth FROM settings WHERE auth = $1 and guild = $2", prefix,
+                                               guild)
                 search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
                 if result is not None:
                     await cursor.execute("UPDATE settings SET auth = NULL and guild = $1", guild)
@@ -88,6 +97,7 @@ class Help(commands.Cog, name='Commands'):
             prefix = await cursor.fetchval("SELECT auth FROM settings WHERE guild = $1", guild)
             await ctx.send(f"Your current set prefix is: `{prefix or '*'}`")
         await self.bot.db.release(cursor)
+
 
 def setup(bot):
     bot.add_cog(Help(bot))

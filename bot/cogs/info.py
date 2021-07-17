@@ -9,13 +9,15 @@ import discord
 import psutil
 from discord.ext import commands
 
-
 uses = 0
+
+
+def get_ending_note():
+    return "The Greek themed discord bot that makes your experience that much better @ dionysus.gg"
+
 
 class EmbedHelpCommand(commands.HelpCommand):
     COLOUR = 0x95a5a6
-    def get_ending_note(self):
-        return "The Greek themed discord bot that makes your experience that much better @ dionysus.gg"
 
     def get_heading_note(self):
         return f"Type `{self.clean_prefix}help<command>` for specific command help.  e.g. `{self.clean_prefix}help support`"
@@ -26,24 +28,24 @@ class EmbedHelpCommand(commands.HelpCommand):
 
         embed.description = self.get_heading_note()
 
-        for cog, commands in mapping.items():
+        for cog, command in mapping.items():
             name = 'No Category' if cog is None else cog.qualified_name
-            if commands and name != 'Jishaku':
+            if command and name != 'Jishaku':
                 desc = f"**{cog.description}**\n\n"
-                value = '\u2002'.join(f'`{c.name}`' for c in commands)
+                value = '\u2002'.join(f'`{c.name}`' for c in command)
                 val = desc + value
                 embed.add_field(name=name, value=val, inline=False)
 
-        embed.set_footer(text=self.get_ending_note())
+        embed.set_footer(text=get_ending_note())
         await self.get_destination().send(embed=embed)
 
-        # shows all related info about a particuler command
     async def send_command_help(self, command):
         embed = discord.Embed(title=f'Dionysus Help', color=self.COLOUR)
         aliases = ''
         aliases += ', '.join(alias for alias in command.aliases)
         embed.description = command.description
-        embed.add_field(name=f'{self.clean_prefix}{command.qualified_name} {command.signature}', value=command.help or '...', inline=False)
+        embed.add_field(name=f'{self.clean_prefix}{command.qualified_name} {command.signature}',
+                        value=command.help or '...', inline=False)
         if command.brief:
             embed.add_field(name='Example', value=self.clean_prefix + command.brief)
         if aliases != '':
@@ -63,16 +65,19 @@ class EmbedHelpCommand(commands.HelpCommand):
             embed.description = group.description
             embed.add_field(name=f'{self.clean_prefix}{group.name} {group.signature}', value=group.help)
 
-        value = '\n'.join(f"`{self.clean_prefix}{command.qualified_name}` - {command.help}" for command in group.commands)
+        value = '\n'.join(
+            f"`{self.clean_prefix}{command.qualified_name}` - {command.help}" for command in group.commands)
         embed.add_field(name=f'Commands', value=value or '...', inline=False)
         if group.brief:
             embed.add_field(name='Example', value=self.clean_prefix + group.brief)
 
         await self.get_destination().send(embed=embed)
 
+
 # help commands
 class Help(commands.Cog, name='Information'):
     """[Gets Information About The Bot Or Server](https://github.com/SrS2225a/role-manager-bot/wiki/Information)"""
+
     # sets up help command from the class EmbedHelpCommand
     def __init__(self, bot):
         self.bot = bot
@@ -98,11 +103,23 @@ class Help(commands.Cog, name='Information'):
         number = 0
         for members in self.bot.get_all_members():
             number += 1
-        usage = f"CPU: {[round(x / psutil.cpu_count() * 100, 2) for x in psutil.getloadavg()]} \nRAM: {str(psutil.virtual_memory()[2])}% \nNetwork: Download {round(math.floor(psutil.net_io_counters().bytes_recv / 1073742000), 2)} GB, Upload {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB"
+        usage = f"CPU: {[round(x / psutil.cpu_count() * 100, 2) for x in psutil.getloadavg()]} \n" \
+                f"RAM: {str(psutil.virtual_memory()[2])}% \nNetwork: " \
+                f"Download {round(math.floor(psutil.net_io_counters().bytes_recv / 1073742000), 2)} GB, " \
+                f"Upload {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB "
         stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {uses}"
         embed = discord.Embed(title="About Dionysus", color=0x0001fe)
-        embed.add_field(name='Credits', value='**Main Devs**\n<@!270848136006729728> <@!508455796783317002>\n**Contributors**\n<@!332180997653135383>')
-        embed.add_field(name="Url's", value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here](https://github.com/SrS2225a/role-manager-bot/tree/master)\nSupport: [Click Here](https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here](https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here](https://trello.com/b/Y86Q7qKA/dionysus-bot)\ntop.gg: [Click Here](https://top.gg/bot/437447118127366154)")
+        embed.add_field(name='Credits',
+                        value='**Main Devs**\n<@!270848136006729728> '
+                              '<@!508455796783317002>\n**Contributors**\n<@!332180997653135383>')
+        embed.add_field(name="Url's",
+                        value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id"
+                              "=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here]("
+                              "https://github.com/SrS2225a/role-manager-bot/tree/master)\nSupport: [Click Here]("
+                              "https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here]("
+                              "https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here]("
+                              "https://trello.com/b/Y86Q7qKA/dionysus-bot)\ntop.gg: [Click Here]("
+                              "https://top.gg/bot/437447118127366154)")
         embed.add_field(name='Stats', value=stats)
         embed.add_field(name='Usage', value=usage)
         embed.add_field(name='Uptime', value="Since " + up)
@@ -118,11 +135,11 @@ class Help(commands.Cog, name='Information'):
     async def invite(self, ctx):
         """Give you a link to invite the bot"""
         ctx.send("https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot")
-    
-    @command.command(aliases=['github'])
+
+    @commands.command(aliases=['github'])
     async def opensource(self, ctx):
         await ctx.send("https://github.com/SrS2225a/role-manager-bot/tree/master")
-    
+
     @commands.command()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Shows info about a role"""
@@ -143,7 +160,8 @@ class Help(commands.Cog, name='Information'):
         embed = discord.Embed(title='Role Info', color=role.color)
         embed.add_field(name="Role Name", value=f"```{role}```")
         embed.add_field(name="Role ID", value=f"```{role.id}```")
-        embed.add_field(name="Created At", value=f"```{role.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
+        embed.add_field(name="Created At", value=f"```{role.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
+                        inline=False)
         embed.add_field(name="Color", value=f"```{role.color}```")
         embed.add_field(name="Position", value=f"```{role.position}```")
         embed.add_field(name="Has Role", value=f"```{has}```")
@@ -152,7 +170,6 @@ class Help(commands.Cog, name='Information'):
         embed.add_field(name="Mentionable", value=f"```{role.mentionable}```")
         embed.add_field(name='Key Permissions', value=f"```{array}```")
         await ctx.send(embed=embed)
-
 
     @commands.command()
     async def channelinfo(self, ctx, *, channel: typing.Union[discord.TextChannel, discord.VoiceChannel] = None):
@@ -176,7 +193,8 @@ class Help(commands.Cog, name='Information'):
             embed.add_field(name="Channel Name", value=f"```{channel}```")
             embed.add_field(name="Category", value=f"```{channel.category}```")
             embed.add_field(name="Channel ID", value=f"```{channel.id}```", inline=False)
-            embed.add_field(name="Created At", value=f"```{channel.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
+            embed.add_field(name="Created At",
+                            value=f"```{channel.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
             embed.add_field(name="Topic", value=f"```{channel.topic}```", inline=False)
             embed.add_field(name="Overwrites", value=overwrites, inline=False)
             embed.add_field(name="Slowmode", value=f"```{channel.slowmode_delay}```")
@@ -197,7 +215,8 @@ class Help(commands.Cog, name='Information'):
             embed.add_field(name="Channel Name", value=f"```{channel}```")
             embed.add_field(name="Category", value=f"```{channel.category}```")
             embed.add_field(name="Channel ID", value=f"```{channel.id}```", inline=False)
-            embed.add_field(name="Created At", value=f"```{channel.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
+            embed.add_field(name="Created At",
+                            value=f"```{channel.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
             embed.add_field(name="Overwrites", value=overwrites, inline=False)
             embed.add_field(name="Position", value=f"```{channel.position}```")
             embed.add_field(name="User Limit", value=f"```{channel.user_limit}```")
@@ -206,7 +225,6 @@ class Help(commands.Cog, name='Information'):
             embed.add_field(name="Permissions Synced", value=f"```{channel.permissions_synced}```")
             embed.add_field(name="Type", value=f"```{channel.type}```")
             await ctx.send(embed=embed)
-
 
     @commands.command(aliases=["serverinfo"])
     async def guildinfo(self, ctx, *, guild=None):
@@ -234,8 +252,12 @@ class Help(commands.Cog, name='Information'):
             embed.add_field(name='Owner', value=f"```{guild.owner}```")
             embed.add_field(name='Guild Name', value=f"```{guild.name}```")
             embed.add_field(name='Guild ID', value=f"```{guild.id}```", inline=False)
-            embed.add_field(name='Created At', value=f"```{guild.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
-            embed.add_field(name='Boosts', value=f"```Level {guild.premium_tier} With {guild.premium_subscription_count} Boosts And {len(guild.premium_subscribers)} Actual```", inline=False)
+            embed.add_field(name='Created At',
+                            value=f"```{guild.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```", inline=False)
+            embed.add_field(name='Boosts',
+                            value=f"```Level {guild.premium_tier} With {guild.premium_subscription_count} Boosts And "
+                                  f"{len(guild.premium_subscribers)} Actual```",
+                            inline=False)
             embed.add_field(name='Features', value=f"```{features}```", inline=False)
             embed.add_field(name='Members', value=f"```{guild.member_count}```")
             embed.add_field(name='Text Channels', value=f"```{channel_count}```")
@@ -264,12 +286,13 @@ class Help(commands.Cog, name='Information'):
         if not member.pending:
             roles = [role for role in member.roles]
             amount = len(roles) - 1
-            join_position = sorted(ctx.guild.members, key = lambda m: m.joined_at or m.created_at).index(member) + 1
+            join_position = sorted(ctx.guild.members, key=lambda m: m.joined_at or m.created_at).index(member) + 1
             booster = member.premium_since.__format__(
                 '%a %b %d %Y %I:%M:%S %p UTC') if member.premium_since is not None else 'False'
             status = str(member.status)
             dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
-                    "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker",
+                    "use_voice_activation", "read_message_history", "external_emojis", "add_reactions",
+                    "priority_speaker",
                     "change_nickname"]
             array = " "
             for perm, value in member.guild_permissions:
@@ -326,9 +349,11 @@ class Help(commands.Cog, name='Information'):
             embed.add_field(name='User ID', value=f"```{member.id}```", inline=False)
             embed.add_field(name='Activity', value=message, inline=False)
             embed.add_field(name='Booster', value=f"```{booster}```", inline=False)
-            embed.add_field(name='Created At', value=f"```{member.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
+            embed.add_field(name='Created At',
+                            value=f"```{member.created_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
                             inline=False)
-            embed.add_field(name='Joined At', value=f"```{member.joined_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
+            embed.add_field(name='Joined At',
+                            value=f"```{member.joined_at.__format__('%a %b %d %Y %I:%M:%S %p UTC')}```",
                             inline=False)
             embed.add_field(name='Public Flags', value=f"```{flags}```", inline=False)
             embed.add_field(name="Join Position", value=f"```{join_position}```")
@@ -336,10 +361,12 @@ class Help(commands.Cog, name='Information'):
             embed.add_field(name='Bot', value=f"```{member.bot}```")
             embed.add_field(name='Key Permissions', value=f"```{array}```", inline=False)
             if amount > 0:
-                embed.add_field(name=f'Roles [{amount}]', value=" ".join([role.mention for role in roles if role.name != "@everyone"]), inline=False)
+                embed.add_field(name=f'Roles [{amount}]',
+                                value=" ".join([role.mention for role in roles if role.name != "@everyone"]),
+                                inline=False)
             embed.set_thumbnail(url=member.avatar_url)
             await ctx.send(embed=embed)
 
+
 def setup(bot):
     bot.add_cog(Help(bot))
-

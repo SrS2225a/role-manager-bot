@@ -27,7 +27,8 @@ class Tasks(commands.Cog):
                     # gets settings per guild
                     for guild in self.bot.guilds:
                         announcement = await connection.prepare(f"SELECT announce FROM settings WHERE guild = $1")
-                        boosting = await connection.prepare(f"SELECT date, role FROM boost WHERE guild = $1 and type = $2")
+                        boosting = await connection.prepare(
+                            f"SELECT date, role FROM boost WHERE guild = $1 and type = $2")
                         boosting = await boosting.fetch(guild.id, 'boost')
                         channel = guild.get_channel(await announcement.fetchval(guild.id))
                         boosters = guild.premium_subscribers
@@ -35,22 +36,27 @@ class Tasks(commands.Cog):
                         # checks how long someone has been boosting for and gives the booster an reward accordingly
                         if boosting:
                             for boost in boosters:
-                                await connection.execute(f"INSERT INTO owner VALUES($1, $2, $3) on conflict do nothing", guild.id,  boost.id, 'boost')
+                                await connection.execute(f"INSERT INTO owner VALUES($1, $2, $3) on conflict do nothing",
+                                                         guild.id, boost.id, 'boost')
                                 for day in boosting:
                                     role = guild.get_role(role_id=day[1])
-                                    if (datetime.now()-boost.premium_since).days >= int(day[0]):
+                                    if (datetime.now() - boost.premium_since).days >= int(day[0]):
                                         if channel is not None and role.id not in [role.id for role in boost.roles]:
-                                            await channel.send(f"Congrats to {boost.mention} for boosting {guild} for {(datetime.now()-boost.premium_since).days} Days!")
+                                            await channel.send(
+                                                f"Congrats to {boost.mention} for boosting {guild} for {(datetime.now() - boost.premium_since).days} Days!")
                                         await boost.add_roles(role)
 
                             # checks if the booster has stopped boosting at all and remove all of their rewards
-                            roles = await connection.prepare("select member, role from owner inner join boost using (guild) where boost.type = $1 and boost.guild = $2")
+                            roles = await connection.prepare("select member, role from owner inner join boost using ("
+                                                             "guild) where boost.type = $1 and boost.guild = $2")
                             for user in await roles.fetch('boost', guild.id):
                                 member = guild.get_member(int(user[0]))
                                 role = guild.get_role(role_id=user[1])
                                 if member is not None and member.premium_since is None:
                                     await member.remove_roles(role)
-                                    await connection.execute(f"DELETE FROM owner WHERE guild = $1 and member = $2 and type = $3", guild.id, member.id, 'boost')
+                                    await connection.execute(
+                                        f"DELETE FROM owner WHERE guild = $1 and member = $2 and type = $3",
+                                        guild.id, member.id, 'boost')
         except Exception:
             traceback.print_exc()
 
@@ -61,9 +67,9 @@ class Tasks(commands.Cog):
     @tasks.loop(hours=24.0)
     async def flags(self):
         try:
-           async with self.bot.db.acquire() as cursor:
-               async with cursor.transaction():
-                # gets all members in all guilds
+            async with self.bot.db.acquire() as cursor:
+                async with cursor.transaction():
+                    # gets all members in all guilds
                     for guild in self.bot.guilds:
                         stmt = await cursor.prepare("SELECT role, date FROM boost WHERE guild = $1 and type = $2")
                         public = await stmt.fetch(guild.id, 'flag')
@@ -90,7 +96,8 @@ class Tasks(commands.Cog):
             async with self.bot.db.acquire() as cursor:
                 async with cursor.transaction():
                     for guild in self.bot.guilds:
-                        position = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
+                        position = await cursor.prepare(
+                            "SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
                         position = await position.fetch(guild.id, 'create', 'join')
                         if position:
                             for member in guild.members:
@@ -117,7 +124,10 @@ class Tasks(commands.Cog):
             async with self.bot.db.acquire() as cursor:
                 async with cursor.transaction():
                     for guild in self.bot.guilds:
-                        top = await cursor.prepare("SELECT role, type, level, user_id FROM leveling left join levels ON leveling.guild=levels.guild_id WHERE guild = $1 and system = $2 ORDER BY lvl DESC, exp DESC")
+                        top = await cursor.prepare(
+                            "SELECT role, type, level, user_id FROM leveling left join levels ON "
+                            "leveling.guild=levels.guild_id WHERE guild = $1 and system = $2 ORDER BY lvl DESC, "
+                            "exp DESC")
                         top = await top.fetch(guild.id, 'top')
                         for top in top:
                             if top[1] == 'day' and top[2] == 1:
@@ -132,7 +142,9 @@ class Tasks(commands.Cog):
                                 member = guild.get_member(top[3])
                                 role = guild.get_role(top[0])
                                 member.add_roles(role)
-                            await cursor.execute("UPDATE leveling SET level = $1 < 30 OR 0 WHERE guild = $1 and system = $2", top[2]+1, guild.id, 'top')
+                            await cursor.execute(
+                                "UPDATE leveling SET level = $1 < 30 OR 0 WHERE guild = $1 and system = $2", top[2] + 1,
+                                guild.id, 'top')
 
         except Exception:
             traceback.print_exc()
