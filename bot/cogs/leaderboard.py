@@ -346,7 +346,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                     if user == ctx.member:
                         total += len(table)
 
-            # puts results in a navigatable page interface and formats our data into a text table
+            # puts results in a navigable page interface and formats our data into a text table
             class Source(menus.ListPageSource):
                 def __init__(self, data):
                     super().__init__(data, per_page=20)
@@ -405,8 +405,8 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         # gets our leaderboard results
         tabulate.MIN_PADDING = 0
         result = await cursor.fetch(
-            f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC",
-            ctx.guild.id)
+            f"SELECT member, SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 GROUP BY member "
+            f"ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC", ctx.guild.id)
         table = []
         for row in result:
             user = self.bot.get_user(id=int(row[0]))
@@ -528,10 +528,12 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         guild = ctx.guild
         member = member or ctx.author
         full = await cursor.fetchrow(
-            "SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2 GROUP BY member",
+            "SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2 GROUP BY "
+            "member",
             guild.id, member.id)
         rank = await cursor.fetch(
-            "SELECT member FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC",
+            "SELECT member FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, "
+            "SUM(amount3) DESC",
             ctx.guild.id)
 
         full = full if full is not None else [0, 0, 0]
@@ -547,7 +549,10 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 break
 
         embed = discord.Embed(title=f"{member} Invites",
-                              description=f"**{full[0]}** joins, **{full[1]}** leaves, **{full[2]}** fakes (**{actual}**). With A Rank Of **{i}** \nYou currently have a deficit of **{deficit}**% and invited **{server}**% of server",
+                              description=f"**{full[0]}** joins, **{full[1]}** leaves, **{full[2]}** fakes "
+                                          f"(**{actual}**). With A Rank Of **{i}** "
+                                          f"\nYou currently have a deficit of **{deficit}**% and invited "
+                                          f"**{server}**% of server",
                               color=member.color)
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
@@ -616,10 +621,12 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         """Shows info about how many messages you sent or someone elses"""
         cursor = await self.bot.db.acquire()
         member = member or ctx.author
-        # cursor.fetch("SELECT member, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY member ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(days=date or 30))):
+        # cursor.fetch("SELECT member, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY
+        # member ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(
+        # days=date or 30))):
         messages = await cursor.fetch(
-            f"SELECT channel, SUM(messages) FROM message WHERE guild = $1 and member = $2 GROUP BY channel ORDER BY SUM(messages) DESC",
-            ctx.guild.id, member.id)
+            f"SELECT channel, SUM(messages) FROM message WHERE guild = $1 and member = $2 GROUP BY channel "
+            f"ORDER BY SUM(messages) DESC", ctx.guild.id, member.id)
         rank = await cursor.fetch(
             "SELECT member FROM message WHERE guild = $1 GROUP BY member, messages ORDER BY messages DESC",
             ctx.guild.id)
@@ -638,11 +645,12 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
             newLine = '\n'  # put new line in a variable, otherwise python will complain
             embed = discord.Embed(title=f"Messages Sent By {member}",
-                                  description=f"Total: **{sum([user[1] for user in messages])}**. With A Ranking of **{i}** \n\n{newLine.join(user1)}")
+                                  description=f"Total: **{sum([user[1] for user in messages])}**. With A Ranking of *"
+                                              f"*{i}** \n\n{newLine.join(user1)}")
             await ctx.send(embed=embed)
             await self.bot.db.release(cursor)
         else:
-            await ctx.send("User data not poluated yet!")
+            await ctx.send("User data not populated yet!")
 
 
 def setup(bot):
