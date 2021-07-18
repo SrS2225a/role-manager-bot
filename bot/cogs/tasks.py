@@ -78,10 +78,11 @@ class Tasks(commands.Cog):
                                 badges = [public_flags for public_flags in member.public_flags]
                                 for flags in public:
                                     role = member.guild.get_role(flags[0])
-                                    if (flags[1], True) in badges and role.id not in [role.id for role in member.roles]:
-                                        await member.add_roles(role, reason='User has Public_Flags')
-                                    elif (flags[1], False) in badges and role.id in [role.id for role in member.roles]:
-                                        await member.remove_roles(role, reason='User no longer has Public_Flags')
+                                    if role is not None:
+                                        if (flags[1], True) in badges and role.id not in [role.id for role in member.roles]:
+                                            await member.add_roles(role, reason='User has Public_Flags')
+                                        elif (flags[1], False) in badges and role.id in [role.id for role in member.roles]:
+                                            await member.remove_roles(role, reason='User no longer has Public_Flags')
 
         except Exception:
             traceback.print_exc()
