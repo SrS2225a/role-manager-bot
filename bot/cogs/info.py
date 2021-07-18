@@ -134,11 +134,13 @@ class Help(commands.Cog, name='Information'):
     @commands.command()
     async def invite(self, ctx):
         """Give you a link to invite the bot"""
-        ctx.send("https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot")
+        # ctx.send("https://discord.com/api/oauth2/authorize?client_id=630247782325944330&permissions=8&scope=bot")
+        await ctx.send("https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot")
 
     @commands.command(aliases=['github'])
     async def opensource(self, ctx):
-        await ctx.send("https://github.com/SrS2225a/role-manager-bot/tree/master")
+        """Gives you a link to the open source project of the bot"""
+        await ctx.send("https://github.com/SrS2225a/role-manager-bot")
 
     @commands.command()
     async def roleinfo(self, ctx, *, role: discord.Role):
