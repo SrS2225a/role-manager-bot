@@ -87,7 +87,7 @@ class Help(commands.Cog, name='Information'):
 
     # increments uses when a command is runned
     @commands.Cog.listener()
-    async def on_command_completion(self, ctx):
+    async def on_command_completion(self, _):
         global uses
         uses += 1
 
