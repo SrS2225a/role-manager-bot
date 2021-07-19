@@ -376,7 +376,6 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             f"SELECT member, SUM(messages) FROM message WHERE guild = $1 GROUP BY member ORDER BY SUM(messages) DESC",
             ctx.guild.id)
         table = []
-        print(result)
         for row in result:
             user = self.bot.get_user(id=int(row[0]))
             if user is not None:
