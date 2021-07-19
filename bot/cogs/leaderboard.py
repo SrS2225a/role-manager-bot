@@ -373,9 +373,10 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         # gets our leaderboard results
         tabulate.MIN_PADDING = 0
         result = await cursor.fetch(
-            f"SELECT member, SUM(joins) FROM member WHERE guild = $1 GROUP BY member ORDER BY SUM(joins) DESC",
+            f"SELECT member, SUM(messages) FROM message WHERE guild = $1 GROUP BY member ORDER BY SUM(messages) DESC",
             ctx.guild.id)
         table = []
+        print(result)
         for row in result:
             user = self.bot.get_user(id=int(row[0]))
             if user is not None:
