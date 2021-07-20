@@ -275,7 +275,7 @@ class Events(commands.Cog):
                                             await message.author.add_roles(reward)
 
                     # FOR AFK
-                    afk = await cursor.prepare("SELECT member, message FROM afk WHERE guild = $1 LIMIT 1")
+                    afk = await cursor.prepare("SELECT member, message FROM afk WHERE guild = $1")
                     channel = message.channel
                     member = message.author
                     for user in await afk.fetch(message.guild.id):
@@ -456,15 +456,11 @@ class Events(commands.Cog):
                                 "SELECT amount FROM invite WHERE guild = $1 and member = $2 and invite = $3 LIMIT 1")
                             amount = await amount.fetchval(guild.id, invites.inviter.id, invites.code)
                             if amount is not None and invites.uses > amount:
-                                await cursor.execute(
-                                    "UPDATE invite SET amount = $1 WHERE guild = $2 and member = $3 and invite = $4",
-                                    invites.uses, guild.id, invites.inviter.id, invites.code)
-                                await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)",
-                                                     guild.id, member.id, invites.code)
+                                await cursor.execute("UPDATE invite SET amount = $1 WHERE guild = $2 and member = $3 and invite = $4", invites.uses, guild.id, invites.inviter.id, invites.code)
+                                await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
 
                                 # if enabled congratulates the inviter if they complete a number of invites
-                                announcement = await cursor.fetchval(
-                                    "SELECT announce FROM settings WHERE guild = $1 LIMIT 1", guild.id)
+                                announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1 LIMIT 1", guild.id)
                                 if announcement:
                                     total = await cursor.fetchval(
                                         "SELECT SUM(amount) FROM invite WHERE guild = $1 and member = $2 LIMIT 1",
@@ -477,18 +473,15 @@ class Events(commands.Cog):
                                             channel = guild.get_channel(announcement)
                                             user = guild.get_member(invites.inviter.id)
                                             role = guild.get_role(day[1])
-                                            if (channel, user) is not None and \
-                                                    role.id not in [role.id for role in user.roles]:
+                                            if (channel, user) is not None and role.id not in [role.id for role in user.roles]:
                                                 await channel.send(f"Congrats to {user.mention} for inviting {total}"
                                                                    f" users to {guild}!")
                                                 await user.add_roles(role)
                                 break
                             elif amount is None and invites.uses > 0:
-                                await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2, "
-                                                     "amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id,
+                                await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2,amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id,
                                                      invites.inviter.id, invites.code, invites.uses, 0, 0)
-                                await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)",
-                                                     guild.id, member.id, invites.code)
+                                await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
                                 break
                 except discord.Forbidden:
                     pass

@@ -10,16 +10,21 @@ import os
 
 print("Initalizing and connecting to discord!")
 
+
 # represents a connection to Discord
 async def __init__(self, bot):
     self.bot = bot
+
 
 # loads token/database credentials and emojis from file
 with open("token.json", "r") as set:
     settings = json.load(set)
 
 # connects to database
-db = asyncio.get_event_loop().run_until_complete(asyncpg.create_pool('postgresql://localhost:5432/postgres2', user=settings['user'], password=settings['password'], max_size=800, max_queries=100, max_cacheable_statement_size=0))
+db = asyncio.get_event_loop().run_until_complete(
+    asyncpg.create_pool('postgresql://localhost:5432/postgres2', user=settings['user'], password=settings['password'],
+                        max_size=800, max_queries=100, max_cacheable_statement_size=0))
+
 
 # sets command prefix
 async def get_prefix(bot, message):
@@ -28,11 +33,13 @@ async def get_prefix(bot, message):
         if message.guild:
             pre = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1 LIMIT 1")
             prefix = await pre.fetchval(message.guild.id) or prefix
-        return commands.when_mentioned_or(prefix)(bot, message) 
+        return commands.when_mentioned_or(prefix)(bot, message)
 
-# sets bot variables
+    # sets bot variables
+
+
 intents = discord.Intents.default()
-intents.members = True 
+intents.members = True
 intents.presences = True
 intents.messages = True
 intents.webhooks = False
@@ -51,13 +58,15 @@ with open("emojis.json", "r") as unicode:
     for key, value in emojis.items():
         bot.emoji.append(value['emoji'])
 
+
 # checks if an command has been run in a dm
 @bot.check
 async def predicate(ctx):
     if ctx.guild is None:
         raise commands.NoPrivateMessage
     return commands.check(predicate)
-        
+
+
 # checks if a guild has enabled or disabled a command
 @bot.check
 async def bot_check(ctx):
@@ -68,6 +77,7 @@ async def bot_check(ctx):
             return True
         else:
             raise commands.DisabledCommand(f"{ctx.command.name} command is disabled.")
+
 
 # loads cogs
 bot.load_extension("jishaku")
@@ -81,6 +91,5 @@ logger.setLevel(logging.INFO)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(message)s'))
 logger.addHandler(handler)
-
 
 bot.run(settings['token'])  # runs bot
