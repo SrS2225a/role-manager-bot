@@ -465,7 +465,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
             await pages.start(ctx)
         elif diff1 is None:
-            await ctx.send("Partnerships is currently disabled for this server!")
+            await ctx.send("The partnerships feature has not been setup yet by this server!")
         await self.bot.db.release(cursor)
 
     @commands.command(aliases=['level'], brief="rank @Vendron#2001")
@@ -517,7 +517,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 await ctx.send(embed=embed)
 
         else:
-            await ctx.send("This leveling feature is currently disabled for this bot!")
+            await ctx.send("The leveling feature has not been setup yet by this server!")
         await self.bot.db.release(cursor)
 
     @commands.command(brief="invites @Vendron#2001")
