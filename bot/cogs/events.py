@@ -275,20 +275,24 @@ class Events(commands.Cog):
                                             await message.author.add_roles(reward)
 
                     # FOR AFK
-                    afk = await cursor.prepare("SELECT member, message FROM afk WHERE guild = $1")
+                    afk = await cursor.prepare("SELECT member, message, count FROM afk WHERE guild = $1")
                     channel = message.channel
                     member = message.author
                     for user in await afk.fetch(message.guild.id):
                         # checks the the member marked as AFK talked then removes them as AFK
                         if user[0] == member.id:
-                            try:
-                                nick = member.display_name
-                                await member.edit(nick=nick.split('[AFK]')[0])
-                            except discord.Forbidden:
-                                pass
-                            await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", message.guild.id,
-                                                 message.author.id)
-                            await channel.send(f"{message.author.mention} I marked you as no longer AFK!")
+                            if user[2] >= 3:
+                                try:
+                                    nick = member.display_name
+                                    await member.edit(nick=nick.split('[AFK]')[0])
+                                except discord.Forbidden:
+                                    pass
+                                await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", message.guild.id,
+                                                     message.author.id)
+                                await channel.send(f"{message.author.mention} I marked you as no longer AFK!")
+                            else:
+                                await cursor.execute("UPDATE afk SET count = $1 WHERE guild = $2 and member = $3",
+                                                     user[2]+1, message.guild.id, message.author.id)
                         # checks if the mentioned user is afk, and if they are, tell them
                         elif user[0] in [msg.id for msg in message.mentions]:
                             him = message.guild.get_member(user[0])
