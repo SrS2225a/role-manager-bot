@@ -29,6 +29,7 @@ class Handler(commands.Cog):
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(866678659862626355)
         await channel.send(f"A new command was ran **{ctx.command}** in guild **{guild} ({guild.id})**")
+        self.bot.uses += 1
 
     # ERROR HANDLER
     @commands.Cog.listener()

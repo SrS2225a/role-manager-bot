@@ -77,20 +77,22 @@ class Events(commands.Cog):
 
                     await self.call_timers(timer)
 
-        except asyncio.CancelledError:
-            raise
-        except (OSError, discord.ConnectionClosed, asyncpg.PostgresConnectionError):
+        except (OSError, discord.ConnectionClosed, asyncpg.PostgresConnectionError, asyncio.CancelledError):
             self._task.cancel()
             self._task = self.bot.loop.create_task(self.dispatch_timers())
+            raise
 
     async def call_timers(self, timer):
-        server = self.bot.get_guild(timer[0])
-        user = await server.fetch_member(timer[1])
-        role = server.get_role(timer[2])
-        if timer[4]:
-            await user.add_roles(role)
-        else:
-            await user.remove_roles(role)
+        try:
+            server = self.bot.get_guild(timer[0])
+            user = await server.fetch_member(timer[1])
+            role = server.get_role(timer[2])
+            if timer[4]:
+                await user.add_roles(role)
+            else:
+                await user.remove_roles(role)
+        except (discord.Forbidden, discord.NotFound):
+            pass
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -451,51 +453,29 @@ class Events(commands.Cog):
 
                 # code for invite rewards
                 try:
-                    for invites in await guild.invites():
-                        # checks if we are not the same user that created the invite
-                        if invites.inviter.id != member.id:
-                            # sets our invites if the inviters invites increased and puts the member that joined into
-                            # our database for leave detection
-                            amount = await cursor.prepare(
-                                "SELECT amount FROM invite WHERE guild = $1 and member = $2 and invite = $3 LIMIT 1")
-                            amount = await amount.fetchval(guild.id, invites.inviter.id, invites.code)
-                            if amount is not None and invites.uses > amount:
-                                await cursor.execute("UPDATE invite SET amount = $1 WHERE guild = $2 and member = $3 and invite = $4", invites.uses, guild.id, invites.inviter.id, invites.code)
-                                await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
-
-                                # if enabled congratulates the inviter if they complete a number of invites
-                                announcement = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1 LIMIT 1", guild.id)
-                                if announcement:
-                                    total = await cursor.fetchval(
-                                        "SELECT SUM(amount) FROM invite WHERE guild = $1 and member = $2 LIMIT 1",
-                                        guild.id, invites.inviter.id)
-                                    check = await cursor.fetch(
-                                        "SELECT date::int8, role FROM boost WHERE guild = $1 and type = $2 ORDER BY "
-                                        "date", guild.id, 'invite')
-                                    for day in check:
-                                        if total >= day[0]:
-                                            channel = guild.get_channel(announcement)
-                                            user = guild.get_member(invites.inviter.id)
-                                            role = guild.get_role(day[1])
-                                            if (channel, user) is not None and role.id not in [role.id for role in user.roles]:
-                                                await channel.send(f"Congrats to {user.mention} for inviting {total}"
-                                                                   f" users to {guild}!")
-                                                await user.add_roles(role)
-                                break
-                            elif amount is None and invites.uses > 0:
-                                await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2,amount3) VALUES($1, $2, $3, $4, $5, $6)", guild.id,
-                                                     invites.inviter.id, invites.code, invites.uses, 0, 0)
-                                await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)", guild.id, member.id, invites.code)
-                                break
+                    async with cursor.transaction():
+                        for invite in await guild.invites():
+                            # checks if we are not the same user that created the invite
+                            if invite.inviter.id != member.id:
+                                # sets our invites if the inviters invites increased and puts the member that joined into
+                                # our database for leave detection
+                                amount = await cursor.prepare(
+                                    "SELECT amount FROM invite WHERE guild = $1 and invite = $2 LIMIT 1")
+                                amount = await amount.fetchval(guild.id, invite.code)
+                                if amount is not None and invite.uses > amount:
+                                    await cursor.execute("UPDATE invite SET amount = $1 WHERE guild = $2 and invite = $3",
+                                                         invite.uses, guild.id, invite.code)
+                                    await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)",
+                                                         guild.id, member.id, invite.code)
+                                    break
+                                elif amount is None and invite.uses > 0:
+                                    await cursor.execute("INSERT INTO invite(guild, member, invite, amount, amount2,amount3) "
+                                                         "VALUES($1, $2, $3, $4, $5, $6)", guild.id, invite.inviter.id,
+                                                         invite.code, invite.uses, 0, 0)
+                                    await cursor.execute("INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)",
+                                                         guild.id, member.id, invite.code)
                 except discord.Forbidden:
                     pass
-
-                # code for sticky roles
-                master = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
-                for select in await master.fetch(guild.id, member.id, 'sticky'):
-                    if select[0] not in [role.id for role in member.roles] and select[0] is not None:
-                        srole = guild.get_role(role_id=int(select[0]))
-                        await member.add_roles(srole, reason='User had sticky roles when leaving')
 
                 # code for autoroles
                 auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or "
@@ -516,6 +496,13 @@ class Events(commands.Cog):
                                 await self.create_timer([member, auto[0], False, auto[1]])
                             else:
                                 await member.remove_roles(role, reason='Auto role')
+
+                # code for sticky roles
+                master = await cursor.prepare("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3")
+                for select in await master.fetch(guild.id, member.id, 'sticky'):
+                    if select[0] not in [role.id for role in member.roles] and select[0] is not None:
+                        srole = guild.get_role(role_id=int(select[0]))
+                        await member.add_roles(srole, reason='User had sticky roles when leaving')
 
                 # code for channel overwrites recovery
                 override = await cursor.prepare("SELECT yes, no, channel FROM recover WHERE guild = $1 and member = $2")

@@ -85,12 +85,6 @@ class Help(commands.Cog, name='Information'):
         bot.help_command = EmbedHelpCommand()
         bot.help_command.cog = self
 
-    # increments uses when a command is runned
-    @commands.Cog.listener()
-    async def on_command_completion(self, _):
-        global uses
-        uses += 1
-
     @commands.command(aliases=["status", "info"])
     async def about(self, ctx):
         """Shows info about the bot"""
@@ -107,7 +101,7 @@ class Help(commands.Cog, name='Information'):
                 f"RAM: {str(psutil.virtual_memory()[2])}% \nNetwork: " \
                 f"Download {round(math.floor(psutil.net_io_counters().bytes_recv / 1073742000), 2)} GB, " \
                 f"Upload {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB "
-        stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {uses}"
+        stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {self.bot.uses}"
         embed = discord.Embed(title="About Dionysus", color=0x0001fe)
         embed.add_field(name='Credits',
                         value='**Main Devs**\n<@!270848136006729728> '
