@@ -70,7 +70,7 @@ class Tasks(commands.Cog):
     async def invite(self):
         try:
             async with self.bot.db.acquire() as cursor:
-                async with cursor.transaction:
+                async with cursor.transaction():
                     for guild in self.bot.guilds:
                         # if enabled congratulates the inviter if they complete a number of invites
                         check = await cursor.fetch(
