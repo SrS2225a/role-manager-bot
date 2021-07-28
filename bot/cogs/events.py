@@ -4,7 +4,6 @@ import datetime
 import random
 import re
 import traceback
-import typing
 
 import discord
 from discord.ext import commands, tasks
@@ -555,8 +554,7 @@ class Events(commands.Cog):
                                          member.guild.id, 0, 1, date)
                 else:
                     await cursor.execute("UPDATE member SET leaves = $1 WHERE day = $2 and guild = $3", dateVal + 1,
-                                         date,
-                                         member.guild.id)
+                                         date, member.guild.id)
 
                 # updates the inviters invite leaves if the user left the guild
                 amount = await cursor.prepare("SELECT invite FROM invite2 WHERE guild = $1 and member = $2 LIMIT 1")

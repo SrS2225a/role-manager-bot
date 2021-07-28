@@ -72,7 +72,7 @@ class Tasks(commands.Cog):
                                         channel = guild.get_channel(announcement)
                                         user = guild.get_member(total[1])
                                         role = guild.get_role(day[1])
-                                        if (channel, user) is not None and role.id not in [role.id for role
+                                        if (channel, user, role) is not None and role.id not in [role.id for role
                                                                                            in user.roles]:
                                             await user.add_roles(role)
                                             await channel.send(
