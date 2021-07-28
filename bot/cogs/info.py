@@ -9,20 +9,18 @@ import discord
 import psutil
 from discord.ext import commands
 
-uses = 0
 
-
-def get_ending_note():
-    return "The Greek themed discord bot that makes your experience that much better @ dionysus.gg"
-
-
+# overrides discord.py default help command to use our own custom one
 class EmbedHelpCommand(commands.HelpCommand):
     COLOUR = 0x95a5a6
 
     def get_heading_note(self):
         return f"Type `{self.clean_prefix}help<command>` for specific command help.  e.g. `{self.clean_prefix}help support`"
 
-    # shows the items of all available commands
+    def get_ending_note(self):
+        return "The Greek themed discord bot that makes your experience that much better @ dionysus.gg"
+
+    # sends the default bot help; listing all commands per cog
     async def send_bot_help(self, mapping):
         embed = discord.Embed(title='Dionysus Help', colour=self.COLOUR)
 
@@ -30,15 +28,16 @@ class EmbedHelpCommand(commands.HelpCommand):
 
         for cog, command in mapping.items():
             name = 'No Category' if cog is None else cog.qualified_name
-            if command and name != 'Jishaku':
+            if command and name != 'Jishaku':  # ignores sending commands in the Jishaku cog
                 desc = f"**{cog.description}**\n\n"
                 value = '\u2002'.join(f'`{c.name}`' for c in command)
                 val = desc + value
                 embed.add_field(name=name, value=val, inline=False)
 
-        embed.set_footer(text=get_ending_note())
+        embed.set_footer(text=self.get_ending_note())
         await self.get_destination().send(embed=embed)
 
+    # sends info about a specific command
     async def send_command_help(self, command):
         embed = discord.Embed(title=f'Dionysus Help', color=self.COLOUR)
         aliases = ''
@@ -53,6 +52,7 @@ class EmbedHelpCommand(commands.HelpCommand):
 
         await self.get_destination().send(embed=embed)
 
+    # sends info about a specific command group; listing commands in that group
     async def send_group_help(self, group):
         embed = discord.Embed(title=f"Dionysus Help", color=self.COLOUR)
         aliases = ''
@@ -78,7 +78,7 @@ class EmbedHelpCommand(commands.HelpCommand):
 class Help(commands.Cog, name='Information'):
     """[Gets Information About The Bot Or Server](https://github.com/SrS2225a/role-manager-bot/wiki/Information)"""
 
-    # sets up help command from the class EmbedHelpCommand
+    # sets up help command from the class EmbedHelpCommand and load it to the info cog
     def __init__(self, bot):
         self.bot = bot
         self.bot._original_help_command = bot.help_command
@@ -88,12 +88,12 @@ class Help(commands.Cog, name='Information'):
     @commands.command(aliases=["status", "info"])
     async def about(self, ctx):
         """Shows info about the bot"""
-        # basiclly shows related information about the bot such as usage statstics, version, and resources
+        # basically shows related information about the bot such as usage statistics, version, and resources
         global uses
         os = str(platform.system() + " " + platform.release()) + " - " + "Python " + platform.python_version()
         p = psutil.Process()
         up = time.strftime("%Y-%m-%d %H:%M " + "UTC", time.gmtime(p.create_time()))
-        # Cannot use len() here, python will complain. Stupid
+        # Cannot use len() here, otherwise python will complain. Stupid
         number = 0
         for members in self.bot.get_all_members():
             number += 1
@@ -128,7 +128,6 @@ class Help(commands.Cog, name='Information'):
     @commands.command()
     async def invite(self, ctx):
         """Give you a link to invite the bot"""
-        # ctx.send("https://discord.com/api/oauth2/authorize?client_id=630247782325944330&permissions=8&scope=bot")
         await ctx.send("https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot")
 
     @commands.command(aliases=['github'])
@@ -139,8 +138,7 @@ class Help(commands.Cog, name='Information'):
     @commands.command()
     async def roleinfo(self, ctx, *, role: discord.Role):
         """Shows info about a role"""
-        # gets various information about a role
-        has = len(role.members)
+        # gets the roles following permissions and ignore the rest in dont
         dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
                 "use_voice_activation", "read_message_history", "external_emojis", "add_reactions", "priority_speaker",
                 "change_nickname"]
@@ -153,6 +151,7 @@ class Help(commands.Cog, name='Information'):
                 break
         if array == " ":
             array = "None"
+
         embed = discord.Embed(title='Role Info', color=role.color)
         embed.add_field(name="Role Name", value=f"```{role}```")
         embed.add_field(name="Role ID", value=f"```{role.id}```")
@@ -160,7 +159,7 @@ class Help(commands.Cog, name='Information'):
                         inline=False)
         embed.add_field(name="Color", value=f"```{role.color}```")
         embed.add_field(name="Position", value=f"```{role.position}```")
-        embed.add_field(name="Has Role", value=f"```{has}```")
+        embed.add_field(name="Has Role", value=f"```{len(role.members)}```")
         embed.add_field(name="Hoisted", value=f"```{role.hoist}```")
         embed.add_field(name="Integrated", value=f"```{role.managed}```")
         embed.add_field(name="Mentionable", value=f"```{role.mentionable}```")
@@ -170,7 +169,7 @@ class Help(commands.Cog, name='Information'):
     @commands.command()
     async def channelinfo(self, ctx, *, channel: typing.Union[discord.TextChannel, discord.VoiceChannel] = None):
         """Shows info about a channel"""
-        # gets various information about a channel
+        # gets channel overwrites for roles and list if they are permitted or not
         channel = channel or ctx.channel
         yes = " "
         no = " "
@@ -226,7 +225,6 @@ class Help(commands.Cog, name='Information'):
     async def guildinfo(self, ctx, *, guild=None):
         """Shows info about a guild"""
         # gets various information about a server (has to be in it)
-        guild = self.bot.get_guild(guild) or ctx.guild
         fa = 'Enabled' if guild.mfa_level == 1 else 'Disabled'
         notifications = 'All Messages' if guild.default_notifications.value == 0 else 'Only @Mentions'
         features = 'None' if not guild.features else ' '.join(guild.features)
@@ -285,7 +283,7 @@ class Help(commands.Cog, name='Information'):
             join_position = sorted(ctx.guild.members, key=lambda m: m.joined_at or m.created_at).index(member) + 1
             booster = member.premium_since.__format__(
                 '%a %b %d %Y %I:%M:%S %p UTC') if member.premium_since is not None else 'False'
-            status = str(member.status)
+            # gets the members following permissions and ignore the rest in dont
             dont = ["speak", "stream", "connect", "read_messages", "send_messages", "embed_links", "attach_files",
                     "use_voice_activation", "read_message_history", "external_emojis", "add_reactions",
                     "priority_speaker",
@@ -300,6 +298,7 @@ class Help(commands.Cog, name='Information'):
             if array == " ":
                 array = "None"
 
+            # gets the members current flags
             flags = " "
             for flag, value in member.public_flags:
                 if value is True:
@@ -307,6 +306,7 @@ class Help(commands.Cog, name='Information'):
             if flags == " ":
                 flags = "None"
 
+            # gets the members current activity status and add them to message accordingly
             message = '\n'
             if not member.activity or not member.activities:
                 message = "None"
@@ -341,7 +341,7 @@ class Help(commands.Cog, name='Information'):
 
             embed = discord.Embed(title='User Info', color=member.color)
             embed.add_field(name='Name', value=f"```{member}```")
-            embed.add_field(name='Status', value=f"```{status}```")
+            embed.add_field(name='Status', value=f"```{member.status}```")
             embed.add_field(name='User ID', value=f"```{member.id}```", inline=False)
             embed.add_field(name='Activity', value=message, inline=False)
             embed.add_field(name='Booster', value=f"```{booster}```", inline=False)

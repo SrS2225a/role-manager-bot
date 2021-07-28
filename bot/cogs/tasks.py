@@ -7,21 +7,15 @@ from discord.ext import tasks, commands
 class Tasks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.task.add_exception_type(asyncpg.PostgresConnectionError)
+        self.task.start()
 
-        self.boosters.add_exception_type(asyncpg.PostgresConnectionError)
-        self.flags.add_exception_type(asyncpg.PostgresConnectionError)
-        self.position.add_exception_type(asyncpg.PostgresConnectionError)
-        self.leveling.add_exception_type(asyncpg.PostgresConnectionError)
-        self.invite.add_exception_type(asyncpg.PostgresConnectionError)
-
-        self.boosters.start()
-        self.flags.start()
-        self.position.start()
-        self.leveling.start()
-        self.invite.start()
+    # if the cog gets unloaded in someway, stop all current running tasks
+    def cog_unload(self):
+        self.task.cancel()
 
     @tasks.loop(hours=24.0)
-    async def boosters(self):
+    async def task(self):
         # task for booster reward system
         try:
             async with self.bot.db.acquire() as cursor:
@@ -59,20 +53,10 @@ class Tasks(commands.Cog):
                                     await cursor.execute(
                                         f"DELETE FROM owner WHERE guild = $1 and member = $2 and type = $3",
                                         guild.id, member.id, 'boost')
-        except Exception:
-            traceback.print_exc()
 
-    @boosters.before_loop
-    async def before_printer(self):
-        await self.bot.wait_until_ready()
+# ---------------------------------------------------------------------------------------------------------------------
 
-    @tasks.loop(hours=24.0)
-    async def invite(self):
-        try:
-            async with self.bot.db.acquire() as cursor:
-                async with cursor.transaction():
-                    for guild in self.bot.guilds:
-                        # if enabled congratulates the inviter if they complete a number of invites
+                        # if configured congratulates the inviter if they complete a number of invites
                         check = await cursor.fetch(
                             "SELECT date::int, role FROM boost WHERE guild = $1 and type = $2 ORDER BY "
                             "date", guild.id, 'invite')
@@ -80,33 +64,26 @@ class Tasks(commands.Cog):
                             "SELECT announce FROM settings WHERE guild = $1 LIMIT 1", guild.id)
                         if check:
                             totals = await cursor.fetch(
-                                "SELECT SUM(amount), member FROM invite WHERE guild = $1 ORDER BY member", guild.id)
+                                "SELECT SUM(amount), member FROM invite WHERE guild = $1 GROUP BY member",
+                                guild.id)
                             for total in totals:
                                 for day in check:
                                     if total[0] >= day[0]:
                                         channel = guild.get_channel(announcement)
                                         user = guild.get_member(total[1])
                                         role = guild.get_role(day[1])
-                                        if (channel, user) is not None and role.id not in [role.id for role in
-                                                                                           user.roles]:
+                                        if (channel, user) is not None and role.id not in [role.id for role
+                                                                                           in user.roles]:
                                             await user.add_roles(role)
-                                            await channel.send(f"Congrats to {user.mention} for inviting {total}"
-                                                               f" users to {guild}!")
-        except Exception:
-            traceback.print_exc()
+                                            await channel.send(
+                                                f"Congrats to {user.mention} for inviting {total}"
+                                                f" users to {guild}!")
 
-    @invite.before_loop
-    async def before_printer(self):
-        await self.bot.wait_until_ready()
+# ---------------------------------------------------------------------------------------------------------------------
 
-    @tasks.loop(hours=24.0)
-    async def flags(self):
-        try:
-            async with self.bot.db.acquire() as cursor:
-                async with cursor.transaction():
-                    # gets all members in all guilds
-                    for guild in self.bot.guilds:
-                        stmt = await cursor.prepare("SELECT role, date FROM boost WHERE guild = $1 and type = $2")
+                        # if configured automatically gives a role depending on what public flags a member has
+                        stmt = await cursor.prepare(
+                            "SELECT role, date FROM boost WHERE guild = $1 and type = $2")
                         public = await stmt.fetch(guild.id, 'flag')
                         if public:
                             for member in guild.members:
@@ -114,26 +91,17 @@ class Tasks(commands.Cog):
                                 for flags in public:
                                     role = member.guild.get_role(flags[0])
                                     if role is not None:
-                                        if (flags[1], True) in badges and role.id not in [role.id for role in
-                                                                                          member.roles]:
+                                        if (flags[1], True) in badges and role.id not in \
+                                                [role.id for role in member.roles]:
                                             await member.add_roles(role, reason='User has Public_Flags')
                                         elif (flags[1], False) in badges and role.id in [role.id for role in
                                                                                          member.roles]:
                                             await member.remove_roles(role, reason='User no longer has Public_Flags')
 
-        except Exception:
-            traceback.print_exc()
+# ---------------------------------------------------------------------------------------------------------------------
 
-    @flags.before_loop
-    async def before_printer(self):
-        await self.bot.wait_until_ready()
-
-    @tasks.loop(hours=24.0)
-    async def position(self):
-        try:
-            async with self.bot.db.acquire() as cursor:
-                async with cursor.transaction():
-                    for guild in self.bot.guilds:
+                        # if configured, automatically gives a role based on how long the members account was created
+                        # for or in the server
                         position = await cursor.prepare(
                             "SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3")
                         position = await position.fetch(guild.id, 'create', 'join')
@@ -149,37 +117,30 @@ class Tasks(commands.Cog):
                                             role = member.guild.get_role(role_id=int(position[0]))
                                             await member.add_roles(role, reason="Auto position join date")
 
-        except Exception:
-            traceback.print_exc()
+# ---------------------------------------------------------------------------------------------------------------------
 
-    @position.before_loop
-    async def before_printer(self):
-        await self.bot.wait_until_ready()
-
-    @tasks.loop(hours=24.0)
-    async def leveling(self):
-        try:
-            async with self.bot.db.acquire() as cursor:
-                async with cursor.transaction():
-                    for guild in self.bot.guilds:
+                        # if enabled, check for the top ranking user per day, week, or month and give them the set role
+                        # for their efforts
                         top = await cursor.prepare(
-                            "SELECT role, type, level, user_id FROM leveling left join levels ON "
-                            "leveling.guild=levels.guild_id WHERE guild = $1 and system = $2 ORDER BY lvl DESC, "
-                            "exp DESC")
+                            "SELECT role, type, level FROM leveling WHERE guild = $1 and system = $2")
                         top = await top.fetch(guild.id, 'top')
                         for top in top:
-                            if top[1] == 'day' and top[2] == 1:
-                                member = guild.get_member(top[3])
-                                role = guild.get_role(top[0])
-                                member.add_roles(role)
-                            elif top[1] == 'week' and top[2] == 7:
-                                member = guild.get_member(top[3])
-                                role = guild.get_role(top[0])
-                                member.add_roles(role)
-                            elif top[1] == 'month' and top[2] == 30:
-                                member = guild.get_member(top[3])
-                                role = guild.get_role(top[0])
-                                member.add_roles(role)
+                            role = guild.get_role(top[0])
+                            current = await cursor.prepare("SELECT user_id FROM levels WHERE guild_id = $1"
+                                                           "ORDER BY lvl DESC, exp DESC")
+                            current = current.fetchrow(guild.id)
+                            member = guild.get_member(current[1])
+                            if role is not None:
+                                for member in role.members:
+                                    if member.id != current:
+                                        member.remove_roles(role)
+                                if top[1] == 'day' and top[2] == 1:
+                                    member.add_roles(role)
+                                elif top[1] == 'week' and top[2] == 7:
+                                    member.add_roles(role)
+                                elif top[1] == 'month' and top[2] == 30:
+                                    member.add_roles(role)
+                        if top:
                             await cursor.execute(
                                 "UPDATE leveling SET level = $1 < 30 OR 0 WHERE guild = $1 and system = $2", top[2] + 1,
                                 guild.id, 'top')
@@ -187,7 +148,7 @@ class Tasks(commands.Cog):
         except Exception:
             traceback.print_exc()
 
-    @leveling.before_loop
+    @task.before_loop
     async def before_printer(self):
         await self.bot.wait_until_ready()
 

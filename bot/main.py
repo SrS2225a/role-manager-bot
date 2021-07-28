@@ -26,7 +26,7 @@ db = asyncio.get_event_loop().run_until_complete(
                         max_size=800, max_queries=100, max_cacheable_statement_size=0))
 
 
-# sets command prefix
+# gets custom command prefix or default one
 async def get_prefix(bot, message):
     async with db.acquire() as cursor:
         prefix = '*'
@@ -37,7 +37,7 @@ async def get_prefix(bot, message):
 
     # sets bot variables
 
-
+# sets discord gateway intents
 intents = discord.Intents.default()
 intents.members = True
 intents.presences = True
@@ -47,6 +47,7 @@ intents.integrations = False
 intents.bans = False
 intents.typing = False
 
+# initializes bot vars to be used elsewhere
 bot = commands.Bot(command_prefix=get_prefix, intents=intents, case_insensitive=True)
 bot.owner_ids = [508455796783317002, 270848136006729728, 222492698236420099, 372923892865433600]
 bot.active = []
@@ -54,6 +55,7 @@ bot.emoji = []
 bot.db = db
 bot.uses = 0
 
+# loads emojis from file
 with open("emojis.json", "r") as unicode:
     emojis = json.load(unicode)
     for key, value in emojis.items():
@@ -77,6 +79,7 @@ async def bot_check(ctx):
         if name is None or ctx.command.parent:
             return True
         else:
+            # raise if the command is disabled
             raise commands.DisabledCommand(f"{ctx.command.name} command is disabled.")
 
 

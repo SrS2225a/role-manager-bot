@@ -10,6 +10,7 @@ class Handler(commands.Cog):
     # WHO ADDED LOG
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
+        # logs to support server if the bot was added to a guild
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(844387430743801896)
         await channel.send(f"Dionysus was added into guild **{guild} ({guild.id})**. "
@@ -17,6 +18,7 @@ class Handler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
+        # logs to support server if the bot was removed from a guild
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(844387430743801896)
         await channel.send(f"Dionysus was removed from guild **{guild} ({guild.id})**. "
@@ -25,6 +27,7 @@ class Handler(commands.Cog):
     # COMMAND RAN LOG
     @commands.Cog.listener()
     async def on_command(self, ctx):
+        # logs to support sever if a command is run and increases total command uses by 1
         guild = ctx.guild
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(866678659862626355)
@@ -34,6 +37,8 @@ class Handler(commands.Cog):
     # ERROR HANDLER
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        # upon a command erroring, check if it is an exception and let the user know what went wrong and log to support
+        # server, else if it is not, it is a general command error (not by code)
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(840276875301224479)
         etype = type(error)
@@ -62,7 +67,6 @@ class Handler(commands.Cog):
     # ERROR HANDLER
     @commands.Cog.listener()
     async def on_error(self, event, error):
-        # finds who is is in the team and send all an error report when it happens upon a general error
         guild = self.bot.get_guild(531247629649182750)
         channel = guild.get_channel(840276875301224479)
         etype = type(error)

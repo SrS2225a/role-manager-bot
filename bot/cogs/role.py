@@ -22,7 +22,7 @@ class Role(commands.Cog, name="Roles"):
 
     @commands.command(description='Supply type with add/remove to add or remove that role and to with everyone to '
                                   'execute for everyone in the guild, members to execute for all members, '
-                                  'bots to execute for all bots, or an user')
+                                  'bots to execute for all bots, or an user', brief='giverole member everyone')
     @commands.has_permissions(manage_roles=True)
     async def giverole(self, ctx, type, role: discord.Role, to):
         """Allows you to add or remove an role from members, bots, or everyone"""
@@ -113,10 +113,10 @@ class Role(commands.Cog, name="Roles"):
             await role.delete()
             await ctx.send("Role Deleted Successfully!")
 
-    @commands.group(invoke_without_command=True, hidden=True, brief='autorole add member')
+    @commands.group(invoke_without_command=True, hidden=True, brief='autorole add member 7d')
     @commands.has_permissions(manage_guild=True)
-    async def autorole(self, ctx, role: discord.Role, delay=None):
-        """Sets what role will be given or removed automatically to the user upon joining the guild"""
+    async def autorole(self, ctx):
+        """Sets what role will be given or removed automatically to the user upon joining the guild; you can also optionally set a time for when this should occur"""
         if not ctx.invoked_subcommand:
             await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
 
@@ -185,7 +185,8 @@ class Role(commands.Cog, name="Roles"):
             await ctx.send("Sticky Role Deleted Successfully!")
         await self.bot.db.release(cursor)
 
-    @commands.group(aliases=['autopn'], invoke_without_command=True, hidden=True)
+    @commands.group(aliases=['autopn'], invoke_without_command=True, hidden=True,
+                    brief='autoposition join legendary member 1y')
     @commands.has_permissions(manage_guild=True)
     async def autoposition(self, ctx):
         """Allows you to automatically add roles based on someones account creation or server join date"""
@@ -194,7 +195,7 @@ class Role(commands.Cog, name="Roles"):
 
     @autoposition.command()
     @commands.has_permissions(manage_guild=True)
-    async def create(self, ctx, role: discord.Role, delay):
+    async def create(self, ctx, role: discord.Role, *, delay):
         """Adds a role based on someones account creation date"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
@@ -217,7 +218,7 @@ class Role(commands.Cog, name="Roles"):
 
     @autoposition.command()
     @commands.has_permissions(manage_guild=True)
-    async def join(self, ctx, role: discord.Role, delay):
+    async def join(self, ctx, role: discord.Role, *, delay):
         """Adds a role based on someones server join date"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
@@ -252,10 +253,12 @@ class Role(commands.Cog, name="Roles"):
         role = role.id
         main = message.id + ctx.channel.id
         roles = blacklist.id if blacklist is not None else 0
-        emote = re.findall(r'(\d+)\s*', emoji)
-        mark = True if emote and int(emote[0]) in [emojis.id for emojis in await ctx.guild.fetch_emojis()] else False
-        unicode = True if emoji in self.bot.emoji else False
+        emote = re.search(r'(\d+)\s*', emoji)
+        # checks if the following emoji is valid
+        mark = True if int(emote.group()) in [emojis.id for emojis in await ctx.guild.fetch_emojis()] or \
+                       emoji in self.bot.emoji else False
         result = await cursor.fetchval("SELECT role FROM reaction WHERE master = $1 and guild = $2", main, guild)
+        # prevents conflicts with a reaction role category and makes sure that the user is defining the right type
         if result is not None and "r" in str(result):
             type = "r"
             role = type + str(role)
@@ -270,8 +273,9 @@ class Role(commands.Cog, name="Roles"):
         else:
             await ctx.send("The reaction role emoji has been incorrectly defined for this category!")
         if type in ("r", "o", "n"):
-            if unicode or mark:
-                reaction = emote[0] if mark else emoji
+            if mark:
+                # adds support for custom emojis
+                reaction = emote.group() if emote is not None else emoji
                 results = await cursor.fetchval(
                     "SELECT role FROM reaction WHERE role = $1 and master = $2 and guild = $3", role, main, guild)
                 if not results == role:

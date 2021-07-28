@@ -32,19 +32,13 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         week = [0, 0]
         day = [0, 0]
 
-        plt.style.use('dark_background')
-        matplotlib.rcParams['figure.figsize'] = (10, 5)
-
-        fig, ax = plt.subplots()
-
-        plt.grid()
-        ax.xaxis.set_major_locator(plt.MaxNLocator(20))
-        ax.tick_params(axis='x', labelrotation=45)
+        # gets join and leave data
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
         members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 ORDER BY "
                                      "day ASC", guild.id, (datetime.date.today() - datetime.timedelta(days=date or 30)))
 
         if members:
+            # converts total member joins and leaves as the last 24/week/or month
             max = members[-1][2]
             x1 = []
             y1 = []
@@ -71,11 +65,25 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
             embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
             embed.add_field(name="Net Change", value=f"`{round(month[0] / (month[0] + month[1]) * 100, 2)}%`")
+            embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
+            embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
+            embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
+
+            # plot join and leave results
+            plt.style.use('dark_background')
+            matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+            fig, ax = plt.subplots()
+
+            plt.grid()
+            ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+            ax.tick_params(axis='x', labelrotation=45)
 
             plt.plot(x1, y1, marker="o", ls="", ms=3)
             plt.plot(x2, y2, marker="o", ls="", ms=3)
             plt.plot(x1, y1, label="Joins", color='#21BBFF')
             plt.plot(x2, y2, label="Leaves", color='#4e42ff')
+            # reverse both graphs if 1 is less than the other
             if y1 < y2:
                 plt.fill_between(x1, y2, y1, color='#4e42ff', alpha=0.3)
                 plt.fill_between(x2, y1, color='#21BBFF', alpha=0.3)
@@ -83,10 +91,8 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 plt.fill_between(x1, y1, y2, color='#21BBFF', alpha=0.3)
                 plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
             plt.legend()
-            embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`\nLeaves: `{day[1]}`')
-            embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`\nLeaves: `{week[1]}`')
-            embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`\nLeaves: `{month[1]}`')
 
+            # sends plot as image
             data_stream = io.BytesIO()
             plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
             data_stream.seek(0)
@@ -112,20 +118,13 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         week = [0, 0]
         day = [0, 0]
 
-        plt.style.use('dark_background')
-        matplotlib.rcParams['figure.figsize'] = (10, 5)
-
-        fig, ax = plt.subplots()
-
-        plt.grid()
-        ax.xaxis.set_major_locator(plt.MaxNLocator(20))
-        ax.tick_params(axis='x', labelrotation=45)
-
+        # gets join data
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
         members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 ORDER BY "
                                      "day ASC", guild.id, (datetime.date.today() - datetime.timedelta(days=date or 30)))
 
         if members:
+            # converts total member joins as the last 24/week/or month
             max = members[-1][2]
             x1 = []
             y1 = []
@@ -147,14 +146,25 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
             embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
             embed.add_field(name="Net Change", value=f"`{round(month[0] / (month[0] + month[1]) * 100, 2)}%`")
-
-            plt.plot(x1, y1, label="Joins", color='#21BBFF')
-            plt.plot(x1, y1, marker="o", ls="", ms=3)
-            plt.fill_between(x1, y1, color='#21BBFF', alpha=0.3)
             embed.add_field(name="Last 24 Hours", value=f'Joins: `{day[0]}`')
             embed.add_field(name="Last 7 Days", value=f'Joins: `{week[0]}`')
             embed.add_field(name="Last 30 Days", value=f'Joins: `{month[0]}`')
 
+            # plot join results
+            plt.style.use('dark_background')
+            matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+            fig, ax = plt.subplots()
+
+            plt.grid()
+            ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+            ax.tick_params(axis='x', labelrotation=45)
+
+            plt.plot(x1, y1, label="Joins", color='#21BBFF')
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.fill_between(x1, y1, color='#21BBFF', alpha=0.3)
+
+            # send plot as image
             data_stream = io.BytesIO()
             plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
             data_stream.seek(0)
@@ -180,20 +190,13 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         week = [0, 0]
         day = [0, 0]
 
-        plt.style.use('dark_background')
-        matplotlib.rcParams['figure.figsize'] = (10, 5)
-
-        fig, ax = plt.subplots()
-
-        plt.grid()
-        ax.xaxis.set_major_locator(plt.MaxNLocator(20))
-        ax.tick_params(axis='x', labelrotation=45)
-
+        # gets leave data
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
         members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 ORDER BY "
                                      "day ASC", guild.id, (datetime.date.today() - datetime.timedelta(days=date or 30)))
 
         if members:
+            # converts total member leaves as the last 24/week/or month
             max = members[-1][2]
             x1 = []
             y1 = []
@@ -216,14 +219,25 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             embed.add_field(name="Total Members", value=f"`{guild.member_count}`")
             embed.add_field(name="Member Retention", value=f"`{round((month[1] - day[0]) / month[0] * 100, 2)}%`")
             embed.add_field(name="Net Change", value=f"`{round(month[0] / (month[0] + month[1]) * 100, 2)}%`")
-
-            plt.plot(x1, y1, marker="o", ls="", ms=3)
-            plt.plot(x1, y1, color='#4e42ff')
-            plt.fill_between(x1, y1, color='#4e42ff', alpha=0.3)
             embed.add_field(name="Last 24 Hours", value=f'Leaves: `{day[1]}`')
             embed.add_field(name="Last 7 Days", value=f'Leaves: `{week[1]}`')
             embed.add_field(name="Last 30 Days", value=f'Leaves: `{month[1]}`')
 
+            # plot leave results
+            plt.style.use('dark_background')
+            matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+            fig, ax = plt.subplots()
+
+            plt.grid()
+            ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+            ax.tick_params(axis='x', labelrotation=45)
+
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.plot(x1, y1, color='#4e42ff')
+            plt.fill_between(x1, y1, color='#4e42ff', alpha=0.3)
+
+            # send plot as image
             data_stream = io.BytesIO()
             plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
             data_stream.seek(0)
@@ -248,24 +262,18 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         userDay = 0
         userWeek = 0
         userMonth = 0
-        plt.style.use('dark_background')
-        matplotlib.rcParams['figure.figsize'] = (10, 5)
 
-        fig, ax = plt.subplots()
-
-        plt.grid()
-        ax.xaxis.set_major_locator(plt.MaxNLocator(20))
-        ax.tick_params(axis='x', labelrotation=45)
-
+        # gets message data
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
         members = await cursor.fetch("SELECT day, SUM(messages) FROM message WHERE guild = $1 and day > $2 GROUP BY "
-                                     "day ORDER BY day ASC", guild.id, (datetime.date.today() - datetime.timedelta(
+                                     "day ORDER BY day", guild.id, (datetime.date.today() - datetime.timedelta(
             days=date or 30)))
 
         if members:
             max = members[-1][0]
             x1 = []
             y1 = []
+            # converts total messages as the last 24/week/or month
             for messages in members:
                 userMonth += messages[1]
 
@@ -277,6 +285,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 x1.append(messages[0].strftime('%d %m'))
                 y1.append(messages[1])
 
+            # gets the top 5 users
             topUser = ""
             for messages in await cursor.fetch("SELECT member, SUM(messages) FROM message WHERE guild = $1 and day > "
                                                "$2 GROUP BY member ORDER BY SUM(messages) DESC LIMIT 5", guild.id,
@@ -285,6 +294,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 if user:
                     topUser += f"{user.mention} - `{messages[1]}`\n"
 
+            # gets the top 5 channels
             topChannel = ""
             for messages in await cursor.fetch("SELECT channel, SUM(messages) FROM message WHERE guild = $1 and day > "
                                                "$2 GROUP BY channel ORDER BY SUM(messages) DESC LIMIT 5", guild.id,
@@ -300,10 +310,21 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             embed.add_field(name="Top 5 Channels", value=topChannel)
             embed.add_field(name="Top 5 Users", value=topUser)
 
+            # plot message results
+            plt.style.use('dark_background')
+            matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+            fig, ax = plt.subplots()
+
+            plt.grid()
+            ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+            ax.tick_params(axis='x', labelrotation=45)
+
             plt.plot(x1, y1, marker="o", ls="", ms=3)
             plt.plot(x1, y1, color='#21BBFF')
             plt.fill_between(x1, y1, color='#21BBFF', alpha=0.3)
 
+            # send plot as image
             data_stream = io.BytesIO()
             plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
             data_stream.seek(0)
@@ -328,7 +349,6 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     async def lb_ranks(self, ctx):
         """Shows top leveling rankings"""
         cursor = await self.bot.db.acquire()
-        # shows the leaderboard for leveling
         tabulate.MIN_PADDING = 0
         # checks if the sever has leveling enabled for Dionysus
         diff1 = await cursor.fetchval("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2",
@@ -381,7 +401,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             if user is not None:
                 table.append([row[1], user.name + "#" + user.discriminator])
 
-        # puts results in a navigatable page interface and formats our data into a text table
+        # puts results in a navigable page interface and formats our data into a text table
         class Source(menus.ListPageSource):
             def __init__(self, data):
                 super().__init__(data, per_page=20)
@@ -413,7 +433,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             if user is not None:
                 table.append([row[1], row[2], row[3], user.name + "#" + user.discriminator])
 
-        # puts results in a navigatable page interface and formats our data into a text table
+        # puts results in a navigable page interface and formats our data into a text table
         class Source(menus.ListPageSource):
             def __init__(self, data):
                 super().__init__(data, per_page=20)
@@ -433,13 +453,13 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     @leaderboard.command(name='partners')
     async def lb_partners(self, ctx):
         """Shows top completed partnerships"""
-        # shows the leaderboard for invites
         cursor = await self.bot.db.acquire()
         # checks if the sever has partnerships enabled for Dionysus
         tabulate.MIN_PADDING = 0
         diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2",
                                       ctx.author.guild.id, 'partners')
         if diff1 is not None:
+            # gets our leaderboard results
             result = await cursor.fetch("SELECT member, number FROM partner WHERE guild = $1 ORDER BY number DESC",
                                         ctx.guild.id)
             table = []
@@ -448,7 +468,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                 if user is not None:
                     table.append([row[1], user.name + "#" + user.discriminator])
 
-            # puts results in a navigatable page interface and formats our data into a text table
+            # puts results in a navigable page interface and formats our data into a text table
             class Source(menus.ListPageSource):
                 def __init__(self, data):
                     super().__init__(data, per_page=20)
@@ -483,7 +503,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             ranking = await cursor.fetch("SELECT user_id FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC",
                                          ctx.guild.id)
 
-            # detects if we have been ranked yet
+            # detects if we have been ranked yet and send the results
             if result is None:
                 embed = discord.Embed(
                     title='Undefined Rank',
@@ -493,7 +513,6 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
                 await ctx.send(embed=embed)
             else:
-                # shows various information about our rank
                 i = 0
                 for row in ranking:
                     i += 1
@@ -522,19 +541,16 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
     @commands.command(brief="invites @Vendron#2001")
     async def invites(self, ctx, *, member: discord.User = None):
-        """Shows info about how many members you invited, or someone else"""
+        """Shows info about how many members you invited, or someone else's"""
         cursor = await self.bot.db.acquire()
-        # shows various information about how many members we invited, or someone elses
         guild = ctx.guild
         member = member or ctx.author
         full = await cursor.fetchrow(
             "SELECT SUM(amount), SUM(amount2), SUM(amount3) FROM invite WHERE guild = $1 and member = $2 GROUP BY "
-            "member",
-            guild.id, member.id)
+            "member", guild.id, member.id)
         rank = await cursor.fetch(
             "SELECT member FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, "
-            "SUM(amount3) DESC",
-            ctx.guild.id)
+            "SUM(amount3) DESC", ctx.guild.id)
 
         full = full if full is not None else [0, 0, 0]
         leave = full[1] + full[2]
@@ -557,11 +573,10 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
-    @commands.command(aliases=['invitecodes'], brief="invites @Vendron#2001")
+    @commands.command(aliases=['invitecodes'], brief="inviteinfo @Vendron#2001")
     async def inviteinfo(self, ctx, *, member: discord.User = None):
-        """Shows info about your invites, or someone elses"""
+        """Shows info about your invites, or someone else's"""
         cursor = await self.bot.db.acquire()
-        # shows various information about how many members we invited, or someone elses
         guild = ctx.guild
         member = member or ctx.author
         full = await cursor.fetch(
@@ -574,7 +589,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
-    @commands.command(aliases=['getinvite'])
+    @commands.command(aliases=['getinvite'], brief="searchinvite @Vendron#2001")
     async def searchinvite(self, ctx, code):
         """Gets information about an invite code"""
         cursor = await self.bot.db.acquire()
@@ -592,7 +607,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
     @commands.command(brief="partners @Vendron#2001")
     async def partners(self, ctx, member: discord.Member = None):
-        """Shows info about how many partners you completed or someone elses"""
+        """Shows info about how many partners you completed or someone else's"""
         cursor = await self.bot.db.acquire()
         diff1 = await cursor.fetchval(f"SELECT system FROM leveling WHERE guild = $1 and system = $2", ctx.guild.id,
                                       'partners')
@@ -618,17 +633,14 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
     @commands.command(aliases=["msgs"], brief="messages @Vendron#2001")
     async def messages(self, ctx, member: discord.Member = None):
-        """Shows info about how many messages you sent or someone elses"""
+        """Shows info about how many messages you sent or someone else's"""
         cursor = await self.bot.db.acquire()
         member = member or ctx.author
-        # cursor.fetch("SELECT member, SUM(joins) FROM member WHERE guild = $1 and type = $2 and day > $3 GROUP BY
-        # member ORDER BY SUM(joins) DESC LIMIT 5", guild.id, 'message', (datetime.date.today()-datetime.timedelta(
-        # days=date or 30))):
         messages = await cursor.fetch(
             f"SELECT channel, SUM(messages) FROM message WHERE guild = $1 and member = $2 GROUP BY channel "
             f"ORDER BY SUM(messages) DESC", ctx.guild.id, member.id)
         rank = await cursor.fetch(
-            "SELECT member FROM message WHERE guild = $1 GROUP BY member, messages ORDER BY messages DESC",
+            "SELECT member FROM message WHERE guild = $1 GROUP BY member, messages ORDER BY member DESC",
             ctx.guild.id)
         if messages:
             user1 = []

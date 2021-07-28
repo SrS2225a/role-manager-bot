@@ -23,12 +23,14 @@ class Help(commands.Cog, name='Commands'):
         cog = self.bot.get_cog(command)
         command = self.bot.get_command(command)
         guild = ctx.guild
+        # checks if we are referencing a command
         if command is not None:
             if command.parent is not None:
                 command = command.parent
             await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id,
                                  command.name, 'command')
             await ctx.send(f"Command Enabled Successfully!")
+        # checks if we are referencing a cog
         elif cog is not None:
             for command in cog.get_commands():
                 await cursor.execute("DELETE FROM boost WHERE guild = $1 and date = $2 and type = $3", guild.id,
@@ -46,28 +48,33 @@ class Help(commands.Cog, name='Commands'):
         cog = self.bot.get_cog(command)
         command = self.bot.get_command(command)
         guild = ctx.guild
+        # checks if we are referencing a command
         if command is not None:
             if command.parent is not None:
                 command = command.parent
+            # prevents us from disabling bot owner commands
             if command.name == "jishaku":
                 await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
             elif command.name == "command":
                 await ctx.send(
-                    "Disabling this command will prevent you from enabling/disabing any more commands, and thus "
+                    "Disabling this command will prevent you from enabling/disabling any more commands, and thus "
                     "cannot be turned off!")
             else:
                 await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id, command.name,
                                      'command')
                 await ctx.send(f"Command Disabled Successfully!")
+        # checks if we are referencing a cog
         elif cog is not None:
-            for command in cog.get_commands():
-                if command.name == "command":
-                    await ctx.send(
-                        "Disabling this command will prevent you from enabling/disabing any more commands, and thus "
-                        "cannot be turned off!")
-                else:
+            if cog.qualified_name == "jishaku":
+                await ctx.send("Bot owner commands are mandatory and cannot be turned off!")
+            elif cog.qualified_name == "commands":
+                await ctx.send(
+                    "Disabling this command will prevent you from enabling/disabling any more commands, and thus "
+                    "cannot be turned off!")
+            else:
+                for command in cog.get_commands():
                     await cursor.execute("INSERT INTO boost(guild, date, type) VALUES($1, $2, $3)", guild.id,
-                                         command.name, 'command')
+                                     command.name, 'command')
             await ctx.send(f"Cog Disabled Successfully!")
         else:
             await ctx.send("Not a valid command or cog!")

@@ -29,9 +29,16 @@ class Utilities(commands.Cog, name='Utilities'):
         self.__current_timer = None
         self.have_data = asyncio.Event(loop=bot.loop)
         self.current_timer = None
-        self._task = bot.loop.create_task(self.dispatch_remind())
-        self.__task = bot.loop.create_task(self.dispatch_poll())
-        self.task = bot.loop.create_task(self.dispatch_giveaway())
+        self._task = bot.loop.create_task(self.dispatch_remind())  # remind task
+        self.__task = bot.loop.create_task(self.dispatch_poll())  # poll task
+        self.task = bot.loop.create_task(self.dispatch_giveaway())  # giveaway task
+
+    # if the cog gets unloaded in someway, stop all current running tasks
+    def cog_unload(self):
+        self.task.cancel()
+        self._task.cancel()
+        self.__task.cancel()
+
 
     class MaybeAcquire:
         def __init__(self, connection, *, pool):
@@ -176,7 +183,6 @@ class Utilities(commands.Cog, name='Utilities'):
 
                     if timer[4] >= now:
                         to_sleep = (timer[4] - now).total_seconds()
-                        print(to_sleep)
                         await asyncio.sleep(to_sleep)
 
                     await con.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4",
@@ -197,7 +203,7 @@ class Utilities(commands.Cog, name='Utilities'):
         for reaction in sent.reactions:
             if reaction.emoji == '🎉':
                 users = await reaction.users().flatten()
-                if reaction.count <= timer[2]:
+                if reaction.count < timer[2]:
                     embed = discord.Embed(title=data.title,
                                           description=f"**Giveaway Ended** \nHost: "
                                                       f"{re.search(r'<@(!?)([0-9]*)>', data.description)[0]}"
@@ -243,6 +249,8 @@ class Utilities(commands.Cog, name='Utilities'):
                 return ' '.join(result)
 
             time = date_convert_seconds(duration)
+
+            # checks if a valid time
             if time[1] < 1:
                 await ctx.send("I do not recognise that time!")
             elif time[0] < 1:
@@ -256,17 +264,23 @@ class Utilities(commands.Cog, name='Utilities'):
                 remind_id = random.choices(rand, k=6)
                 escaped = discord.utils.escape_mentions(description)
                 if repeat:
+                    # disallows the creation of the reminder if th repeating reminder is being sent to a server and less
+                    # than 1 hour to prevent spam
                     if time < 3600 and isinstance(thing, discord.TextChannel):
                         await ctx.send("To prevent spam in servers, repeating reminders must be more than 1 hour. Try "
-                                       "having the reminder send to your dm or increase the remind time")
+                                       "having the reminder send to your dm or increase the reminder time")
                         return
                     else:
+                        # for user friendliness in repeating reminders use display_time()
+                        # converts as e.x.: 1 years 12 months 7 weeks 30 days 1 hours 60 minutes 60 seconds
                         await ctx.send(f"Ok, reminding you every {display_time(time)} about: {escaped}")
                 else:
                     await ctx.send(f"Ok, reminding you at <t:{round(delta.timestamp())}> about: {escaped}")
                 await cursor.execute("INSERT INTO remind(repeat, message, date, win, type, account, assigned) VALUES("
                                      "$1, $2, $3, $4, $5, $6, $7)",
-                    repeat, ''.join(remind_id), delta, description, thing.id, ctx.author.id, now)
+                                     repeat, ''.join(remind_id), delta, description, thing.id, ctx.author.id, now)
+
+                # restarts the task if the sleep time is less than the current timer
                 if self._current_timer and delta < self._current_timer[2] or self._current_timer is None:
                     if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
                         self._have_data.set()
@@ -298,7 +312,8 @@ class Utilities(commands.Cog, name='Utilities'):
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
-    @remind.command(description="You can optionally supply code with all if you want to delete all your reminders at once")
+    @remind.command(
+        description="You can optionally supply code with all if you want to delete all your reminders at once")
     async def delete(self, ctx, code):
         """Allows you to delete a reminder"""
         cursor = await self.bot.db.acquire()
@@ -323,6 +338,8 @@ class Utilities(commands.Cog, name='Utilities'):
             pass
 
         time = date_convert_seconds(duration)
+
+        # checks if a valid time
         if time[1] < 1:
             await ctx.send("I do not recognise that time!")
         elif time[0] < 1:
@@ -339,6 +356,8 @@ class Utilities(commands.Cog, name='Utilities'):
             await sent.add_reaction('🎉')
             await cursor.execute("INSERT INTO vote(guild, message, date, win, type, channel) VALUES($1, $2, $3, $4, "
                                  "$5, $6)", ctx.guild.id, sent.id, delta, winners, "giveaway", ctx.channel.id)
+
+            # restarts the task if the sleep time is less than the current timer
             if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
                 self.have_data.set()
             if self.current_timer and delta < self.current_timer[4] or self.current_timer is None:
@@ -356,21 +375,21 @@ class Utilities(commands.Cog, name='Utilities'):
         except discord.Forbidden:
             pass
         sent = await ctx.channel.fetch_message(message.id)
-        execute = await cursor.fetchrow("SELECT date FROM vote WHERE guild = $1 and message = $2 and type = $3",
+        execute = await cursor.fetchcval("SELECT date FROM vote WHERE guild = $1 and message = $2 and type = $3",
                                         ctx.guild.id, sent.id, "giveaway")
+        # checks if the giveaway exists
         if execute is not None:
-            vote = sent.reactions
-            for reaction in vote:
-                if reaction.emoji == '🎉':
-                    time = datetime.datetime.now()
-                    if time < execute[0]:
-                        await cursor.execute("UPDATE vote SET date = $1 WHERE guild = $2 and message = $3 and type = $4",
-                                             time, ctx.guild.id, sent.id, "giveaway")
-                        self.task.cancel()
-                        self.task = self.bot.loop.create_task(self.dispatch_giveaway())
-                        break
-                    else:
-                        await ctx.send("That Giveaway Has Already Ended!")
+            time = datetime.datetime.now()
+            # checks the the giveaway has already ended
+            if time < execute:
+                await cursor.execute(
+                    "UPDATE vote SET date = $1 WHERE guild = $2 and message = $3 and type = $4",
+                    time, ctx.guild.id, sent.id, "giveaway")
+                # restarts the task
+                self.task.cancel()
+                self.task = self.bot.loop.create_task(self.dispatch_giveaway())
+            else:
+                await ctx.send("That Giveaway Has Already Ended!")
         else:
             await ctx.send("This Giveaway Does Not Exist Or In The Current Channel")
         await self.bot.db.release(cursor)
@@ -387,11 +406,10 @@ class Utilities(commands.Cog, name='Utilities'):
         sent = await ctx.channel.fetch_message(message)
         execute = await cursor.fetchrow("SELECT * FROM vote WHERE guild = $1 and message = $2 and type = $3",
                                         ctx.guild.id, sent.id, "giveaway end")
+        # checks if the giveaway exists
         if execute is not None:
-            vote = sent.reactions
-            for reaction in vote:
-                if reaction.emoji == '🎉':
-                    await self.call_giveaway(execute)
+            # trigger the giveaway
+            await self.call_giveaway(execute)
         else:
             await ctx.send("This Giveaway Does Not Exist!")
         await self.bot.db.release(cursor)
@@ -406,10 +424,13 @@ class Utilities(commands.Cog, name='Utilities'):
             await ctx.message.delete()
         except discord.Forbidden:
             pass
+        # because of discord limitations, check the following
         if len(questions) > 20:
             await ctx.send("You can only have a maximum of 20 questions!")
         else:
             time = date_convert_seconds(duration)
+
+            # checks if a valid time
             if time[1] < 1:
                 await ctx.send("I do not recognise that time!")
             elif time[0] < 1:
@@ -425,34 +446,35 @@ class Utilities(commands.Cog, name='Utilities'):
                 for item, feilds in enumerate(questions):
                     embed.add_field(name=indicators[item], value=feilds)
                 sent = await ctx.send(embed=embed)
+                for button in range(len(questions)):
+                    await sent.add_reaction(indicators[button])
                 await cursor.execute(
                     "INSERT INTO vote(guild, message, win, type, date, channel) VALUES($1, $2, $3, $4, $5, $6)",
                     ctx.guild.id, sent.id, multiple, "poll", delta, ctx.channel.id)
-                for button in range(len(questions)):
-                    await sent.add_reaction(indicators[button])
+                # restarts the task if the sleep time is less than the current timer
+                if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
+                    self.__have_data.set()
                 if self.__current_timer and delta < self.__current_timer[4] or self.__current_timer is None:
-                    if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
-                        self.__have_data.set()
                     self.__task.cancel()
                     self.__task = self.bot.loop.create_task(self.dispatch_poll())
                 await self.bot.db.release(cursor)
 
     @commands.command(aliases=["endvote"])
     @commands.has_permissions(manage_messages=True)
-    async def endpoll(self, ctx, message: int):
+    async def endpoll(self, ctx, *, message: discord.Message):
         """Allows you to end a running poll"""
         cursor = await self.bot.db.acquire()
         try:
             await ctx.message.delete()
         except discord.Forbidden:
             pass
-        sent = await ctx.channel.fetch_message(message)
         execute = await cursor.fetchval("SELECT message FROM vote WHERE guild = $1 and message = $2 and type = $3",
-                                        ctx.guild.id, sent.id, "poll")
+                                        ctx.guild.id, message.id, "poll")
+        # checks if the poll exists
         if execute is not None:
             await cursor.execute("UPDATE vote SET date = $1 WHERE guild = $2 and message = $3 and type = $4",
-                                 datetime.datetime.now(), ctx.guild.id, sent.id,
-                                 "poll")  # update this instead to trigger the endpoll and reload task
+                                 datetime.datetime.now(), ctx.guild.id, message.id,
+                                 "poll")  # update this instead to current date to trigger the endpoll and reload task
             self.__task.cancel()
             self.__task = self.bot.loop.create_task(self.dispatch_poll())
         else:
@@ -485,7 +507,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2",
                                                 guildid, 'role')
                 custom = f"{name} ({default[1]})" if default[1] is not None else name
-                # checks if all arguments are correct
+                # because of discord limitations, check the following
                 if not re.search("#([0-9a-fA-F]{6})", color):
                     await ctx.send(f"The first argument Must Be A Hex")
                 elif len(custom) > 50:
@@ -526,7 +548,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2",
                                                 guildid, 'text')
                 custom = f"{topic} __**({default[1]})**__" if default[1] is not None else topic
-                # checks if all arguments are correct
+                # because of discord limitations, check the following
                 if len(custom) > 1024:
                     await ctx.send("The channel topic cannot be over 1024 characters!")
                 elif len(name) > 100:
@@ -569,7 +591,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 default = await cursor.fetchrow("SELECT position, tag FROM custom WHERE guild = $1 and system = $2",
                                                 guildid, 'voice')
                 custom = f"{name} ({default[1]})" if default[1] is not None else name
-                # checks if all arguments are correct
+                # because of discord limitations, check the following
                 if len(name) > 100:
                     await ctx.send("The channel name cannot be over 100 Characters!")
                 elif int(limit) > 99:
@@ -616,7 +638,7 @@ class Utilities(commands.Cog, name='Utilities'):
                                          guildid, 'role')
             default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
             custom = f"{name} ({default})" if default is not None else name
-            # checks if all arguments are correct
+            # because of discord limitations, check the following
             if not re.search(r"#([0-9a-fA-F]{6})", color):
                 await ctx.send(f"The first argument Must Be A Hex")
             elif len(custom) > 50:
@@ -646,7 +668,7 @@ class Utilities(commands.Cog, name='Utilities'):
                                             memID, guildid, 'text')
             default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'text')
             custom = f"{topic} __**({default})**__" if default is not None else topic
-            # checks if all arguments are correct
+            # because of discord limitations, check the following
             if len(topic) > 1024:
                 await ctx.send("The channel topic cannot be over 1024 characters!")
             elif len(name) > 100:
@@ -677,7 +699,7 @@ class Utilities(commands.Cog, name='Utilities'):
                                             memID, guildid, 'voice')
             default = await cursor.fetchval("SELECT tag FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
             custom = f"{name} ({default})" if default is not None else name
-            # checks if all arguments are correct
+            # because of discord limitations, check the following
             if len(custom) > 100:
                 await ctx.send("The channel name cannot be over 100 Characters!")
             elif int(limit) > 99:
@@ -785,6 +807,7 @@ class Utilities(commands.Cog, name='Utilities'):
         number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'role')
         result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid,
                                        memID, 'role')
+        # checks if the custom role exists
         if result is not None:
             crole = guild.get_role(result)
             if action not in ("add", "remove"):
@@ -793,6 +816,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 await ctx.send("You cannot Add or Remove custom roles you already own to yourself")
             else:
                 if not member.bot and crole.id not in [role.id for role in member.roles] and action in "add":
+                    # checks if we have more members than is allowed
                     if len(crole.members) > number:
                         await ctx.send(f"You can only give this custom role to an max of {number} members")
                     else:
@@ -814,6 +838,7 @@ class Utilities(commands.Cog, name='Utilities'):
         number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'text')
         result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid,
                                        memID, 'text')
+        # checks if the custom text channel exxists
         if result is not None:
             cchannel = guild.get_channel(result)
             if action not in ("add", "remove"):
@@ -823,6 +848,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 return
             else:
                 if not member.bot and not cchannel.permissions_for(member).read_messages and action == "add":
+                    # checks if we have more members than is allowed
                     if len(cchannel.members) > number:
                         await ctx.send(
                             f"You can only give this custom text channel access to an max of {number} members")
@@ -844,10 +870,12 @@ class Utilities(commands.Cog, name='Utilities'):
         memID = ctx.author.id
         guild = ctx.guild
         guildid = ctx.guild.id
-        number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid, 'voice')
         result = await cursor.fetchval("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", guildid,
                                        memID, 'voice')
+        # checks if the custom voice channel exists
         if result is not None:
+            number = await cursor.fetchval("SELECT amount FROM custom WHERE guild = $1 and system = $2", guildid,
+                                           'voice')
             cchannel = guild.get_channel(result)
             if action not in ("add", "remove"):
                 await ctx.send("The 'type' argument must be defined as add or remove")
@@ -855,15 +883,15 @@ class Utilities(commands.Cog, name='Utilities'):
                 await ctx.send("You cannot Add or Remove custom text channels you already own to yourself")
             else:
                 if not member.bot and not cchannel.permissions_for(member).view_channel and action == "add":
+                    # checks if we have more members than is allowed
                     if len(cchannel.members) > number:
                         await ctx.send(
-                            f"You can only give this custom text channel access to an max of {number} members")
-                        return
+                            f"You can only give this custom voice channel access to an max of {number} members")
                     else:
                         await cchannel.set_permissions(member, view_channel=True, connect=True)
                 elif not member.bot and cchannel.permissions_for(member).view_channel and action in "remove":
                     await cchannel.set_permissions(member, overwrite=None)
-                await ctx.send(content=f"Successfully {action} custom voice channel access to {member.name}")
+                await ctx.send(f"Successfully {action} custom voice channel access to {member.name}")
         else:
             await ctx.send(
                 f"You need to have a custom voice channel first! Use `{ctx.prefix}createcustom` to create one!")

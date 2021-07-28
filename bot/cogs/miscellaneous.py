@@ -15,10 +15,10 @@ class Info(commands.Cog, name='Miscellaneous'):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(brief='settings autorole')
     @commands.has_permissions(manage_guild=True)
     async def settings(self, ctx, setting=None):
-        """List your configured bot settings for your server"""
+        """List your configured bot settings for your server or a specific one"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
         tabulate.MIN_PADDING = 0
@@ -386,8 +386,7 @@ class Info(commands.Cog, name='Miscellaneous'):
         if club is None:
             await ctx.send("The channel specified is not a valid Club!")
         else:
-            # checks if the member was blacklisted from our club alreadly, and if they were remove them from the
-            # blacklist
+            # checks if the member was blacklisted from our club already, and if they were remove them from the blacklist
             check = await cursor.fetchval(
                 "SELECT member FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", guild.id,
                 member.id, club[1], 'club')
@@ -413,7 +412,6 @@ class Info(commands.Cog, name='Miscellaneous'):
     @commands.command()
     async def roles(self, ctx):
         """Shows a list of all roles in the server"""
-        # finds all of the server roles
         roles = []
         for role in ctx.guild.roles[::-1]:
             roles.append(role.name + " " + str(role.id))
@@ -440,7 +438,6 @@ class Info(commands.Cog, name='Miscellaneous'):
             for member in ctx.guild.members:
                 if len(member.roles) == 1:
                     members.append(member.name + "#" + member.discriminator)
-
         # finds members without the specified role
         elif role.find("--none") > -1:
             role = await commands.RoleConverter().convert(ctx, role.split(" --none")[0])
@@ -480,7 +477,7 @@ class Info(commands.Cog, name='Miscellaneous'):
         member = ctx.author
         # detects if we are already AFK
         afk = await cursor.fetchval("SELECT member FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
-        # unmarks us as AFK we are
+        # unmarks us as AFK we are already AFK
         if afk is not None:
             try:
                 nick = member.display_name
@@ -490,9 +487,9 @@ class Info(commands.Cog, name='Miscellaneous'):
             await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
             await ctx.send(f"{member.mention} I marked you as no longer AFK!")
         else:
-            # marks us as AFK if we are
+            # marks us as AFK
             try:
-                nick = member.display_name + ' [AFK]'
+                nick = '[AFK] ' + member.display_name
                 if len(nick) < 32:
                     await member.edit(nick=nick)
             except discord.Forbidden:
@@ -520,7 +517,7 @@ class Info(commands.Cog, name='Miscellaneous'):
         elif check is not None and int(check) in [role.id for role in member.roles]:
             await ctx.send("You are not allowed to create Applications!")
         else:
-            # feteches questions
+            # fetches questions
             questions = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id,
                                            'question')
             questions = [questions[0] for questions in questions]
@@ -540,11 +537,12 @@ class Info(commands.Cog, name='Miscellaneous'):
                     responses = []
                     send = True
 
+                    # checks if we are the recipient sending the message in dm's
                     def check(m: discord.Message):
                         return m.guild is None and m.author.id == member.id
 
                     try:
-                        # asks the user to confirm the application proccess then records responses
+                        # asks the user to confirm the application process then records responses
                         confirm = await self.bot.wait_for('message', check=check, timeout=60)
                         if confirm.content == 'start':
                             for i, v in enumerate(questions, start=1):
@@ -558,7 +556,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                         await member.send("You took too long to confirm this current application. Canceled!")
                         send = False
                     if send:
-                        # sends and tells the bot where to send finished applicants
+                        # tells the bot where to send finished applicants and gets the custom accept/deny text
                         yes = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2",
                                                     guild.id, 'accept')
                         no = await cursor.fetchval("SELECT text FROM questions WHERE guild = $1 and type = $2",
@@ -576,7 +574,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                                 super().__init__(clear_reactions_after=True, timeout=None)
                                 self.data = data
 
-                            # checks if we have actually reacted to the menu
+                            # checks if anyone has reacted to the menu
                             def reaction_check(self, payload):
                                 if payload.message_id != self.message.id:
                                     return False
@@ -624,7 +622,6 @@ class Info(commands.Cog, name='Miscellaneous'):
     @apply.command(aliases=['view', 'questions'])
     async def list(self, ctx):
         """Allows you to view current application questions"""
-        # allows the user to see a list of questions for applying
         cursor = await self.bot.db.acquire()
         lists = await cursor.fetch("SELECT text FROM questions WHERE guild = $1 and type = $2", ctx.guild.id, 'question')
 
@@ -777,7 +774,6 @@ class Info(commands.Cog, name='Miscellaneous'):
     @commands.command(aliases=['av'])
     async def avatar(self, ctx, *, member: discord.User = None):
         """Enlarges a members avatar"""
-        # enhances a users avatar
         member = member or ctx.author
         embed = discord.Embed(title=f"{member} Avatar")
         embed.set_image(url=member.avatar_url)
@@ -785,8 +781,7 @@ class Info(commands.Cog, name='Miscellaneous'):
 
     @commands.command()
     async def ping(self, ctx):
-        """Responds with the bots ping between the client and discord"""
-        # gets the bots current ping
+        """Responds with the bots current ping between the client and discord"""
         await ctx.send(f"The ping is: {round(self.bot.latency * 1000)} ms!")
 
 
