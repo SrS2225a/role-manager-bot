@@ -225,6 +225,7 @@ class Help(commands.Cog, name='Information'):
     async def guildinfo(self, ctx, *, guild=None):
         """Shows info about a guild"""
         # gets various information about a server (has to be in it)
+        guild = self.bot.get_guild(guild) or ctx.guild
         fa = 'Enabled' if guild.mfa_level == 1 else 'Disabled'
         notifications = 'All Messages' if guild.default_notifications.value == 0 else 'Only @Mentions'
         features = 'None' if not guild.features else ' '.join(guild.features)
