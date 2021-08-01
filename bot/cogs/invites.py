@@ -21,6 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+
+self.bot.invites.pop(guild.id, None)
 import asyncio
 import datetime
 import time
@@ -177,6 +179,12 @@ class Invites(commands.Cog):
     async def on_guild_join(self, guild: discord.Guild) -> None:
         invites = await self.fetch_invites(guild) or {}
         self.bot.invites[guild.id] = invites
+
+    @commands.Cog.listener()
+    async def on_guild_available(self, guild: discord.Guild) -> None:
+        # reload all invites in case they changed during
+        # the time that the guilds were unavailable
+        self.bot.invites[guild.id] = await self.fetch_invites(guild) or {}
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: discord.Guild) -> None:

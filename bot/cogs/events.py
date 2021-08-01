@@ -616,6 +616,8 @@ class Events(commands.Cog):
                     else:
                         roles = await cursor.fetch("SELECT role FROM reaction WHERE master = $1 and guild = $2",
                                                    main, guild_id)
+                        channel = guild.get_channel(channel_id)
+                        message = await channel.fetch_message(message_id)
                         # splits reaction role types into code readable format and checks if we can add role
                         # depending on the type
                         if "o" in role[0]:
@@ -624,8 +626,6 @@ class Events(commands.Cog):
                             for role in roles:
                                 role = int(role[0].replace("o", ""))
                                 if role in [role.id for role in member.roles]:
-                                    channel = guild.get_channel(channel_id)
-                                    message = await channel.fetch_message(message_id)
                                     await message.remove_reaction(payload.emoji, payload.member)
                                     await member.send("You cannot change your roles after reacting from this reaction "
                                                       "role category!")
