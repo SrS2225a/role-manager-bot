@@ -640,6 +640,7 @@ class Events(commands.Cog):
                                 role = int(role[0].replace("n", ""))
                                 if role in [role.id for role in member.roles]:
                                     nroles = guild.get_role(role)
+                                    await message.remove_reaction(payload.emoji, payload.member)
                                     await member.remove_roles(nroles, reason='User unreacted to reaction role')
                             await member.add_roles(mroles, reason='User reacted to reaction role')
 
@@ -656,8 +657,6 @@ class Events(commands.Cog):
                                                                "= $2 and message = $3 and type = $4 LIMIT 1",
                                                                guild_id, user_id, message_id, 'club')
                             if cblacklist is not None:
-                                channel = guild.get_channel(channel_id)
-                                message = await channel.fetch_message(message_id)
                                 await message.remove_reaction(payload.emoji, payload.member)
                             else:
                                 await member.add_roles(mroles, reason='User reacted to reaction role')
@@ -669,9 +668,6 @@ class Events(commands.Cog):
                 multi = await multi.fetchval(guild_id, message_id, 'poll')
                 if multi == 0:
                     emoji = self.bot.emoji[1648:1668][::-1]
-                    guild = self.bot.get_guild(guild_id)
-                    channel = guild.get_channel(channel_id)
-                    message = await channel.fetch_message(message_id)
                     count = 0
                     for reaction in message.reactions:
                         users = await reaction.users().flatten()
