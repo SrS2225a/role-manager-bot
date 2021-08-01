@@ -37,6 +37,10 @@ class Invites(commands.Cog):
 
         self.bot.invites = {}
 
+        self.bot.get_invite = self.get_invite
+
+        self.bot.wait_for_invites = self.wait_for_invites
+
         self.bot.loop.create_task(self.__ainit__())
 
     async def __ainit__(self):
@@ -69,6 +73,10 @@ class Invites(commands.Cog):
         # and since the expiring_invites dict is also updated
         # so the time goes down we use this instead
         self.bot.expiring_invites.pop(self.bot.shortest_invite, None)
+
+    @delete_expired.before_loop
+    async def wait_for_list(self):
+        await self.wait_for_invites()
 
     @tasks.loop(minutes=10)
     async def update_invite_expiry(self):
@@ -122,8 +130,20 @@ class Invites(commands.Cog):
         entry_found = self.get_invites(invite.guild.id)
         entry_found.pop(invite.code, None)
 
+    def get_invite(self, code: str) -> Optional[discord.Invite]:
+        for invites in self.bot.invites.values():
+            find = invites.get(code)
+
+            if find:
+                return find
+        return None
+
     def get_invites(self, guild_id: int) -> Optional[Dict[str, discord.Invite]]:
         return self.bot.invites.get(guild_id, None)
+
+    async def wait_for_invites(self) -> None:
+        if not self._invites_ready.is_set():
+            await self._invites_ready.wait()
 
     async def fetch_invites(self, guild: discord.Guild) -> Optional[Dict[str, discord.Invite]]:
         try:
