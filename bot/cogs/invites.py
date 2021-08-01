@@ -22,7 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-self.bot.invites.pop(guild.id, None)
 import asyncio
 import datetime
 import time
