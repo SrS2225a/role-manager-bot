@@ -640,8 +640,8 @@ class Events(commands.Cog):
                                 role = int(role[0].replace("n", ""))
                                 if role in [role.id for role in member.roles]:
                                     nroles = guild.get_role(role)
-                                    await message.remove_reaction(payload.emoji, payload.member)
                                     await member.remove_roles(nroles, reason='User unreacted to reaction role')
+                                    await message.remove_reaction(payload.emoji, payload.member)
                             await member.add_roles(mroles, reason='User reacted to reaction role')
 
                         elif "r" in role[0]:
