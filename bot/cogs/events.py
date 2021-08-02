@@ -113,14 +113,13 @@ class Events(commands.Cog):
                                        status=discord.Status.online, afk=None)
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message) -> None:
         # FOR LEVELING
 
         # checks if we are a real user
         if message.guild is not None and not message.author.bot:
             async with self.bot.db.acquire() as cursor:
                 async with cursor.transaction():
-
                     # code for message graph
                     # increment member messages by 1 else add on a new date
                     date = datetime.date.today()
@@ -314,7 +313,7 @@ class Events(commands.Cog):
                                 f"{message.author.mention} {him} is currently AFK with the reason: {user[1]}!")
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member, _, after):
+    async def on_voice_state_update(self, member: discord.Member, _, after: discord.VoiceState) -> None:
         # VOICE ROLES
         guild = member.guild
         async with self.bot.db.acquire() as cursor:
@@ -354,7 +353,7 @@ class Events(commands.Cog):
                             self.vc.cancel()
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():
                 guild = after.guild
@@ -401,7 +400,7 @@ class Events(commands.Cog):
                             await after.remove_roles(role, reason='User is no longer Streaming')
 
     @commands.Cog.listener()
-    async def on_guild_channel_update(self, before, after):
+    async def on_guild_channel_update(self, before: discord.TextChannel, after: discord.TextChannel) -> None:
         # OVERWRITES RECOVERY
         if before.overwrites != after.overwrites:
             async with self.bot.db.acquire() as cursor:
@@ -466,7 +465,7 @@ class Events(commands.Cog):
                     member.guild.id, member.id, invite.code)
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member) -> None:
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():
                 guild = member.guild
@@ -528,7 +527,7 @@ class Events(commands.Cog):
                                                                                       'channel overwrites')
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: discord.Member) -> None:
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():
                 await cursor.execute("DELETE FROM autorole WHERE guild = $1 and member = $2", member.guild.id,
@@ -587,7 +586,7 @@ class Events(commands.Cog):
                         await custom.delete(reason='Required Role/Channel Was Removed From Member')
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload) -> None:
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():
                 # for reaction roles
@@ -677,7 +676,7 @@ class Events(commands.Cog):
                                 await message.remove_reaction(payload.emoji, payload.member)
 
     @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
+    async def on_raw_reaction_remove(self, payload) -> None:
         # removes roles to an member once they unreact to an set emoji
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():

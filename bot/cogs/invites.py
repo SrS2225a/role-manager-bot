@@ -30,6 +30,7 @@ from typing import Dict, Optional
 import discord
 from discord.ext import commands, tasks
 
+
 class Invites(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -202,7 +203,7 @@ class Invites(commands.Cog):
 
             # zipping is the easiest way to compare each in order, and
             # they should be the same size? if we do it properly
-            for old, new in zip(cached, invites):
+            for new, old in zip(invites, cached):
                 if old.uses < new.uses:
                     self.bot.invites[member.guild.id][old.code] = new
                     self.bot.dispatch("invite_update", member, new)

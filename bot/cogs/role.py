@@ -63,55 +63,55 @@ class Role(commands.Cog, name="Roles"):
 
             await ctx.send(f"Successfully {type} role {role} for {to}")
 
-    @commands.command(
-        description="Supply type with color to edit a roles color, name to edit an roles name, position to edit a "
-                    "role position, create to create a role or delete to delete a role",
-        brief='role color mod #fffaaa')
-    @commands.has_permissions(manage_roles=True)
-    async def role(self, ctx, type, role: discord.Role, arg=None):
+    @commands.group(invoke_without_command=True, hidden=True)
+    async def role(self, ctx):
         """Allows you to create, edit, or delete an role"""
-        guild = ctx.guild
-        if type not in ("color", "name", "position", "create", "delete"):
-            await ctx.send("The 'type' must be defined as add or type")
-            return
-        # allows us to edit a position of a a role
-        if type in "position":
-            if re.search(r"(\D*)\d*", arg):
-                await role.edit(position=int(arg))
-                await ctx.send("Role Position Edited Successfully!")
-            elif role is None:
-                await ctx.send(f"Missing Role Argument")
-            else:
-                ctx.send("Role Position Must Be An Integer")
-        # allows us to edit the color of a role
-        if type in "color":
-            if re.search(r"#([0-9a-fA-F]{6})", arg):
-                await role.edit(reason=None, color=discord.Colour(int(arg[1:], 16)))
-                await ctx.send("Role Color Edited Successfully!")
-            elif role is None:
-                await ctx.send(f"Missing Role Argument")
-            else:
-                ctx.send("Role Color Must Be A Hex")
-        # allows us to edit the name of a role
-        if type in "name":
-            if re.search("^[!-~][ -~]{0,49}$", arg):
-                await role.edit(name=arg)
-                await ctx.send(f"Role Name Edited Successfully!")
-            elif role is None:
-                await ctx.send(f"Missing Role Argument")
-            else:
-                await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
-        # allows us to create a new role
-        if type in "create":
-            if re.search("^[!-~][ -~]{0,49}$", arg):
-                await guild.create_role(name=arg)
-                await ctx.send("Role Created Successfully!")
-            else:
-                await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
-        # allows us to delete an already existing role
-        if type in "delete":
-            await role.delete()
-            await ctx.send("Role Deleted Successfully!")
+        if not ctx.invoked_subcommand:
+            await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
+
+    @role.command(brief='role position mod 25')
+    @commands.has_permissions(manage_roles=True)
+    async def position(self, ctx, role: discord.Role, position: int):
+        """Edit a role's current position"""
+        await role.edit(position=position)
+        await ctx.send("Role Position Edited Successfully!")
+
+    @role.command(aliases=["colour"], brief='role color mod #fffaaa')
+    @commands.has_permissions(manage_roles=True)
+    async def color(self, ctx, role: discord.Role, *, hex):
+        """Edit a role's current color"""
+        if re.search(r"#([0-9a-fA-F]{6})", hex):
+            await role.edit(reason=None, color=discord.Colour(int(hex[1:], 16)))
+            await ctx.send("Role Color Edited Successfully!")
+        else:
+            ctx.send("Role Color Must Be A Hex")
+
+    @role.command(brief='role name members member')
+    @commands.has_permissions(manage_roles=True)
+    async def name(self, ctx, role: discord.Role, *, name):
+        """Edits a role's current name"""
+        if len(name) < 50:
+            await role.edit(name=name)
+            await ctx.send(f"Role Name Edited Successfully!")
+        else:
+            await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
+
+    @role.command()
+    @commands.has_permissions(manage_roles=True)
+    async def create(self, ctx, *, name):
+        """Creates a role with the specified name"""
+        if len(name) < 50:
+            await ctx.guild.create_role(name=name)
+            await ctx.send("Role Created Successfully!")
+        else:
+            await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
+
+    @role.command()
+    @commands.has_permissions(manage_roles=True)
+    async def delete(self, ctx, role: discord.Role):
+        """Deletes the specified role"""
+        await role.delete()
+        await ctx.send("Role Deleted Successfully!")
 
     @commands.group(invoke_without_command=True, hidden=True, brief='autorole add member 7d')
     @commands.has_permissions(manage_guild=True)
