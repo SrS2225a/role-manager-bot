@@ -35,8 +35,6 @@ async def get_prefix(bot, message):
             prefix = await pre.fetchval(message.guild.id) or prefix
         return commands.when_mentioned_or(prefix)(bot, message)
 
-    # sets bot variables
-
 # sets discord gateway intents
 intents = discord.Intents.default()
 intents.members = True

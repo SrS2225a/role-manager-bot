@@ -640,7 +640,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             f"SELECT channel, SUM(messages) FROM message WHERE guild = $1 and member = $2 GROUP BY channel "
             f"ORDER BY SUM(messages) DESC", ctx.guild.id, member.id)
         rank = await cursor.fetch(
-            "SELECT member FROM message WHERE guild = $1 GROUP BY member, messages ORDER BY member DESC",
+            "SELECT member, SUM(messages) FROM message WHERE guild = $1 GROUP BY member ORDER BY SUM(messages) DESC",
             ctx.guild.id)
         if messages:
             user1 = []

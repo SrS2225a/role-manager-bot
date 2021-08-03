@@ -192,14 +192,19 @@ class Invites(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member) -> None:
-        invites = await self.fetch_invites(member.guild)
+        inv = await self.fetch_invites(member.guild)
 
-        if invites:
+        if inv:
             # we sort the invites to ensure we are comparing
             # A.uses == A.uses
-            invites = sorted(invites.values(), key=lambda i: i.code)
+            invites = sorted(inv.values(), key=lambda i: i.code)
             cached = sorted(self.bot.invites[member.guild.id].values(),
                             key=lambda i: i.code)
+
+            # if we have more cached invites than regular invites for any reason
+            # recache our invites
+            if len(invites) < len(cached):
+                self.bot.invites[member.guild.id] = inv
 
             # zipping is the easiest way to compare each in order, and
             # they should be the same size? if we do it properly
