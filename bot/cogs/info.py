@@ -229,6 +229,7 @@ class Help(commands.Cog, name='Information'):
         fa = 'Enabled' if guild.mfa_level == 1 else 'Disabled'
         notifications = 'All Messages' if guild.default_notifications.value == 0 else 'Only @Mentions'
         features = 'None' if not guild.features else ' '.join(guild.features)
+        description = guild.description
         if guild is not None:
             splash = f"[```Click Here```]({str(guild.splash_url)})"
             banner = f"[```Click Here```]({str(guild.banner_url)})"
@@ -244,6 +245,8 @@ class Help(commands.Cog, name='Information'):
             emoji_count = len(guild.emojis)
 
             embed = discord.Embed(title='Guild Info', color=ctx.author.color)
+            if description is not None:
+                embed.description = description
             embed.add_field(name='Owner', value=f"```{guild.owner}```")
             embed.add_field(name='Guild Name', value=f"```{guild.name}```")
             embed.add_field(name='Guild ID', value=f"```{guild.id}```", inline=False)
