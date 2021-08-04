@@ -202,8 +202,7 @@ class Invites(commands.Cog):
                             key=lambda i: i.code)
 
             # if we have more cached invites than regular invites for any reason
-            # or more invites than cached
-            # recache our invites
+            # or more invites than cached, recache our invites
             if len(invites) != len(cached):
                 self.bot.invites[member.guild.id] = inv
 

@@ -22,7 +22,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         if not ctx.invoked_subcommand:
             await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
 
-    @graph.group(aliases=['mem'])
+    @graph.group(invoke_without_command=True, aliases=['mem'])
     async def members(self, ctx):
         """Displays Joins and Leaves over a 1 month period"""
         global embed, graph
