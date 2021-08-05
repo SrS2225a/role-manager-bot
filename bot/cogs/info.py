@@ -1,4 +1,3 @@
-import os
 import math
 import typing
 
@@ -8,6 +7,7 @@ import time
 import discord
 import psutil
 from discord.ext import commands
+from urllib.parse import urlencode
 
 
 # overrides discord.py default help command to use our own custom one
@@ -128,7 +128,20 @@ class Help(commands.Cog, name='Information'):
     @commands.command()
     async def invite(self, ctx):
         """Give you a link to invite the bot"""
-        await ctx.send("https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot")
+        scopes = ('bot', 'applications.commands')
+        permissions = discord.Permissions()
+
+        setattr(permissions, '0', True)
+
+        application_info = await self.bot.application_info()
+
+        query = {
+            "client_id": application_info.id,
+            "scope": "+".join(scopes),
+            "permissions": permissions.value
+        }
+
+        await ctx.send(f"<https://discordapp.com/oauth2/authorize?{urlencode(query, safe='+')}>")
 
     @commands.command(aliases=['github'])
     async def opensource(self, ctx):
