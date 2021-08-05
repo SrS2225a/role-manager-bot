@@ -128,10 +128,10 @@ class Help(commands.Cog, name='Information'):
     @commands.command()
     async def invite(self, ctx):
         """Give you a link to invite the bot"""
-        scopes = ('bot', 'applications.commands')
+        scopes = ('bot',)
         permissions = discord.Permissions()
 
-        setattr(permissions, '0', True)
+        setattr(permissions, 'administrator', True)
 
         application_info = await self.bot.application_info()
 
