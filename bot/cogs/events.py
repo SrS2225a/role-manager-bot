@@ -81,8 +81,8 @@ class Events(commands.Cog):
                         to_sleep = (timer[3] - now).total_seconds()
                         await asyncio.sleep(to_sleep)
 
-                    await con.execute("DELETE FROM autorole WHERE member = $1 and guild = $2 and role = $3", timer[1],
-                                      timer[0], timer[2])
+                    await con.execute("DELETE FROM autorole WHERE member = $1 and guild = $2 and role = $3 and date = $4",
+                                      timer[1], timer[0], timer[2], timer[3])
 
                     await self.call_timers(timer)
 

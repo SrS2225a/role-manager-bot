@@ -1,5 +1,4 @@
 import discord
-import typing
 import tabulate
 import re
 import asyncio

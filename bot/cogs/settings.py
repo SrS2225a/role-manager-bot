@@ -1,5 +1,4 @@
 import datetime
-import argparse
 import typing
 import re
 import discord

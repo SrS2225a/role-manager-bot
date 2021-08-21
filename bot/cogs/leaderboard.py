@@ -589,7 +589,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
 
-    @commands.command(aliases=['getinvite'], brief="searchinvite @Vendron#2001")
+    @commands.command(aliases=['getinvite'], brief="searchinvite JHkhnzDvWG")
     async def searchinvite(self, ctx, code):
         """Gets information about an invite code"""
         cursor = await self.bot.db.acquire()

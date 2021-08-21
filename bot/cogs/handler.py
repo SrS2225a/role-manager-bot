@@ -27,12 +27,14 @@ class Handler(commands.Cog):
     # COMMAND RAN LOG
     @commands.Cog.listener()
     async def on_command(self, ctx):
+        cursor = await self.bot.db.acquire()
         # logs to support sever if a command is run and increases total command uses by 1
         guild = ctx.guild
         server = self.bot.get_guild(531247629649182750)
         channel = server.get_channel(866678659862626355)
         await channel.send(f"A new command was ran **{ctx.command}** in guild **{guild} ({guild.id})**")
-        self.bot.uses += 1
+        await cursor.execute("UPDATE bot SET ran = ran + 1")
+        await self.bot.db.release(cursor)
 
     # ERROR HANDLER
     @commands.Cog.listener()

@@ -51,7 +51,6 @@ bot.owner_ids = [508455796783317002, 270848136006729728, 222492698236420099, 372
 bot.active = []
 bot.emoji = []
 bot.db = db
-bot.uses = 0
 
 # loads emojis from file
 with open("emojis.json", "r") as unicode:
