@@ -336,7 +336,7 @@ class Events(commands.Cog):
                             await cursor.execute("UPDATE voice SET voice2 = $1 WHERE day = $2 and "
                                                  "guild = $3 and member = $4 and channel = $5", time + dateval[1],
                                                  date, member.guild.id, member.id, channel.id)
-                    else:
+                    elif before.channel is None:
                         await cursor.execute("UPDATE voice SET created = $1 WHERE day = $2 and guild = $3 and "
                                              "member = $4 and channel = $5", datetime.datetime.now(), date,
                                              member.guild.id, member.id, channel.id)
