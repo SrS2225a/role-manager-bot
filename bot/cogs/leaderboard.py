@@ -358,9 +358,6 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         """Displays voice and stage statistics over a set period"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
-        # gets voice data
-        #         result = await cursor.fetch("SELECT member, SUM(voice), SUM(voice2) FROM voice WHERE guild = $1 GROUP BY member "
-        #                               "ORDER BY SUM(voice) DESC, SUM(voice2) DESC", ctx.guild.id)
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
         voice = await cursor.fetch(
             "SELECT SUM(voice), SUM(voice2), day FROM voice WHERE guild = $1 and day > $2 GROUP BY "
@@ -716,7 +713,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         table = []
         for row in result:
             user = self.bot.get_user(id=int(row[0]))
-            if user is not None:
+            if user is not None and row[1] + row[2] > 0:
                 table.append([display_time(row[1]), display_time(row[2]), user.name + "#" + user.discriminator])
 
         class Source(menus.ListPageSource):

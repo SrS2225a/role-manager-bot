@@ -343,7 +343,7 @@ class Events(commands.Cog):
                 elif dateval is None:
                     await cursor.execute("INSERT INTO voice(voice, voice2, day, channel, member, guild, created) "
                                          "VALUES($1, $2, $3, $4, $5, $6, $7)" "on conflict do nothing", 0, 0, date,
-                                         after.channel.id, member.id, channel.guild.id, datetime.datetime.now())
+                                         channel.id, member.id, channel.guild.id, datetime.datetime.now())
 
                 voice = await cursor.prepare("SELECT role, date::int8 FROM boost WHERE guild = $1 and type = $2")
                 for channel in await voice.fetch(member.guild.id, 'voice'):
