@@ -13,8 +13,7 @@ from discord.ext import commands
 
 def date_convert_seconds(s):
     current, result = Calendar().parse(s)
-    t = datetime.datetime(*current[:6])
-    futureDate = int((t - datetime.datetime.now()).total_seconds())
+    futureDate = int((datetime.datetime(*current[:6]) - datetime.datetime.now()).total_seconds())
     return futureDate + 1, result
 
 

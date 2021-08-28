@@ -9,9 +9,24 @@ import datetime
 import io
 
 
+def display_time(duration):
+    intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400),
+                 ('hours', 3600), ('minutes', 60))
+
+    result = []
+
+    for name, count in intervals:
+        value = duration // count
+        if value:
+            duration -= value * count
+            result.append(f'{round(value)} {name}')
+
+    return ' '.join(result)
+
+
 class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
     """[These Commands Lets You View Dionysus's Various Leaderboards And Counters](
-    https://github.com/SrS2225a/role-manager-bot/wiki/Leaderboards-&-Counters) """
+    https://github.com/SrS2225a/role-manager-bot/wiki/Leaderboards-&-Counters)"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -24,7 +39,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
     @graph.group(invoke_without_command=True, aliases=['mem'])
     async def members(self, ctx):
-        """Displays Joins and Leaves over a 1 month period"""
+        """Displays Joins and Leaves over a set period"""
         global embed, graph
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
@@ -104,13 +119,13 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         if members:
             await ctx.send(embed=embed, file=graph)
         else:
-            await ctx.send("Data not popluated yet!")
+            await ctx.send("Data not populated yet!")
 
         await self.bot.db.release(cursor)
 
     @members.command()
     async def joins(self, ctx):
-        """Displays Joins over a 1 month peroid"""
+        """Displays Joins over a set period"""
         global embed, graph
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
@@ -182,7 +197,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
     @members.command()
     async def leaves(self, ctx):
-        """Displays Leaves over a 1 month peroid"""
+        """Displays Leaves over a set period"""
         global embed, graph
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
@@ -193,7 +208,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         # gets leave data
         date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
         members = await cursor.fetch("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 ORDER BY "
-                                     "day ASC", guild.id, (datetime.date.today() - datetime.timedelta(days=date or 30)))
+                                     "day", guild.id, (datetime.date.today() - datetime.timedelta(days=date or 30)))
 
         if members:
             # converts total member leaves as the last 24/week/or month
@@ -255,7 +270,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
     @graph.command(name="messages", aliases=["msgs"])
     async def graph_messages(self, ctx):
-        """Displays total messages sent over a 1 month period"""
+        """Displays total messages sent over a set period"""
         global embed, graph
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
@@ -333,10 +348,280 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             graph = discord.File(data_stream, filename='graph.png')
             embed.set_image(url='attachment://graph.png')
 
-        if members:
             await ctx.send(embed=embed, file=graph)
         else:
             await ctx.send("Data not popluated yet!")
+        await self.bot.db.release(cursor)
+
+    @graph.group(name="voice", aliases=['vc'])
+    async def graph_voice(self, ctx):
+        """Displays voice and stage statistics over a set period"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild
+        # gets voice data
+        #         result = await cursor.fetch("SELECT member, SUM(voice), SUM(voice2) FROM voice WHERE guild = $1 GROUP BY member "
+        #                               "ORDER BY SUM(voice) DESC, SUM(voice2) DESC", ctx.guild.id)
+        date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
+        voice = await cursor.fetch(
+            "SELECT SUM(voice), SUM(voice2), day FROM voice WHERE guild = $1 and day > $2 GROUP BY "
+            "day ORDER BY day", ctx.guild.id, (datetime.date.today() - datetime.timedelta(days=date or 30)))
+        if voice:
+            # converts total member joins as the last 24/week/or month
+            max = voice[-1][2]
+            x1 = []
+            y1 = []
+            x2 = []
+            y2 = []
+            month = [0, 0]
+            week = [0, 0]
+            day = [0, 0]
+            for member in voice:
+                member = [member[0] // 60, member[1] // 60, member[2]]
+                month[0] += member[0]
+                month[1] += member[1]
+
+                if max == member[2]:
+                    day[0] += member[0]
+                    day[1] += member[1]
+                if max - datetime.timedelta(days=7) <= member[2]:
+                    week[0] += member[0]
+                    week[1] += member[1]
+
+                x1.append(member[2].strftime('%d %m'))
+                y1.append(member[0])
+
+                x2.append(member[2].strftime('%d %m'))
+                y2.append(member[1])
+
+            # gets the top 5 users
+            topUser = ""
+            for voice in await cursor.fetch(
+                    "SELECT member, SUM(voice) + SUM(voice2) FROM voice WHERE guild = $1 and day > "
+                    "$2 GROUP BY member ORDER BY SUM(voice) + SUM(voice2) DESC LIMIT 5", guild.id,
+                    (datetime.date.today() - datetime.timedelta(days=date or 30))):
+                user = self.bot.get_user(id=int(voice[0]))
+                if user:
+                    topUser += f"{user.mention} - `{display_time(voice[1])}`\n"
+
+            # gets the top 5 channels
+            topChannel = ""
+            for voice in await cursor.fetch(
+                    "SELECT channel, SUM(voice) + SUM(voice2) FROM voice WHERE guild = $1 and day > "
+                    "$2 GROUP BY channel ORDER BY SUM(voice) + SUM(voice2) DESC LIMIT 5", guild.id,
+                    (datetime.date.today() - datetime.timedelta(days=date or 30))):
+                channel = guild.get_channel(voice[0])
+                if channel:
+                    topChannel += f"{channel.mention} - `{display_time(voice[1])}`\n"
+
+            embed = discord.Embed(title=f"{ctx.guild}'s Voice Overview")
+            embed.add_field(name="Last 24 Hours", value=f"Voice: `{day[0]}`, Stage: `{day[1]}`")
+            embed.add_field(name="Last 7 Days", value=f"Voice: `{week[0]}`, Stage: `{week[1]}`")
+            embed.add_field(name="Last 30 Days", value=f"Voice: `{month[0]}`, Stage: `{month[1]}`")
+            embed.add_field(name="Top 5 Channels", value=topChannel)
+            embed.add_field(name="Top 5 Users", value=topUser)
+
+            # plot message results
+            plt.style.use('dark_background')
+            matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+            fig, ax = plt.subplots()
+
+            plt.grid()
+            ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+            ax.tick_params(axis='x', labelrotation=45)
+
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.plot(x2, y2, marker="o", ls="", ms=3)
+            plt.plot(x1, y1, label="Voice", color='#21BBFF')
+            plt.plot(x2, y2, label="Stage", color='#4e42ff')
+            # reverse both graphs if 1 is less than the other
+            if y1 < y2:
+                plt.fill_between(x1, y2, y1, color='#4e42ff', alpha=0.3)
+                plt.fill_between(x2, y1, color='#21BBFF', alpha=0.3)
+            else:
+                plt.fill_between(x1, y1, y2, color='#21BBFF', alpha=0.3)
+                plt.fill_between(x2, y2, color='#4e42ff', alpha=0.3)
+            plt.legend()
+
+            # send plot as image
+            data_stream = io.BytesIO()
+            plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
+            data_stream.seek(0)
+            plt.close()
+
+            graph = discord.File(data_stream, filename='graph.png')
+            embed.set_image(url='attachment://graph.png')
+
+            await ctx.send(embed=embed, file=graph)
+        else:
+            await ctx.send("Data not populated yet!")
+
+        await self.bot.db.release(cursor)
+
+    @graph_voice.command(name='voice', aliases=['vc'])
+    async def speech(self, ctx):
+        """Displays voice statistics over a set period"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild
+        month = 0
+        week = 0
+        day = 0
+
+        # gets leave data
+        date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
+        voice = await cursor.fetch("SELECT SUM(voice), day FROM voice WHERE guild = $1 and day > $2 GROUP BY "
+                                   "day ORDER BY day", ctx.guild.id,
+                                   (datetime.date.today() - datetime.timedelta(days=date or 30)))
+
+        if voice:
+            max = voice[-1][2]
+            x1 = []
+            y1 = []
+
+            for member in voice:
+                month += member[0]
+                if max == member[2]:
+                    day += member[0]
+                if max - datetime.timedelta(days=7) <= member[2]:
+                    week += member[0]
+
+                x1.append(member[2].strftime('%d %m'))
+                y1.append(member[1])
+
+            # gets the top 5 users
+            topUser = ""
+            for messages in await cursor.fetch("SELECT member, SUM(messages) FROM message WHERE guild = $1 and day > "
+                                               "$2 GROUP BY member ORDER BY SUM(messages) DESC LIMIT 5", guild.id,
+                                               (datetime.date.today() - datetime.timedelta(days=date or 30))):
+                user = self.bot.get_user(id=int(messages[0]))
+                if user:
+                    topUser += f"{user.mention} - `{display_time(messages[1])}`\n"
+
+            # gets the top 5 channels
+            topChannel = ""
+            for messages in await cursor.fetch("SELECT channel, SUM(messages) FROM message WHERE guild = $1 and day > "
+                                               "$2 GROUP BY channel ORDER BY SUM(messages) DESC LIMIT 5", guild.id,
+                                               (datetime.date.today() - datetime.timedelta(days=date or 30))):
+                channel = guild.get_channel(messages[0])
+                if channel:
+                    topChannel += f"{channel.mention} - `{display_time(messages[1])}`\n"
+
+            embed = discord.Embed(title=f"{ctx.guild}'s Voice Overview")
+            embed.add_field(name="Last 24 Hours", value=f'Voice: `{day}`')
+            embed.add_field(name="Last 7 Days", value=f'Voice: `{week}`')
+            embed.add_field(name="Last 30 Days", value=f'Voice: `{month}`')
+            embed.add_field(name="Top 5 Channels", value=topChannel)
+            embed.add_field(name="Top 5 Users", value=topUser)
+
+            # plot leave results
+            plt.style.use('dark_background')
+            matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+            fig, ax = plt.subplots()
+
+            plt.grid()
+            ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+            ax.tick_params(axis='x', labelrotation=45)
+
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.plot(x1, y1, color='#4e42ff')
+            plt.fill_between(x1, y1, color='#4e42ff', alpha=0.3)
+
+            # send plot as image
+            data_stream = io.BytesIO()
+            plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
+            data_stream.seek(0)
+            plt.close()
+
+            graph = discord.File(data_stream, filename='graph.png')
+            embed.set_image(url='attachment://graph.png')
+            await ctx.send(embed=embed, file=graph)
+        else:
+            await ctx.send("Data not popluated yet!")
+
+        await self.bot.db.release(cursor)
+
+    @graph_voice.command()
+    async def stage(self, ctx):
+        """Displays stage statistics over a set period"""
+        cursor = await self.bot.db.acquire()
+        guild = ctx.guild
+        month = 0
+        week = 0
+        day = 0
+
+        # gets leave data
+        date = await cursor.fetchval("SELECT lookback FROM settings WHERE guild = $1", ctx.guild.id)
+        voice = await cursor.fetch("SELECT SUM(voice2), day FROM voice WHERE guild = $1 and day > $2 GROUP BY "
+                                   "day ORDER BY day", ctx.guild.id,
+                                   (datetime.date.today() - datetime.timedelta(days=date or 30)))
+
+        if voice:
+            max = voice[-1][2]
+            x1 = []
+            y1 = []
+
+            for member in voice:
+                month += member[0]
+                if max == member[2]:
+                    day += member[0]
+                if max - datetime.timedelta(days=7) <= member[2]:
+                    week += member[0]
+
+                x1.append(member[2].strftime('%d %m'))
+                y1.append(member[1])
+
+            # gets the top 5 users
+            topUser = ""
+            for messages in await cursor.fetch("SELECT member, SUM(messages) FROM message WHERE guild = $1 and day > "
+                                               "$2 GROUP BY member ORDER BY SUM(messages) DESC LIMIT 5", guild.id,
+                                               (datetime.date.today() - datetime.timedelta(days=date or 30))):
+                user = self.bot.get_user(id=int(messages[0]))
+                if user:
+                    topUser += f"{user.mention} - `{display_time(messages[1])}`\n"
+
+            # gets the top 5 channels
+            topChannel = ""
+            for messages in await cursor.fetch("SELECT channel, SUM(messages) FROM message WHERE guild = $1 and day > "
+                                               "$2 GROUP BY channel ORDER BY SUM(messages) DESC LIMIT 5", guild.id,
+                                               (datetime.date.today() - datetime.timedelta(days=date or 30))):
+                channel = guild.get_channel(messages[0])
+                if channel:
+                    topChannel += f"{channel.mention} - `{display_time(messages[1])}`\n"
+
+            embed = discord.Embed(title=f"{ctx.guild}'s Voice Overview")
+            embed.add_field(name="Last 24 Hours", value=f'Voice: `{day}`')
+            embed.add_field(name="Last 7 Days", value=f'Voice: `{week}`')
+            embed.add_field(name="Last 30 Days", value=f'Voice: `{month}`')
+            embed.add_field(name="Top 5 Channels", value=topChannel)
+            embed.add_field(name="Top 5 Users", value=topUser)
+
+            # plot leave results
+            plt.style.use('dark_background')
+            matplotlib.rcParams['figure.figsize'] = (10, 5)
+
+            fig, ax = plt.subplots()
+
+            plt.grid()
+            ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+            ax.tick_params(axis='x', labelrotation=45)
+
+            plt.plot(x1, y1, marker="o", ls="", ms=3)
+            plt.plot(x1, y1, color='#4e42ff')
+            plt.fill_between(x1, y1, color='#4e42ff', alpha=0.3)
+
+            # send plot as image
+            data_stream = io.BytesIO()
+            plt.savefig(data_stream, format='png', bbox_inches="tight", transparent=True)
+            data_stream.seek(0)
+            plt.close()
+
+            graph = discord.File(data_stream, filename='graph.png')
+            embed.set_image(url='attachment://graph.png')
+            await ctx.send(embed=embed, file=graph)
+        else:
+            await ctx.send("Data not popluated yet!")
+
         await self.bot.db.release(cursor)
 
     @commands.group(aliases=['top', 'lb'], hidden=True, invoke_without_command=True)
@@ -417,6 +702,39 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
         pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
         await pages.start(ctx)
+        await self.bot.db.release(cursor)
+
+    @leaderboard.command(name='voice', aliases=['vc'])
+    async def lb_voice(self, ctx):
+        """Shows top voice times"""
+        cursor = await self.bot.db.acquire()
+        tabulate.MIN_PADDING = 0
+        result = await cursor.fetch(
+            "SELECT member, SUM(voice), SUM(voice2) FROM voice WHERE guild = $1 GROUP BY member "
+            "ORDER BY SUM(voice) DESC, SUM(voice2) DESC", ctx.guild.id)
+        # puts results in a navigable page interface and formats our data into a text table
+        table = []
+        for row in result:
+            user = self.bot.get_user(id=int(row[0]))
+            if user is not None:
+                table.append([display_time(row[1]), display_time(row[2]), user.name + "#" + user.discriminator])
+
+        class Source(menus.ListPageSource):
+            def __init__(self, data):
+                super().__init__(data, per_page=20)
+
+            async def format_page(self, menu, entry):
+                offset = menu.current_page * self.per_page
+                embed = discord.Embed(
+                    title=f"Dionysus Voice (Showing Entries {1 + offset} - {len(entry) + offset})",
+                    description=f"```{tabulate.tabulate(entry, headers=['VOICE', 'STAGE', 'USER'], tablefmt='presto')}```")
+                embed.set_footer(
+                    text=f"Page {menu.current_page + 1}/{self.get_max_pages()} | Total Entries: {len(table)}")
+                return embed
+
+        pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
+        await pages.start(ctx)
+        await self.bot.db.release(cursor)
 
     @leaderboard.command(name='invites')
     async def lb_invites(self, ctx):
@@ -640,7 +958,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             f"SELECT channel, SUM(messages) FROM message WHERE guild = $1 and member = $2 GROUP BY channel "
             f"ORDER BY SUM(messages) DESC", ctx.guild.id, member.id)
         rank = await cursor.fetch(
-            "SELECT member, SUM(messages) FROM message WHERE guild = $1 GROUP BY member ORDER BY SUM(messages) DESC",
+            "SELECT member FROM message WHERE guild = $1 GROUP BY member ORDER BY SUM(messages) DESC",
             ctx.guild.id)
         if messages:
             user1 = []
@@ -658,11 +976,45 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             newLine = '\n'  # put new line in a variable, otherwise python will complain
             embed = discord.Embed(title=f"Messages Sent By {member}",
                                   description=f"Total: **{sum([user[1] for user in messages])}**. With A Ranking of *"
-                                              f"*{i}** \n\n{newLine.join(user1)}")
+                                              f"**{i}** \n\n{newLine.join(user1)}")
             await ctx.send(embed=embed)
-            await self.bot.db.release(cursor)
         else:
             await ctx.send("User data not populated yet!")
+        await self.bot.db.release(cursor)
+
+    @commands.command(aliases=['vc'], brief="voice @Calcium#7102")
+    async def voice(self, ctx, member: discord.Member = None):
+        """Shows info about your voice chat time or someone elses'"""
+        cursor = await self.bot.db.acquire()
+        member = member or ctx.author
+        voice = await cursor.fetch("SELECT channel, SUM(voice), SUM(voice2) FROM voice WHERE guild = $1 and member = $2"
+                                   "GROUP BY channel ORDER BY SUM(voice) DESC, SUM(voice2) DESC", ctx.guild.id,
+                                   member.id)
+        rank = await cursor.fetch("SELECT member  FROM voice WHERE guild = $1 GROUP BY member ORDER BY "
+                                  "SUM(voice) + SUM(voice2) DESC", ctx.guild.id)
+        if voice:
+            user1 = []
+            i = 0
+            for user in voice:
+                channel = ctx.guild.get_channel(user[0])
+                if channel:
+                    user1.append(f"--> {channel.mention}: **{display_time(user[1] + user[2])}**")
+
+            for row in rank:
+                i += 1
+                if row[0] == member.id:
+                    break
+
+            newLine = '\n'  # put new line in a variable, otherwise python will complain
+            embed = discord.Embed(title=f"Voice Statics For {member}",
+                                  description=f"**{display_time(sum([user[1] for user in voice]))}** voice and "
+                                              f"**{display_time(sum([user[2] for user in voice]))}** stage, of a total of "
+                                              f"**{display_time(sum([user[1] for user in voice]) + sum([user[2] for user in voice]))}** "
+                                              f"and a ranking of **{i}** \n\n{newLine.join(user1)}")
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("User data not populated yet!")
+        await self.bot.db.release(cursor)
 
 
 def setup(bot):

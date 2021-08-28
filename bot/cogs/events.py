@@ -313,13 +313,39 @@ class Events(commands.Cog):
                                 f"{message.author.mention} {him} is currently AFK with the reason: {user[1]}!")
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member: discord.Member, _, after: discord.VoiceState) -> None:
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState) -> None:
         # VOICE ROLES
         guild = member.guild
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():
-                voice = await cursor.prepare("SELECT role, date::int8 FROM boost WHERE guild = $1 and type = $2")
+                date = datetime.date.today()
+                channel = before.channel or after.channel
+                await cursor.execute("DELETE FROM message WHERE day < $1", (date - datetime.timedelta(days=120)))
+                voices = await cursor.prepare(
+                    "SELECT voice, voice2, day, member, channel, created FROM voice WHERE guild = $1 AND member "
+                    "= $2 and channel = $3 and day = $4 LIMIT 1")
+                dateval = await voices.fetchrow(member.guild.id, member.id, channel.id, date)
+                if dateval is not None:
+                    if after.channel is None:
+                        time = (datetime.datetime.now() - dateval[5]).total_seconds()
+                        if type(channel) is discord.VoiceChannel:
+                            await cursor.execute("UPDATE voice SET voice = $1 WHERE day = $2 and "
+                                                 "guild = $3 and member = $4 and channel = $5", time + dateval[0],
+                                                 date, member.guild.id, member.id, channel.id)
+                        else:
+                            await cursor.execute("UPDATE voice SET voice2 = $1 WHERE day = $2 and "
+                                                 "guild = $3 and member = $4 and channel = $5", time + dateval[1],
+                                                 date, member.guild.id, member.id, channel.id)
+                    else:
+                        await cursor.execute("UPDATE voice SET created = $1 WHERE day = $2 and guild = $3 and "
+                                             "member = $4 and channel = $5", datetime.datetime.now(), date,
+                                             member.guild.id, member.id, channel.id)
+                elif dateval is None:
+                    await cursor.execute("INSERT INTO voice(voice, voice2, day, channel, member, guild, created) "
+                                         "VALUES($1, $2, $3, $4, $5, $6, $7)" "on conflict do nothing", 0, 0, date,
+                                         after.channel.id, member.id, channel.guild.id, datetime.datetime.now())
 
+                voice = await cursor.prepare("SELECT role, date::int8 FROM boost WHERE guild = $1 and type = $2")
                 for channel in await voice.fetch(member.guild.id, 'voice'):
                     role = guild.get_role(role_id=channel[0])
                     # if enabled gives the set role if the member joined the corresponding vc
@@ -345,12 +371,12 @@ class Events(commands.Cog):
                         if after.deaf or after.mute or after.self_mute or after.self_deaf or after.afk is True or None \
                                 or after.channel is None:
                             self.bot.active.remove([member, after])
+                            if not self.bot.active:
+                                self.vc.cancel()
                         elif member not in self.bot.active:
                             self.bot.active.append([member, after])
-                        if self.bot.active and len(self.bot.active) == 1:
-                            self.vc.start()
-                        elif not self.bot.active:
-                            self.vc.cancel()
+                            if self.bot.active and len(self.bot.active) == 1:
+                                self.vc.start()
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member) -> None:

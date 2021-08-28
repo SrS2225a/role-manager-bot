@@ -24,12 +24,10 @@ class Management(commands.Cog, name='Settings'):
     # I am too lazy to add comments for all of this. The doc strings are pretty self explanatory with what the
     # commands do
 
-    @commands.group(description="""You may also supply position with a channel category to define where the custom 
-    channel will be created under if the type is an text channel/voice channel or if as a role to define what role 
-    the custom role will be created under. \n If you want your members to be able to give their custom role/channel 
-    to others supply amount with a limit you desire, or 0 to disable the mechanism.\n If you want the custom role to 
-    be deleted from them as soon as they lose the set required role, set removal to true, otherwise set it to 
-    false.""", brief="custom role booster placeholder 0 true", invoke_without_command=True, hidden=True)
+    @commands.group(description="""You may also supply position with a channel category to define where the custom channel will be created under if the type is an text channel/voice channel or if as a role to define what role the custom role will be created under. 
+    If you want your members to be able to give their custom role/channel to others supply amount with a limit you desire, or 0 to disable the mechanism. 
+    If you want the custom role to be deleted from them as soon as they lose the set required role, set removal to true, otherwise set it to false.""",
+                    brief="custom role booster placeholder 0 true", invoke_without_command=True, hidden=True)
     @commands.has_permissions(manage_guild=True)
     async def custom(self, ctx):
         """Sets who can create an custom role or channel upon getting the defined role"""

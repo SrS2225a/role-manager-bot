@@ -69,6 +69,16 @@ class Role(commands.Cog, name="Roles"):
         if not ctx.invoked_subcommand:
             await ctx.send(f"Invalid sub-command! Please see `{ctx.prefix}help {ctx.command}`")
 
+    @role.command(name='create', brief='role create member')
+    @commands.has_permissions(manage_roles=True)
+    async def cr(self, ctx, name):
+        """Creates a role with the specified name"""
+        if len(name) < 50:
+            await ctx.guild.create_role(name=name)
+            await ctx.send("Role Created Successfully!")
+        else:
+            await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
+
     @role.command(brief='role position mod 25')
     @commands.has_permissions(manage_roles=True)
     async def position(self, ctx, role: discord.Role, position: int):
@@ -93,16 +103,6 @@ class Role(commands.Cog, name="Roles"):
         if len(name) < 50:
             await role.edit(name=name)
             await ctx.send(f"Role Name Edited Successfully!")
-        else:
-            await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
-
-    @role.command()
-    @commands.has_permissions(manage_roles=True)
-    async def create(self, ctx, *, name):
-        """Creates a role with the specified name"""
-        if len(name) < 50:
-            await ctx.guild.create_role(name=name)
-            await ctx.send("Role Created Successfully!")
         else:
             await ctx.send(f"Role Name Must Not Contain More Than 50 Characters!")
 
@@ -240,8 +240,7 @@ class Role(commands.Cog, name="Roles"):
         await self.bot.db.release(cursor)
 
     @commands.command(aliases=['rr'],
-                      description="Supply type with 'r' to signify default reaction roles, 'o' for one time only "
-                                  "reaction roles, or 'n' for toggle reaction roles in an reaction role category",
+                      description="Supply type with 'r' to signify default reaction roles, 'o' for one time only reaction roles, or 'n' for toggle reaction roles in an reaction role category",
                       brief='reactionrole 853147608654807081 1️⃣ introvert n')
     @commands.has_permissions(manage_guild=True)
     async def reactionrole(self, ctx, message: discord.Message, emoji, role: discord.Role, type,
