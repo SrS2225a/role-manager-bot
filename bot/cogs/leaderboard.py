@@ -713,7 +713,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         table = []
         for row in result:
             user = self.bot.get_user(id=int(row[0]))
-            if user is not None and row[1] + row[2] > 0:
+            if user is not None and row[1] > 60 or row[2] > 60:
                 table.append([display_time(row[1]), display_time(row[2]), user.name + "#" + user.discriminator])
 
         class Source(menus.ListPageSource):
