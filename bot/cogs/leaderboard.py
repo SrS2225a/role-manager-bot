@@ -411,9 +411,9 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                     topChannel += f"{channel.mention} - `{display_time(voice[1])}`\n"
 
             embed = discord.Embed(title=f"{ctx.guild}'s Voice Overview")
-            embed.add_field(name="Last 24 Hours", value=f"Voice: `{day[0]}`, Stage: `{day[1]}`")
-            embed.add_field(name="Last 7 Days", value=f"Voice: `{week[0]}`, Stage: `{week[1]}`")
-            embed.add_field(name="Last 30 Days", value=f"Voice: `{month[0]}`, Stage: `{month[1]}`")
+            embed.add_field(name="Last 24 Hours", value=f"Voice: `{display_time(day[0])}`, Stage: `{display_time(day[1])}`")
+            embed.add_field(name="Last 7 Days", value=f"Voice: `{display_time(week[0])}`, Stage: `{display_time(week[1])}`")
+            embed.add_field(name="Last 30 Days", value=f"Voice: `{display_time(month[0])}`, Stage: `{display_time(month[1])}`")
             embed.add_field(name="Top 5 Channels", value=topChannel)
             embed.add_field(name="Top 5 Users", value=topUser)
 
@@ -504,9 +504,9 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                     topChannel += f"{channel.mention} - `{display_time(messages[1])}`\n"
 
             embed = discord.Embed(title=f"{ctx.guild}'s Voice Overview")
-            embed.add_field(name="Last 24 Hours", value=f'Voice: `{day}`')
-            embed.add_field(name="Last 7 Days", value=f'Voice: `{week}`')
-            embed.add_field(name="Last 30 Days", value=f'Voice: `{month}`')
+            embed.add_field(name="Last 24 Hours", value=f'Voice: `{display_time(day)}`')
+            embed.add_field(name="Last 7 Days", value=f'Voice: `{display_time(week)}`')
+            embed.add_field(name="Last 30 Days", value=f'Voice: `{display_time(month)}`')
             embed.add_field(name="Top 5 Channels", value=topChannel)
             embed.add_field(name="Top 5 Users", value=topUser)
 
@@ -587,9 +587,9 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                     topChannel += f"{channel.mention} - `{display_time(messages[1])}`\n"
 
             embed = discord.Embed(title=f"{ctx.guild}'s Voice Overview")
-            embed.add_field(name="Last 24 Hours", value=f'Voice: `{day}`')
-            embed.add_field(name="Last 7 Days", value=f'Voice: `{week}`')
-            embed.add_field(name="Last 30 Days", value=f'Voice: `{month}`')
+            embed.add_field(name="Last 24 Hours", value=f'Voice: `{display_time(day)}`')
+            embed.add_field(name="Last 7 Days", value=f'Voice: `{display_time(week)}`')
+            embed.add_field(name="Last 30 Days", value=f'Voice: `{display_time(month)}`')
             embed.add_field(name="Top 5 Channels", value=topChannel)
             embed.add_field(name="Top 5 Users", value=topUser)
 
