@@ -316,8 +316,6 @@ class Events(commands.Cog):
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState) -> None:
         # VOICE ROLES
         guild = member.guild
-        print(before)
-        print(after)
         async with self.bot.db.acquire() as cursor:
             async with cursor.transaction():
                 date = datetime.date.today()
