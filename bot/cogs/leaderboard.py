@@ -373,7 +373,6 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             week = [0, 0]
             day = [0, 0]
             for member in voice:
-                member = [member[0] // 60, member[1] // 60, member[2]]
                 month[0] += member[0]
                 month[1] += member[1]
 
@@ -385,10 +384,10 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                     week[1] += member[1]
 
                 x1.append(member[2].strftime('%d %m'))
-                y1.append(member[0])
+                y1.append(member[0] // 60)
 
                 x2.append(member[2].strftime('%d %m'))
-                y2.append(member[1])
+                y2.append(member[1] // 60)
 
             # gets the top 5 users
             topUser = ""
