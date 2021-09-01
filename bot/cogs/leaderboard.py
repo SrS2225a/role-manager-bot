@@ -470,7 +470,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                                    (datetime.date.today() - datetime.timedelta(days=date or 30)))
 
         if voice:
-            max = voice[-1][2]
+            max = voice[-1][1]
             x1 = []
             y1 = []
 
@@ -553,7 +553,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
                                    (datetime.date.today() - datetime.timedelta(days=date or 30)))
 
         if voice:
-            max = voice[-1][2]
+            max = voice[-1][1]
             x1 = []
             y1 = []
 
