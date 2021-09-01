@@ -511,6 +511,14 @@ class Events(commands.Cog):
                     await cursor.execute("UPDATE member SET joins = $1 WHERE day = $2 and guild = $3", dateval + 1,
                                          date, guild.id)
 
+                # code for ping on join
+                ping = await cursor.prepare("SELECT ping FROM settings WHERE guild = $1 LIMIT 1")
+                ping = await ping.fetchval(guild.id)
+                channel = guild.get_channel(ping)
+                if channel:
+                    message = await channel.send(member.mention)
+                    await message.delete()
+
                 # code for autoroles
                 # gets autroles to add/remove
                 auto = await cursor.prepare("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or "
