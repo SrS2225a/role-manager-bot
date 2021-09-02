@@ -712,7 +712,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         table = []
         for row in result:
             user = self.bot.get_user(id=int(row[0]))
-            if user is not None and row[1] > 60 or row[2] > 60:
+            if user is not None and row[1] > 60 and row[2] > 60:
                 table.append([display_time(row[1]), display_time(row[2]), user.name + "#" + user.discriminator])
 
         class Source(menus.ListPageSource):
@@ -894,10 +894,10 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         guild = ctx.guild
         member = member or ctx.author
         full = await cursor.fetch(
-            "SELECT amount, amount2, amount3, invite FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
+            "SELECT amount, amount2, amount3, invite, channel FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
         embed = discord.Embed(title=f"Invite Info For {member}", color=member.color)
         for invite in full:
-            embed.add_field(name=invite[3],
+            embed.add_field(name=f"{invite[3]} - {guild.get_channel(invite[4]).mention}",
                             value=f"**{invite[0]}** joins, **{invite[1]}** leaves, **{invite[2]}** fakes", inline=False)
 
         await ctx.send(embed=embed)
