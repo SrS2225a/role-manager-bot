@@ -897,8 +897,8 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             "SELECT amount, amount2, amount3, invite, channel FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
         embed = discord.Embed(title=f"Invite Info For {member}", color=member.color)
         for invite in full:
-            channel = f"<#{invite[4]}>" if invite[4] is not None else '#unknown'
-            embed.add_field(name=f"{invite[3]} - {channel}",
+            channel = guild.get_channel(invite[4]) if guild.get_channel(invite[4]) is not None else '#unknown'
+            embed.add_field(name=f"{invite[3]} - #{channel}",
                             value=f"**{invite[0]}** joins, **{invite[1]}** leaves, **{invite[2]}** fakes", inline=False)
 
         await ctx.send(embed=embed)
