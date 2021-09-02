@@ -711,8 +711,8 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
         # puts results in a navigable page interface and formats our data into a text table
         table = []
         for row in result:
-            user = self.bot.get_user(id=int(row[0]))
-            if user is not None and row[1] > 60 and row[2] > 60:
+            user = self.bot.get_user(row[0])
+            if user is not None:
                 table.append([display_time(row[1]), display_time(row[2]), user.name + "#" + user.discriminator])
 
         class Source(menus.ListPageSource):
@@ -897,7 +897,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
             "SELECT amount, amount2, amount3, invite, channel FROM invite WHERE guild = $1 and member = $2", guild.id, member.id)
         embed = discord.Embed(title=f"Invite Info For {member}", color=member.color)
         for invite in full:
-            channel = guild.get_channel(invite[4]) if guild.get_channel(invite[4]) is not None else '#unknown'
+            channel = guild.get_channel(invite[4]) if guild.get_channel(invite[4]) is not None else 'deleted-channel'
             embed.add_field(name=f"{invite[3]} - #{channel}",
                             value=f"**{invite[0]}** joins, **{invite[1]}** leaves, **{invite[2]}** fakes", inline=False)
 
