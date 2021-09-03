@@ -484,7 +484,7 @@ class Events(commands.Cog):
                 else:
                     await cursor.execute(
                                 "INSERT INTO invite(guild, member, invite, channel, amount, amount2, amount3) "
-                                "VALUES($1, $2, $3, $4, $5, $6, $6)", member.guild.id, invite.inviter.id,
+                                "VALUES($1, $2, $3, $4, $5, $6, $7)", member.guild.id, invite.inviter.id,
                                 invite.code, invite.channel.id, invite.uses, 0, 0)
                 await cursor.execute(
                     "INSERT INTO invite2(guild, member, invite) VALUES($1, $2, $3)",
