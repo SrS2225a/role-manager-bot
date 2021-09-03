@@ -763,6 +763,7 @@ class Leaderboard(commands.Cog, name='Leaderboards & Counters'):
 
         pages = menus.MenuPages(source=Source(table), clear_reactions_after=True)
         await pages.start(ctx)
+        await self.bot.db.release(cursor)
 
     @leaderboard.command(name='partners')
     async def lb_partners(self, ctx):

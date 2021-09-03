@@ -316,9 +316,9 @@ class Events(commands.Cog):
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState) -> None:
         # VOICE ROLES
         if before.channel != after.channel:
-            guild = member.guild
             async with self.bot.db.acquire() as cursor:
                 async with cursor.transaction():
+                    guild = member.guild
                     date = datetime.date.today()
                     channel = before.channel or after.channel
                     await cursor.execute("DELETE FROM message WHERE day < $1", (date - datetime.timedelta(days=120)))
