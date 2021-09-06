@@ -126,8 +126,8 @@ class Utilities(commands.Cog, name='Utilities'):
                     now = datetime.datetime.now()
                     timer = self.__current_timer = await self.wait_for_active_polls(connection=con, days=48)
 
-                    if timer[4] >= now:
-                        to_sleep = (timer[4] - now).total_seconds()
+                    if timer[2] >= now:
+                        to_sleep = (timer[2] - now).total_seconds()
                         await asyncio.sleep(to_sleep)
 
                     await con.execute("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3",
@@ -179,11 +179,9 @@ class Utilities(commands.Cog, name='Utilities'):
                 async with self.MaybeAcquire(connection=self.bot.db, pool=self.bot.db) as con:
                     now = datetime.datetime.now()
                     timer = self.current_timer = await self.wait_for_active_giveaways(connection=con, days=48)
-
-                    if timer[4] >= now:
-                        to_sleep = (timer[4] - now).total_seconds()
+                    if timer[2] >= now:
+                        to_sleep = (timer[2] - now).total_seconds()
                         await asyncio.sleep(to_sleep)
-
                     await con.execute("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4",
                                       "giveaway end", timer[0], timer[1], "giveaway")
                     await self.call_giveaway(timer)
@@ -201,8 +199,7 @@ class Utilities(commands.Cog, name='Utilities'):
         ends = datetime.datetime.strftime(datetime.datetime.now(), '%a %b %d %Y %I:%M:%S %p UTC')
         for reaction in sent.reactions:
             if reaction.emoji == '🎉':
-                users = await reaction.users().flatten()
-                if reaction.count < timer[2]:
+                if reaction.count < timer[3]:
                     embed = discord.Embed(title=data.title,
                                           description=f"**Giveaway Ended** \nHost: "
                                                       f"{re.search(r'<@(!?)([0-9]*)>', data.description)[0]}"
@@ -210,7 +207,8 @@ class Utilities(commands.Cog, name='Utilities'):
                     embed.set_footer(text=f"Ended At: {ends}")
                     await sent.edit(embed=embed)
                 else:
-                    winner = random.choices([winner.mention for winner in users if not winner.bot], k=timer[2])
+                    users = await reaction.users().flatten()
+                    winner = random.choices([winner.mention for winner in users if not winner.bot], k=timer[3])
                     winner = "\n".join(winner)
                     embed = discord.Embed(title=data.title,
                                           description=f"**Giveaway Ended** \nHost: "
@@ -357,12 +355,11 @@ class Utilities(commands.Cog, name='Utilities'):
                                  "$5, $6)", ctx.guild.id, sent.id, delta, winners, "giveaway", ctx.channel.id)
 
             # restarts the task if the sleep time is less than the current timer
-            if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
-                self.have_data.set()
-            if self.current_timer and delta < self.current_timer[4] or self.current_timer is None:
-                self.task.cancel()
-                self.task = self.bot.loop.create_task(self.dispatch_giveaway())
-            await self.bot.db.release(cursor)
+            if self._current_timer and delta < self._current_timer[2] or self._current_timer is None:
+                if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
+                    self._have_data.set()
+                self._task.cancel()
+                self._task = self.bot.loop.create_task(self.dispatch_giveaway())
 
     @commands.command(aliases=["cancelgiveaway"])
     @commands.has_permissions(manage_messages=True)
@@ -453,7 +450,7 @@ class Utilities(commands.Cog, name='Utilities'):
                 # restarts the task if the sleep time is less than the current timer
                 if (delta - now).total_seconds() <= (86400 * 48):  # 48 days
                     self.__have_data.set()
-                if self.__current_timer and delta < self.__current_timer[4] or self.__current_timer is None:
+                if self.__current_timer and delta < self.__current_timer[2] or self.__current_timer is None:
                     self.__task.cancel()
                     self.__task = self.bot.loop.create_task(self.dispatch_poll())
                 await self.bot.db.release(cursor)
