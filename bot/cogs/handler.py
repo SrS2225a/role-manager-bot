@@ -59,12 +59,12 @@ class Handler(commands.Cog):
                                                                                     f"attention join the support "
                                                                                     f"server: "
                                                                                     f"https://discord.gg/JHkhnzDvWG "
-                                                                                    f"\n\n `{error}`")
+                                                                                    f"\n\n `{discord.utils.escape_mentions(str(error))}`")
             await ctx.send(embed=embed)
             await channel.send(f"`New exception occurred in guild {ctx.guild} for command {ctx.command}`"
                                f"\n```py\n{traceback_text}```")
         elif not isinstance(error, commands.CommandNotFound):
-            await ctx.send(f"Error: {error}")
+            await ctx.send(f"`Error: {discord.utils.escape_mentions(str(error))}`")
 
     # ERROR HANDLER
     @commands.Cog.listener()
@@ -77,7 +77,7 @@ class Handler(commands.Cog):
         exception = traceback.format_exception(etype, error, trace, verbosity)
         traceback_text = ''.join(exception)
         if not isinstance(error, discord.Forbidden) or not isinstance(error, discord.NotFound):
-            await channel.send(f"`New exception occurred for event listener {event}`\n ```py\n{traceback_text}```")
+            await channel.send(f"`New exception occurred for event listener {event}`\n ```py\n{discord.utils.escape_mentions(str(traceback_text))}```")
 
 
 def setup(bot):

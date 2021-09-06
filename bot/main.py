@@ -38,7 +38,7 @@ async def get_prefix(bot, message):
 # sets discord gateway intents
 intents = discord.Intents.default()
 intents.members = True
-intents.presences = True
+intents.presences = False
 intents.messages = True
 intents.webhooks = False
 intents.integrations = False
@@ -79,6 +79,18 @@ async def bot_check(ctx):
             # raise if the command is disabled
             raise commands.DisabledCommand(f"{ctx.command.name} command is disabled.")
 
+
+_cd = commands.CooldownMapping.from_cooldown(1.0, 5.0, commands.BucketType.member) # from ?tag cooldown mapping
+
+# Then apply a bot check that will run before every command
+# Very similar to ?tag cooldown mapping but in Bot scope instead of Cog scope
+@bot.check
+async def cooldown_check(ctx):
+    bucket = _cd.get_bucket(ctx.message)
+    retry_after = bucket.update_rate_limit()
+    if retry_after:
+        raise commands.CommandOnCooldown(bucket, retry_after)
+    return True
 
 # loads cogs
 bot.load_extension("jishaku")
