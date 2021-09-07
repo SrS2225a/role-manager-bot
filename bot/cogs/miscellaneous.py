@@ -484,7 +484,7 @@ class Info(commands.Cog, name='Miscellaneous'):
             except discord.Forbidden:
                 pass
             await cursor.execute("DELETE FROM afk WHERE guild = $1 and member = $2", ctx.guild.id, member.id)
-            await ctx.send(f"{member.mention} I marked you as no longer AFK!")
+            await ctx.send(discord.utils.escape_mentions(f"{member.mention} I marked you as no longer AFK!"))
         else:
             # marks us as AFK
             try:
@@ -495,7 +495,7 @@ class Info(commands.Cog, name='Miscellaneous'):
                 pass
             await cursor.execute("INSERT INTO afk(guild, member, message, count) VALUES($1, $2, $3, $4)", ctx.guild.id, member.id,
                                  reason, 0)
-            await ctx.send(f"{member.mention} I marked you as AFK!")
+            await ctx.send(discord.utils.escape_mentions(f"{member.mention} I marked you as AFK!"))
         await self.bot.db.release(cursor)
 
     @commands.group(invoke_without_command=True)

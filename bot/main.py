@@ -23,7 +23,7 @@ with open("token.json", "r") as set:
 # connects to database
 db = asyncio.get_event_loop().run_until_complete(
     asyncpg.create_pool('postgresql://localhost:5432/postgres', user=settings['user'], password=settings['password'],
-                        max_size=800, max_queries=100, max_cacheable_statement_size=0))
+                        max_size=800, max_queries=200, max_cacheable_statement_size=0))
 
 
 # gets custom command prefix or default one
