@@ -309,8 +309,8 @@ class Events(commands.Cog):
                         # checks if the mentioned user is afk, and if they are, tell the member that mentioned them
                         elif user[0] in [msg.id for msg in message.mentions]:
                             him = message.guild.get_member(user[0])
-                            await channel.send(
-                                f"{message.author.mention} {him} is currently AFK with the reason: {user[1]}!")
+                            await channel.send(discord.utils.escape_mentions(
+                                f"{message.author.mention} {him} is currently AFK with the reason: {user[1]}!"))
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState) -> None:
