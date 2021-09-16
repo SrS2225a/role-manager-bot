@@ -29,10 +29,9 @@ db = asyncio.get_event_loop().run_until_complete(
 # gets custom command prefix or default one
 async def get_prefix(bot, message):
     async with db.acquire() as cursor:
-        prefix = '*'
         if message.guild:
             prefix = await cursor.fetchval("SELECT auth FROM settings WHERE guild = $1 LIMIT 1",
-                                           message.guild.id or prefix)
+                                           message.guild.id) or '*'
         return commands.when_mentioned_or(prefix)(bot, message)
 
 
