@@ -18,11 +18,11 @@ class Info(commands.Cog, name='Miscellaneous'):
     @commands.has_permissions(manage_guild=True)
     async def settings(self, ctx, setting=None):
         """List your configured bot settings for your server or a specific one"""
+        global type
         cursor = await self.bot.db.acquire()
         guild = ctx.guild
         tabulate.MIN_PADDING = 0
         ident_flag = False if setting is not None else True
-        message = f"***{guild} Server Settings***\n\n\n"
 
         if setting == "custom" or ident_flag:
             custom = await cursor.fetch("SELECT * FROM custom WHERE guild = $1", guild.id)
@@ -32,8 +32,9 @@ class Info(commands.Cog, name='Miscellaneous'):
                 position = guild.get_role(custom[3])
                 custom_table.append([custom[1], role, position, custom[4], custom[5], custom[6]])
             if custom_table:
-                message += f"**Custom Settings**\n```" \
+                customSend = f"**Custom Settings**\n```" \
                            f"{tabulate.tabulate(custom_table, headers=['Type', 'Role', 'Position', 'Amount', 'Tag', 'Remove'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(customSend) if ident_flag is True else await ctx.author.send(customSend)
 
         if setting == "count" or ident_flag:
             count = await cursor.fetch("SELECT channel, role, count, delay FROM count WHERE guild = $1", guild.id)
@@ -43,7 +44,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 role = guild.get_role(count[1])
                 count_table.append([channel, role, count[2], count[3]])
             if count_table:
-                message += f"**Counter Settings**\n```{tabulate.tabulate(count_table, headers=['Channel', 'Role', 'Count', 'Delay'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                countSend = f"**Counter Settings**\n```{tabulate.tabulate(count_table, headers=['Channel', 'Role', 'Count', 'Delay'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(countSend) if ident_flag is True else await ctx.author.send(countSend)
 
         if setting == "booster" or ident_flag:
             booster = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2",
@@ -53,17 +55,18 @@ class Info(commands.Cog, name='Miscellaneous'):
                 role = guild.get_role(booster[0])
                 boost_table.append([role, booster[1]])
             if boost_table:
-                message += f"**Booster Reward Settings**\n```{tabulate.tabulate(boost_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                boostSend = f"**Booster Reward Settings**\n```{tabulate.tabulate(boost_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(boostSend) if ident_flag is True else await ctx.author.send(boostSend)
 
         if setting == "invite" or ident_flag:
-            invite = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2",
-                                        guild.id, 'invite')
+            invite = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'invite')
             invite_table = []
             for invite in invite:
                 role = guild.get_role(invite[0])
                 invite_table.append([role, invite[1]])
             if invite:
-                message += f"**Invite Reward Settings**\n```{tabulate.tabulate(invite_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                inviteSend = f"**Invite Reward Settings**\n```{tabulate.tabulate(invite_table, headers=['Role', 'Day'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(inviteSend) if ident_flag is True else await ctx.author.send(inviteSend)
 
         if setting == "overwrite" or ident_flag:
             overwrite = await cursor.fetch("SELECT member, role FROM roles WHERE guild = $1 and type = $2",
@@ -74,7 +77,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 role = guild.get_role(overwrite[1])
                 overwrite_table.append([channel, role])
             if overwrite_table:
-                message += f"**Channel Overwrites Settings**\n```{tabulate.tabulate(overwrite_table, headers=['Channel', 'Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                overwriteSend = f"**Channel Overwrites Settings**\n```{tabulate.tabulate(overwrite_table, headers=['Channel', 'Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(overwriteSend) if ident_flag is True else await ctx.author.send(overwriteSend)
 
         if setting == "position" or ident_flag:
             position = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or "
@@ -84,7 +88,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 role = guild.get_role(position[1])
                 position_table.append([position[0], role, position[2]])
             if position_table:
-                message += f"**Auto Position Settings**\n```{tabulate.tabulate(position_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                positionSend = f"**Auto Position Settings**\n```{tabulate.tabulate(position_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(positionSend) if ident_flag is True else await ctx.author.send(positionSend)
 
         if setting == "autorole" or ident_flag:
             autorole = await cursor.fetch("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or "
@@ -94,7 +99,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 role = guild.get_role(autorole[1])
                 autorole_table.append([autorole[0], role, autorole[2]])
             if autorole_table:
-                message += f"**Auto Role Settings**\n```{tabulate.tabulate(autorole_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                autoSend = f"**Auto Role Settings**\n```{tabulate.tabulate(autorole_table, headers=['Type', 'Role', 'Time'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(autoSend) if ident_flag is True else await ctx.author.send(autoSend)
 
         if setting == "sticky" or ident_flag:
             sticky = await cursor.fetch("SELECT role FROM reward WHERE guild = $1 and type = $2", guild.id, 'sticky')
@@ -103,25 +109,30 @@ class Info(commands.Cog, name='Miscellaneous'):
                 role = guild.get_role(sticky[0])
                 sticky_table.append(role)
             if sticky_table:
-                message += f"**Sticky Role Settings**\n```{tabulate.tabulate(sticky_table, headers=['Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                stickSend = f"**Sticky Role Settings**\n```{tabulate.tabulate(sticky_table, headers=['Role'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(stickSend) if ident_flag is True else await ctx.author.send(stickSend)
 
         if setting == "announce" or ident_flag:
             announce = await cursor.fetchval("SELECT announce FROM settings WHERE guild = $1", guild.id)
             announce = guild.get_channel(announce)
             if announce:
-                message += f"**Announce Settings**\n```{announce}```\n\n"
+                announceSend = f"**Announce Settings**\n```{announce}```\n\n"
+                await ctx.send(announceSend) if ident_flag is True else await ctx.author.send(announceSend)
 
         if setting == "suggest" or ident_flag:
             suggest = await cursor.fetchval("SELECT suggest FROM settings WHERE guild = $1", guild.id)
             suggest = guild.get_channel(suggest)
             if suggest:
-                message += f"**Sugggest Settings**\n```{suggest}```\n\n"
+                suggestSend = f"**Sugggest Settings**\n```{suggest}```\n\n"
+                await ctx.send(suggestSend) if ident_flag is True else await ctx.author.send(suggestSend)
+
 
         if setting == "livestream" or ident_flag:
             livestream = await cursor.fetchval("SELECT live FROM settings WHERE guild = $1", guild.id)
             livestream = guild.get_role(livestream)
             if livestream:
-                message += f"**Livestream Settings**\n ````{livestream}```\n\n"
+                livestreamSend = f"**Livestream Settings**\n ````{livestream}```\n\n"
+                await ctx.send(livestreamSend) if ident_flag is True else await ctx.author.send(livestreamSend)
 
         if setting == "flags" or ident_flag:
             flags = await cursor.fetch("SELECT role, date FROM boost WHERE guild = $1 and type = $2", guild.id, 'flag')
@@ -130,7 +141,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 role = guild.get_role(flags[0])
                 flags_table.append([role, flags[1]])
             if flags_table:
-                message += f"**Flag Settings**\n```{tabulate.tabulate(flags_table, headers=['Role', 'Flag'], tablefmt='presto', disable_numparse=True)}```"
+                flagsSend = f"**Flag Settings**\n```{tabulate.tabulate(flags_table, headers=['Role', 'Flag'], tablefmt='presto', disable_numparse=True)}```"
+                await ctx.send(flagsSend) if ident_flag is True else await ctx.author.send(flagsSend)
 
         if setting == "partnership" or ident_flag:
             partnership = await cursor.fetch("SELECT level, difficulty, type, role FROM leveling WHERE guild = $1 and "
@@ -140,9 +152,10 @@ class Info(commands.Cog, name='Miscellaneous'):
                 channel = guild.get_channel(partnership[2])
                 role = guild.get_role(partnership[3])
                 reward = guild.get_role(partnership[1])
-                flags_table.append([channel, role, reward, partnership[0]])
+                partnership_table.append([channel, role, reward, partnership[0]])
             if partnership_table:
-                message += f"**Partnership Settings**\n```{tabulate.tabulate(partnership_table, headers=['Channel', 'Role', 'Reward', 'Amount'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                partnershipSend = f"**Partnership Settings**\n```{tabulate.tabulate(partnership_table, headers=['Channel', 'Role', 'Reward', 'Amount'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(partnershipSend) if ident_flag is True else await ctx.author.send(partnershipSend)
 
         if setting == "leveling" or ident_flag:
             leveling = await cursor.fetch("SELECT * FROM leveling WHERE guild = $1 AND not system = $2 AND not system "
@@ -164,7 +177,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                 elif leveling[1] in ('message', 'voice', 'difficulty', 'keep', 'clear'):
                     leveling_table.append([leveling[1], None, None, leveling[2]])
             if leveling_table:
-                message += f"**Leveling Settings**\n```{tabulate.tabulate(leveling_table, headers=['Type', 'Channel', 'Role', 'Value'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                levelingSend = f"**Leveling Settings**\n```{tabulate.tabulate(leveling_table, headers=['Type', 'Channel', 'Role', 'Value'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(levelingSend) if ident_flag is True else await ctx.author.send(levelingSend)
 
             reaction = await cursor.fetch("SELECT * FROM reaction WHERE guild = $1", guild.id)
             reaction_table = []
@@ -184,7 +198,8 @@ class Info(commands.Cog, name='Miscellaneous'):
                     blacklist = guild.get_role(reaction[4])
                     reaction_table.append([type, role, reaction[2], reaction[3], blacklist])
             if reaction_table:
-                message += f"**Reaction Settings**\n```{tabulate.tabulate(reaction_table, headers=['Type', 'Role', 'Message', 'Emoji', 'Blacklist'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                reactionSend = f"**Reaction Settings**\n```{tabulate.tabulate(reaction_table, headers=['Type', 'Role', 'Message', 'Emoji', 'Blacklist'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(reactionSend) if ident_flag is True else ctx.author.send(reactionSend)
 
         if setting == "clubs" or ident_flag:
             clubs = await cursor.fetch("SELECT role, level, type, difficulty FROM leveling WHERE guild = $1 AND "
@@ -197,15 +212,14 @@ class Info(commands.Cog, name='Miscellaneous'):
                 give = guild.get_role(clubs[3])
                 clubs_table.append([catagorey, channel, role, give])
             if clubs_table:
-                message += f"**Club Settings**\n```{tabulate.tabulate(clubs_table, headers=['Catagorey', 'Channel', 'Role', 'Give'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                clubsSend = f"**Club Settings**\n```{tabulate.tabulate(clubs_table, headers=['Catagorey', 'Channel', 'Role', 'Give'], tablefmt='presto', disable_numparse=True)}```\n\n"
+                await ctx.send(clubsSend) if ident_flag is True else await ctx.author.send(clubsSend)
 
         if setting not in ("clubs", "leveling", "partnership", "flags", "announce", "suggest", "livestream", "position",
-                           "overwrite", "invite", "booster", "count", "custom") and ident_flag is False:
+                           "overwrite", "invite", "booster", "count", "custom", "autorole") and ident_flag is False:
             await ctx.send('The setting option must be defined as "clubs", "leveling", "partnership", "flags", '
-                           '"announce", "suggest", "livestream", "postiion", "sticky", "overwrite", "invite", '
-                           '"booster", "count", "custom"; or none')
-        else:
-            await ctx.send(message)
+                           '"announce", "suggest", "livestream", "position", "sticky", "overwrite", "invite", '
+                           '"booster", "count", "custom", "autorole"; or none')
 
         await self.bot.db.release(cursor)
 

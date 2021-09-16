@@ -31,9 +31,10 @@ async def get_prefix(bot, message):
     async with db.acquire() as cursor:
         prefix = '*'
         if message.guild:
-            pre = await cursor.prepare("SELECT auth FROM settings WHERE guild = $1 LIMIT 1")
-            prefix = await pre.fetchval(message.guild.id) or prefix
+            prefix = await cursor.fetchval("SELECT auth FROM settings WHERE guild = $1 LIMIT 1",
+                                           message.guild.id or prefix)
         return commands.when_mentioned_or(prefix)(bot, message)
+
 
 # sets discord gateway intents
 intents = discord.Intents.default()
@@ -71,8 +72,8 @@ async def predicate(ctx):
 @bot.check
 async def bot_check(ctx):
     async with db.acquire() as cursor:
-        name = await cursor.prepare("SELECT date FROM boost WHERE guild = $1 and date = $2 and type = $3 LIMIT 1")
-        name = await name.fetchval(ctx.guild.id, ctx.command.name, 'command')
+        name = await cursor.fetchval("SELECT date FROM boost WHERE guild = $1 and date = $2 and type = $3 LIMIT 1",
+                                     ctx.guild.id, ctx.command.name, 'command')
         if name is None or ctx.command.parent:
             return True
         else:
@@ -80,20 +81,31 @@ async def bot_check(ctx):
             raise commands.DisabledCommand(f"{ctx.command.name} command is disabled.")
 
 
-_cd = commands.CooldownMapping.from_cooldown(1.0, 5.0, commands.BucketType.member) # from ?tag cooldown mapping
-
 # Then apply a bot check that will run before every command
 # Very similar to ?tag cooldown mapping but in Bot scope instead of Cog scope
 @bot.check
 async def cooldown_check(ctx):
+    _cd = commands.CooldownMapping.from_cooldown(1.0, 5.0, commands.BucketType.default)
     bucket = _cd.get_bucket(ctx.message)
     retry_after = bucket.update_rate_limit()
     if retry_after:
         raise commands.CommandOnCooldown(bucket, retry_after)
     return True
 
+
+@bot.check
+async def blacklist_check(ctx):
+    async with db.acquire() as cursor:
+        user = await cursor.fetchval("SELECT message FROM blacklist WHERE member = $1 LIMIT 1", ctx.author.id)
+        if user:
+            raise commands.DisabledCommand(f"You are currently blocked from using this bot for {user}. "
+                                           f"If you believe that this is an error, please join the support server @ "
+                                           f"https://discord.gg/JHkhnzDvWG and explain why.")
+        else:
+            return True
+
+
 # loads cogs
-bot.load_extension("jishaku")
 for cogs in os.listdir('./cogs'):
     if cogs.endswith('.py'):
         bot.load_extension(f'cogs.{cogs[:-3]}')
