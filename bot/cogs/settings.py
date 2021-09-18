@@ -111,18 +111,15 @@ class Management(commands.Cog, name='Settings'):
         """Pings a user then deletes the ping to a set channel upon the user joining the server"""
         cursor = await self.bot.db.acquire()
         guild = ctx.guild.id
-        result = await cursor.fetchval("SELECT ping FROM settings WHERE ping = $1 and guild = $2", channel.id,
-                                       guild)
-        search = await cursor.fetchval("SELECT guild FROM settings WHERE guild = $1", guild)
-        if result is not None:
-            await cursor.execute("UPDATE settings SET ping = NULL WHERE guild = $1", guild)
-            await ctx.send("Ping On Join Channel Successfully Removed!")
-        elif search is None:
-            await cursor.execute("INSERT INTO settings(guild, ping) VALUES($1, $2)", guild, channel.id)
-            await ctx.send("Ping On Join Channel Set Successfully!")
+        result = await cursor.fetchval("SELECT role AS channel FROM reward WHERE role = $1 and guild = $2 and type = "
+                                       "$3", channel.id, guild, 'poj')
+        if result is None:
+            await cursor.execute("INSERT INTO reward(guild, role, type) VALUES($1, $2, $3)", guild, channel.id, 'poj')
+            await ctx.send("Ping On Join Channel Added Successfully!")
         else:
-            await cursor.execute("UPDATE settings SET ping = $1 WHERE guild = $2", channel.id, guild)
-            await ctx.send("Ping On Join Channel Set Successfully!")
+            await cursor.execute("DELETE FROM reward WHERE guild = $1 and role = $2 and type = $3", guild, channel.id,
+                                 'poj')
+            await ctx.send("Ping On Join Channel Removed Successfully!")
         await self.bot.db.release(cursor)
 
 

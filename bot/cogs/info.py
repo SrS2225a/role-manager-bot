@@ -28,7 +28,7 @@ class EmbedHelpCommand(commands.HelpCommand):
 
         for cog, command in mapping.items():
             name = 'No Category' if cog is None else cog.qualified_name
-            if command and name != 'Jishaku':  # ignores sending commands in the Jishaku cog
+            if command and name != 'CustomDebugCog':  # ignores sending commands in the Jishaku cog
                 desc = f"**{cog.description}**\n\n"
                 value = '\u2002'.join(f'`{c.name}`' for c in command)
                 val = desc + value

@@ -5,7 +5,7 @@ from jishaku.features.baseclass import Feature
 
 
 class CustomDebugCog(*OPTIONAL_FEATURES, *STANDARD_FEATURES):
-    @Feature.Command(parent="jsk", name="block", aliases=['blacklist'])
+    @Feature.Command(parent="jsk", name="block", aliases=['blacklist'], hidden=True)
     async def jsk_block(self, ctx: commands.Context, user: discord.User, *, reason = None):
         """Blocks a user from using the bot"""
         cursor = await self.bot.db.acquire()

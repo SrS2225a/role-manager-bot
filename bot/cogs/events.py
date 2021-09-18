@@ -512,12 +512,12 @@ class Events(commands.Cog):
                                          date, guild.id)
 
                 # code for ping on join
-                ping = await cursor.prepare("SELECT ping FROM settings WHERE guild = $1 LIMIT 1")
-                ping = await ping.fetchval(guild.id)
-                channel = guild.get_channel(ping)
-                if channel:
-                    message = await channel.send(member.mention)
-                    await message.delete()
+                ping = await cursor.prepare("SELECT role FROM reward WHERE guild = $1 and type = $2")
+                for ping in await ping.fetch(guild.id, 'poj'):
+                    channel = guild.get_channel(ping[0])
+                    if channel:
+                        message = await channel.send(member.mention)
+                        await message.delete()
 
                 # code for autoroles
                 # gets autroles to add/remove
