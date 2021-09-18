@@ -18,7 +18,7 @@ class CustomDebugCog(*OPTIONAL_FEATURES, *STANDARD_FEATURES):
             server = self.bot.get_guild(531247629649182750)
             channel = server.get_channel(841455998542938143)
             await cursor.execute("INSERT INTO blacklist(member, message) VALUES($1, $2)", user.id, reason)
-            await ctx.send(f"Successfully blocked {user} from Dionysus with the reason {reason}")
+            await ctx.send(f"Successfully blocked **{user}** from Dionysus with the reason **{reason}**")
             await channel.send(f"**{user}** was just blacklisted from using Dionysus for **{reason}**!")
 
 
