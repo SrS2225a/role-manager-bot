@@ -2,7 +2,7 @@ import math
 import typing
 
 import platform
-import time
+import datetime
 
 import discord
 import psutil
@@ -93,7 +93,19 @@ class Help(commands.Cog, name='Information'):
         global uses
         os = str(platform.system() + " " + platform.release()) + " - " + "Python " + platform.python_version()
         p = psutil.Process()
-        up = time.strftime("%Y-%m-%d %H:%M " + "UTC", time.gmtime(p.create_time()))
+        def display_time(duration):
+            intervals = (('years', 31556952), ('months', 2592000), ('weeks', 604800), ('days', 86400),
+                         ('hours', 3600), ('minutes', 60), ('seconds', 1))
+
+            result = []
+
+            for name, count in intervals:
+                value = duration // count
+                if value:
+                    duration -= value * count
+                    result.append(f'{round(value)} {name}')
+
+            return ' '.join(result)
         # Cannot use len() here, otherwise python will complain. Stupid
         number = 0
         for members in self.bot.get_all_members():
@@ -102,7 +114,8 @@ class Help(commands.Cog, name='Information'):
         usage = f"CPU: {[round(x / psutil.cpu_count() * 100, 2) for x in psutil.getloadavg()]} \n" \
                 f"RAM: {str(psutil.virtual_memory()[2])}% \nNetwork: " \
                 f"Download {round(math.floor(psutil.net_io_counters().bytes_recv / 1073742000), 2)} GB, " \
-                f"Upload {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB "
+                f"Upload {round(math.floor(psutil.net_io_counters().bytes_sent / 1073742000), 2)}GB " \
+                f"\nUptime: {display_time((datetime.datetime.now() - datetime.datetime.fromtimestamp(p.create_time())).total_seconds())}"
         stats = f"Visable Guilds: {len(self.bot.guilds)} \nVisable Members: {number} \nShards: 0 \nCommands Ran: {ran}"
         embed = discord.Embed(title="About Dionysus", color=0x0001fe)
         embed.add_field(name='Credits',
@@ -118,7 +131,6 @@ class Help(commands.Cog, name='Information'):
                               "https://top.gg/bot/437447118127366154)")
         embed.add_field(name='Stats', value=stats)
         embed.add_field(name='Usage', value=usage)
-        embed.add_field(name='Uptime', value="Since " + up)
         embed.add_field(name='Running On', value=os)
         await ctx.send(embed=embed)
         await self.bot.db.release(cursor)
