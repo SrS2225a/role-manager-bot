@@ -122,8 +122,7 @@ class Help(commands.Cog, name='Information'):
                         value='**Main Devs**\n<@!270848136006729728> '
                               '<@!508455796783317002>\n**Contributors**\n<@!332180997653135383>')
         embed.add_field(name="Url's",
-                        value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id"
-                              "=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here]("
+                        value="Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=applications.commands%20bot)\nOpen Source: [Click Here]("
                               "https://github.com/SrS2225a/role-manager-bot/tree/master)\nSupport: [Click Here]("
                               "https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here]("
                               "https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here]("
@@ -143,20 +142,7 @@ class Help(commands.Cog, name='Information'):
     @commands.command()
     async def invite(self, ctx):
         """Give you a link to invite the bot"""
-        scopes = ('bot',)
-        permissions = discord.Permissions()
-
-        setattr(permissions, 'administrator', True)
-
-        application_info = await self.bot.application_info()
-
-        query = {
-            "client_id": application_info.id,
-            "scope": "+".join(scopes),
-            "permissions": permissions.value
-        }
-
-        await ctx.send(f"<https://discordapp.com/oauth2/authorize?{urlencode(query, safe='+')}>")
+        await ctx.send(f"https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=applications.commands%20bot")
 
     @commands.command(aliases=['github'])
     async def opensource(self, ctx):
