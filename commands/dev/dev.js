@@ -3,7 +3,7 @@ const {pool} = require("../../database");
 const fs = require("fs");
 const json = require("../../config.json");
 const {paginator, PaginateWhileRunning} = require("../../structures/paginator");
-const {MessageEmbed, MessageAttachment} = require("discord.js");
+const {MessageEmbed, MessageAttachment, Formatters} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("dev")
@@ -25,6 +25,14 @@ module.exports = {
                 .setDescription("Shell command to run")
                 .setRequired(true)
             ))
+        .addSubcommand(subcommand => subcommand
+                .setName("sql")
+                .setDescription("Runs a SQL query")
+                .addStringOption(option => option
+                    .setName("argument")
+                    .setDescription("SQL query to run")
+                    .setRequired(true)
+                ))
         .addSubcommand(subcommand => subcommand
                 .setName("source")
                 .setDescription("Shows the source code of a command")
@@ -255,6 +263,20 @@ module.exports = {
                     message.channel.send(`Shell exited with code ${code} and took ${(Date.now() - now)} milliseconds to execute`)
                 })
 
+            } catch (error) {
+                await message.channel.send(`\`\`\`js\n${error.stack}\`\`\``)
+            }
+        } else if (message.options.getSubcommand() === "sql") {
+            const query = message.options.getString("argument")
+            try {
+                await message.deferReply()
+                const result = await db.query(query)
+                console.log(result)
+                if (result.rows.length === 0) {
+                    await message.editReply("The query did not return anything")
+                } else {
+                    await message.editReply(Formatters.codeBlock(result.rows), "json")
+                }
             } catch (error) {
                 await message.channel.send(`\`\`\`js\n${error.stack}\`\`\``)
             }
