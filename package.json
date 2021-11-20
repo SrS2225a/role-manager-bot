@@ -16,7 +16,6 @@
   "dependencies": {
     "@discordjs/builders": "^0.7.0",
     "@discordjs/rest": "^0.1.0-canary.0",
-    "@sapphire/discord.js-utilities": "^2.0.2",
     "chartjs-adapter-moment": "^1.0.0",
     "chartjs-node-canvas": "^4.0.1",
     "discord.js": "^13.3.1",
