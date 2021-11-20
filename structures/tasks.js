@@ -209,6 +209,7 @@ class AutoRole {
      } catch (e) {
          console.log(e)
      }
+     await this.dispatch_autorole(client)
  }
 }
 
@@ -339,7 +340,6 @@ class GlobalTasks {
                         if (!member.user.bot) {
                             for (const pos of position.rows) {
                                 if (pos.type === "create") {
-                                    console.log(Date.now() - member.user.createdAt)
                                     if (Date.now() - member.user.createdAt > pos.member) {
                                         const role = guild.roles.cache.get(pos.role)
                                         if (role) {
