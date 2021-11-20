@@ -41,7 +41,7 @@ module.exports = {
                                         if (member) {
                                             const role = message.guild.roles.cache.get(role.rows[0].role);
                                             if (role) {
-                                                await member.roles.add(role);
+                                                await member.add(role);
                                             }
                                         }
                                     } else {
@@ -56,7 +56,7 @@ module.exports = {
                                                         member.roles.remove(prevRole);
                                                     }
                                                 }
-                                                await member.roles.add(role);
+                                                await member.add(role);
                                             }
                                         }
                                     }
@@ -99,9 +99,9 @@ module.exports = {
                             await forgotSend.delete();
                         }, 5000);
                         if (count.rows[0].delay > 0) {
-                            await message.author.add({roles: [count.rows[0].role]});
+                            await message.member.add({roles: [count.rows[0].role]});
                             setTimeout(async () => {
-                                await message.author.remove({roles: [count.rows[0].role]});
+                                await message.member.remove({roles: [count.rows[0].role]});
                             }, count.rows[0].delay * 1000);
                         }
                     }
@@ -127,7 +127,7 @@ module.exports = {
                             for (let i = 0; i < partner.rowCount; i++) {
                                 if (partner_id.rows[0].number === partner.rows[i].level) {
                                     const role = await message.guild.roles.cache.get(partner.rows[i].role);
-                                    await message.author.add({roles: [role]});
+                                    await message.member.add({roles: [role]});
                                     const channel = await message.guild.channels.cache.get(partner.rows[i].channel);
                                     await channel.send({content: `Congratulations ${Formatters.userMention(message.author.id)}! You have completed ${partner.rows[0].level} partners!`});
                                 }
@@ -156,7 +156,7 @@ module.exports = {
                 // check if the mentioned user is afk, and if they are, tell the member that mentioned them
                 else if (message.mentions.users.has(row.member)) {
                     const member = await message.guild.members.fetch(row.member);
-                    const isAfk = await message.channel.send({content: `${Formatters.userMention(member.id)} is AFK! For the reason: ${Util.removeMentions(row.message)}`});
+                    await message.channel.send({content: `${Formatters.userMention(member.id)} is AFK! For the reason: ${Util.removeMentions(row.message)}`});
                 }
             }
             // end of afk

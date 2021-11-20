@@ -46,7 +46,7 @@ module.exports = {
         const embed = new MessageEmbed()
             .setTitle("Guild Info")
             .setThumbnail(message.guild.iconURL())
-            .setDescription(guild.description)
+            .setDescription(guild.description.toString())
             .addFields({name: "Guild Name", value: Formatters.codeBlock(guild.name), inline: true},
                 {name: "Owner", value: Formatters.codeBlock(owner.user.username + '#' + owner.user.discriminator), inline: true},
                 {name: "Guild ID", value: Formatters.codeBlock(guild.id), inline: false},

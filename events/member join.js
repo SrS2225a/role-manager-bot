@@ -75,8 +75,8 @@ module.exports = {
         // end member join role
 
         // for invite update emitter
-        await member.guild.invites.fetch().then(newInvites => {
-            const oldInvites = member.client.invites.get(member.guild.id)
+        await member.guild.invites?.fetch().then(newInvites => {
+            const oldInvites = member.client.invites?.get(member.guild.id)
             const invite = newInvites.find(i => i.uses > oldInvites.get(i.code))
             if (invite) {
                 // set cached invites

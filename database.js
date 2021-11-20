@@ -8,7 +8,8 @@ const p = new Pool({
     database: 'postgres',
     password: json['password'],
     port: 5432,
-    timeout: 10000
+    connectionTimeoutMillis: 5000,
+    max: 1000
 })
 
 // automatically release the pool if it has been active for more than 10 seconds
