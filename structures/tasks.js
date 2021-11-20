@@ -32,6 +32,7 @@ class Reminder {
             }
             await this.finish_reminder(db, timer)
         } catch (e) {
+            await this.dispatch_reminder(client)
             console.log(e)
         }
         await this.dispatch_reminder(client)
@@ -96,6 +97,7 @@ class Poll {
             await msg.edit({embeds: [embed]})
             await this.finish_poll(db, poll)
         } catch (e) {
+            await this.dispatch_poll(client)
             console.log(e)
         }
         await this.dispatch_poll(client)
@@ -157,6 +159,7 @@ class Giveaway {
             const winner_msg = await channel.send(`Congratulations, ${final_winners}! You won the giveaway!`)
             await winner_msg.delete({timeout: 10000})
         } catch (e) {
+            await this.dispatch_giveaway(client)
             console.log(e)
         }
         await this.dispatch_giveaway(client)
@@ -207,6 +210,7 @@ class AutoRole {
          }
          await db.release()
      } catch (e) {
+         await this.dispatch_autorole(client)
          console.log(e)
      }
      await this.dispatch_autorole(client)

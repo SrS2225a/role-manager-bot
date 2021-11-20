@@ -7,8 +7,17 @@ const p = new Pool({
     host: 'localhost',
     database: 'postgres',
     password: json['password'],
-    port: 5432
+    port: 5432,
+    timeout: 10000
 })
+
+// automatically release the pool if it has been active for more than 10 seconds
+p.on('error', async (err, client) => {
+    await client.release()
+    console.error('Unexpected error on idle client', err);
+})
+
+// automatically release the pool if it has been active for more than 10 seconds
 
 module.exports = {
     pool: p
