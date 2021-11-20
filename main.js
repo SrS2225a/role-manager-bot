@@ -27,8 +27,8 @@ for (const folder of commandFolders) {
 
 (async () => {
     const rest = new REST({version: '9'}).setToken(json['token'])
-    await rest.put(Routes.applicationCommands('653484307423297536'), {body: commands})
-    await rest.put(Routes.applicationGuildCommands('653484307423297536', '531247629649182750'), {body: guildCommands})
+    await rest.put(Routes.applicationCommands(json["clientID"]), {body: commands})
+    await rest.put(Routes.applicationGuildCommands(json["clientID"], '531247629649182750'), {body: guildCommands})
 })()
 
 const eventFiles = fs.readdirSync('./events').filter(file=> file.endsWith('.js'))

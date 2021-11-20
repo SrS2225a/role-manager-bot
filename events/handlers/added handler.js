@@ -6,7 +6,7 @@ module.exports = {
             guild.client.invites.set(guild.id, new Map(invites.map(invite => [invite.code, invite.uses])))
         })
 
-        const channel = guild.channels.cache.get('844387430743801896')
+        const channel = guild.client.channels.cache.get("844387430743801896")
         await channel.send(`Dionysus was added into guild **${guild.name} (${guild.id})**. We now have ${guild.client.guilds.cache.size} guilds!`)
     }
 }

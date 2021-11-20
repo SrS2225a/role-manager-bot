@@ -196,15 +196,19 @@ class AutoRole {
 
  async call_autorole(client, autorole, db) {
      await db.query("DELETE FROM autorole WHERE guild = $1 and member = $2 and role = $3 and date = $4", [autorole.guild, autorole.member, autorole.role, autorole.date])
-     const guild = client.guilds.cache.get(autorole.guild)
-     const member = await guild.members.fetch(autorole.member)
-     const role = guild.roles.cache.get(autorole.role)
-     if (autorole.action) {
-         await member.roles.add(role)
-     } else {
-         await member.roles.remove(role)
+     try {
+         const guild = client.guilds.cache.get(autorole.guild)
+         const member = await guild.members.fetch(autorole.member)
+         const role = guild.roles.cache.get(autorole.role)
+         if (autorole.action) {
+             await member.roles.add(role)
+         } else {
+             await member.roles.remove(role)
+         }
+         await db.release()
+     } catch (e) {
+         console.log(e)
      }
-     await db.release()
  }
 }
 
@@ -247,7 +251,7 @@ class GlobalTasks {
                 const boosters = await this.db.query("SELECT member, role FROM owner inner join boost using(guild) WHERE boost.guild = $1 and boost.type = $2", [guild.id, 'boost'])
                 for (const booster of boosters.rows) {
                     const member = guild.members.cache.get(booster.member)
-                    if (!member.premiumSince) {
+                    if (!member?.premiumSince) {
                         await this.db.query("DELETE FROM owner WHERE guild = $1 and member = $2 and type = $3", [guild.id, booster.member, 'boost'])
                         const role = guild.roles.cache.get(booster.role)
                         if (role) {

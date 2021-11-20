@@ -271,7 +271,6 @@ module.exports = {
             try {
                 await message.deferReply()
                 const result = await db.query(query)
-                console.log(result)
                 if (result.rows.length === 0) {
                     await message.editReply("The query did not return anything")
                 } else {
