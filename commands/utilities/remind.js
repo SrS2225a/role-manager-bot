@@ -58,7 +58,7 @@ module.exports = {
         else if (message.options.getSubcommand() === "delete") {
             const id = message.options.getString("id")
             await db.query("DELETE FROM remind WHERE id = $1 and member = $2", [id, message.user.id])
-            const reminder_start = new Reminder()
+            const reminder_start = await new Reminder()
             await reminder_start.dispatch_reminder(message)
             await message.reply("Reminder deleted")
         } else if (message.options.getSubcommand() === "create") {
@@ -81,7 +81,8 @@ module.exports = {
             }
             await db.query("INSERT INTO remind (id, member, date, message, destination, repeat, assigned) VALUES ($1, $2, $3, $4, $5, $6, $7)", [id, message.user.id, delta, description, channel.id, repeat, new Date()])
             await message.reply(`Ok, reminding you ${repeat ? "every": "in"} ${display_time(time)} about: **${Util.removeMentions(description)}**`)
-            await new Reminder().dispatch_reminder(message.client)
+            const reminder_start = new Reminder()
+            await reminder_start.dispatch_reminder(message.client)
         }
         await db.release()
     }

@@ -75,16 +75,18 @@ module.exports = {
         // end member join role
 
         // for invite update emitter
-        await member.guild.invites?.fetch().then(newInvites => {
-            const oldInvites = member.client.invites?.get(member.guild.id)
-            const invite = newInvites.find(i => i.uses > oldInvites?.get(i.code))
-            if (invite) {
-                // set cached invites
-                oldInvites.set(invite.code, invite.uses)
-                // emit member and invite
-                member.client.emit("inviteUpdate", member, invite)
-            }
-        })
+        if (member.guild.me.permissions.has("MANAGE_GUILD")) {
+            await member.guild.invites?.fetch().then(newInvites => {
+                const oldInvites = member.client.invites?.get(member.guild.id)
+                const invite = newInvites.find(i => i.uses > oldInvites?.get(i.code))
+                if (invite) {
+                    // set cached invites
+                    oldInvites.set(invite.code, invite.uses)
+                    // emit member and invite
+                    member.client.emit("inviteUpdate", member, invite)
+                }
+            })
+        }
         // end invite update emitter
 
         // for channel overwrites recoverer

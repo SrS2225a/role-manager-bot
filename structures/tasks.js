@@ -6,6 +6,12 @@ class Reminder {
     constructor(task) {
         this.task = task;
     }
+    static getInstance() {
+        if (!Reminder.instance) {
+            Reminder.instance = new Reminder();
+        }
+        return Reminder.instance;
+    }
 
     async get_active_reminders(db) {
         const timer = await db.query("SELECT * FROM remind WHERE date < (current_date + $1::interval) ORDER BY date LIMIT 1", ['48 days']);
@@ -47,9 +53,10 @@ class Reminder {
         const db = await pool.connect()
         const timer = await this.get_active_reminders(db)
         if (timer) {
+            clearTimeout(client?.reminder_timer)
             const now = new Date()
             if (timer.date >= now) {
-                await setTimeout(() => this.call_reminder(client, timer, db), timer.date.getTime() - now.getTime())
+                client.reminder_timer = setTimeout(async () => await this.call_reminder(client, timer, db), timer.date.getTime() - now.getTime())
             } else {
                 await this.call_reminder(client, timer, db)
             }
@@ -116,9 +123,10 @@ class Poll {
         const poll = await this.get_active_polls(db)
         await db.release()
         if (poll) {
+            clearTimeout(client?.poll_timer)
             const now = new Date()
             if (poll.date >= now) {
-                await setTimeout(() => this.call_poll(client, poll, db), poll.date.getTime() - now.getTime())
+                client.poll_timer = setTimeout(async () => await this.call_poll(client, poll, db), poll.date.getTime() - now.getTime())
             } else {
                 await this.call_poll(client, poll, db)
             }
@@ -137,9 +145,10 @@ class Giveaway {
         const giveaway = await this.get_active_giveaways(db)
         await db.release()
         if (giveaway) {
+            clearTimeout(client?.giveaway_timer)
             const now = new Date()
             if (giveaway.date >= now) {
-                await setTimeout(() => this.call_giveaway(client, giveaway, db), giveaway.date.getTime() - now.getTime())
+                client.giveaway_timer =  setTimeout(async () => await this.call_giveaway(client, giveaway, db), giveaway.date.getTime() - now.getTime())
             } else {
                 await this.call_giveaway(client, giveaway, db)
             }
@@ -201,9 +210,10 @@ class AutoRole {
          const db = await pool.connect()
          const autorole = await this.wait_for_active_autoroles(db, client)
          if (autorole) {
+             clearTimeout(client?.autorole_timer)
              const now = new Date()
              if (autorole.date >= now) {
-                 await setTimeout(() => this.call_autorole(client, autorole, db), autorole.date.getTime() - now.getTime())
+                 client.autorole_timer =  setTimeout(() => this.call_autorole(client, autorole, db), autorole.date.getTime() - now.getTime())
              } else {
                  await this.call_autorole(client, autorole, db)
              }

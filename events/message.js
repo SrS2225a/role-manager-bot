@@ -1,5 +1,5 @@
 const {pool} = require("../database");
-const {Formatters, Util} = require("discord.js");
+const {Formatters, Util, MessageEmbed} = require("discord.js");
 module.exports = {
     name: 'messageCreate',
     once: false,
@@ -8,6 +8,14 @@ module.exports = {
             const db = await pool.connect();
             // code for message graph
             // increment member messages by 1 else add on a new date and delete where the date is older than 120 days
+            if (message.content.includes(`<@!${message.client.user.id}>`)) {
+                const embed = new MessageEmbed()
+                    .setTitle('Moved To Discords Slash Command System')
+                    .setDescription('Hi there, if you are wondering why your commands are no longer working the reason being is that we have moved to discords new `slash command system` which means that commands are now in the form of `/command` instead of `*command`.' +
+                        'This is because message content will become a message intent in March of 2022, requiring bots to apply to use them. (See https://support.discord.com/hc/en-us/articles/4410940809111 for more information).' +
+                        '\n\nYou can invite the bot with the new permission scope here: https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot%20applications.commands')
+                await message.channel.send({embeds: [embed]})
+            }
 
             const graph = await db.query("SELECT messages, day, member, channel FROM message WHERE guild = $1 and member = $2 and channel = $3 and day = $4 LIMIT 1", [message.guild.id, message.author.id, message.channel.id, new Date()]);
             if (graph.rowCount === 0) {
@@ -147,7 +155,7 @@ module.exports = {
                         // unmark the user as afk
                         await db.query("DELETE FROM afk WHERE guild = $1 and member = $2", [message.guild.id, message.author.id]);
                         // send a message to the channel
-                        const isNotAfk = await message.channel.send({content: `${Formatters.userMention(message.author.id)} is no longer AFK!`});
+                        await message.channel.send({content: `${Formatters.userMention(message.author.id)} is no longer AFK!`});
                     }
                     else {
                         await db.query("UPDATE afk SET count = count + 1 WHERE guild = $1 and member = $2", [message.guild.id, message.author.id]);
@@ -161,6 +169,7 @@ module.exports = {
             }
             // end of afk
             await db.release()
+
         }
     }
 }
