@@ -46,7 +46,6 @@ module.exports = {
         const embed = new MessageEmbed()
             .setTitle("Guild Info")
             .setThumbnail(message.guild.iconURL())
-            .setDescription(guild.description.toString())
             .addFields({name: "Guild Name", value: Formatters.codeBlock(guild.name), inline: true},
                 {name: "Owner", value: Formatters.codeBlock(owner.user.username + '#' + owner.user.discriminator), inline: true},
                 {name: "Guild ID", value: Formatters.codeBlock(guild.id), inline: false},
@@ -67,6 +66,7 @@ module.exports = {
                 {name: "Notifications", value: Formatters.codeBlock(guild.defaultMessageNotifications), inline: true},
                 {name: "Splash", value: guild.splash?Formatters.codeBlock(`['Click Me'](${guild.splash.url})`):Formatters.codeBlock('False'), inline: true},
                 {name: "Banner", value: guild.banner?Formatters.codeBlock(`['Click Me'](${guild.banner.url})`):Formatters.codeBlock('False'), inline: true})
+        if (guild.description) {embed.setDescription(guild.description)}
         await message.reply({embeds: [embed]});
 
     }

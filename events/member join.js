@@ -77,7 +77,7 @@ module.exports = {
         // for invite update emitter
         await member.guild.invites?.fetch().then(newInvites => {
             const oldInvites = member.client.invites?.get(member.guild.id)
-            const invite = newInvites.find(i => i.uses > oldInvites.get(i.code))
+            const invite = newInvites.find(i => i.uses > oldInvites?.get(i.code))
             if (invite) {
                 // set cached invites
                 oldInvites.set(invite.code, invite.uses)

@@ -2,6 +2,11 @@ const {Util, MessageEmbed, Formatters} = require("discord.js");
 const {pool} = require("../database");
 
 class Reminder {
+    // prevent more than one instance
+    constructor(task) {
+        this.task = task;
+    }
+
     async get_active_reminders(db) {
         const timer = await db.query("SELECT * FROM remind WHERE date < (current_date + $1::interval) ORDER BY date LIMIT 1", ['48 days']);
         if (timer.rowCount > 0) {
@@ -41,7 +46,6 @@ class Reminder {
     async dispatch_reminder(client) {
         const db = await pool.connect()
         const timer = await this.get_active_reminders(db)
-        await db.release()
         if (timer) {
             const now = new Date()
             if (timer.date >= now) {
@@ -54,6 +58,10 @@ class Reminder {
     }
 }
 class Poll {
+    constructor(task) {
+        this.task = task;
+    }
+
     async get_active_polls(db) {
         const poll = await db.query("SELECT * FROM vote WHERE date < (current_date + $1::interval) and type = $2 ORDER BY date LIMIT 1", ['48 days', 'poll']);
         if (poll.rowCount > 0) {
@@ -120,6 +128,10 @@ class Poll {
 }
 
 class Giveaway {
+    constructor(task) {
+        this.task = task;
+    }
+
     async dispatch_giveaway(client) {
         const db = await pool.connect()
         const giveaway = await this.get_active_giveaways(db)
@@ -172,6 +184,10 @@ class Giveaway {
 }
 
 class AutoRole {
+    constructor(task) {
+        this.task = task;
+    }
+
  async wait_for_active_autoroles(db, client) {
      const timer = client.current_timer = await db.query("SELECT * FROM autorole WHERE date < (current_date + $1::interval) ORDER BY date LIMIT 1", ['48 days'])
      // export this.current_timer = timer
