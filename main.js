@@ -36,9 +36,9 @@ const eventFolders = fs.readdirSync('./events').filter(file=> fs.statSync(`./eve
 for (const file of eventFiles) {
     const event = require(`./events/${file}`)
     if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args).catch(err => console.error(err)))
+        client.once(event.name, (...args) => event.execute(...args))
     } else {
-        client.on(event.name, (...args) => event.execute(...args).catch(err => console.error(err)))
+        client.on(event.name, (...args) => event.execute(...args))
     }
 
 }
@@ -47,9 +47,9 @@ for (const folder of eventFolders) {
     for (const file of eventFiles) {
         const event = require(`./events/${folder}/${file}`)
         if (event.once) {
-            client.once(event.name, (...args) => event.execute(...args).catch(err => console.error(err)))
+            client.once(event.name, (...args) => event.execute(...args))
         } else {
-            client.on(event.name, (...args) => event.execute(...args).catch(err => console.error(err)))
+            client.on(event.name, (...args) => event.execute(...args))
         }
     }
 }
