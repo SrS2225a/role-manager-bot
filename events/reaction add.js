@@ -30,18 +30,17 @@ module.exports = {
                     } else if (react.rows[0].type === "toggle") {
                         const roles = await db.query("SELECT role FROM reaction WHERE guild = $1 and channel = $2 and message = $3", [reaction.message.guild.id, reaction.message.channel.id, reaction.message.id])
                         if (roles.rowCount > 0) {
-                            // check if the user already has the role in roles
+                            // check if the user already has the role in roles and not remove react.rows[0].role
                             const hasRole = member.roles.cache.filter(role => roles.rows.map(r => r.role).includes(role.id))
                             if (hasRole.size > 0) {
-                                await member.roles.remove(react.rows[0].role)
-                                await reaction.users.remove(member)
+                                await member.roles.remove(hasRole)
                             }
-                            await member.roles.add(react.rows[0].role)
+
                         }
                         await member.roles.add(react.rows[0].role)
                     } else if (react.rows[0].type === "reaction") {
                         member.roles.add(react.rows[0].role)
-                    } else {
+                    } else if (react.rows[0].type === "club") {
                         const clubBlacklist = await db.query("SELECT message FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", [reaction.message.guild.id, member.id, reaction.message.id, "blacklist"])
                         if (clubBlacklist.rowCount > 0) {
                             await reaction.users.remove(member)
