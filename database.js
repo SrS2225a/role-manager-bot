@@ -1,5 +1,5 @@
 var json = require('./config.json');
-const {Pool} = require("pg").native;
+const {Pool} = require("pg");
 
 // pg.types.setTypeParser(20, (value) => {return parseInt(value)})
 const p = new Pool({
