@@ -9,7 +9,7 @@ module.exports = {
             try {
                 // code for message graph
                 // increment member messages by 1 else add on a new date and delete where the date is older than 120 days
-                if (message.content.has(`<@!${message.client.user.id}>` || message.content.has(`<@${message.client.user.id}>`))) {
+                if (message.content.includes(`<@!${message.client.user.id}>` || message.content.includes(`<@${message.client.user.id}>`))) {
                     const embed = new MessageEmbed()
                         .setTitle('Moved To Discords Slash Command System')
                         .setDescription('Hi there, if you are wondering why your commands are no longer working the reason being is that we have moved to discords new `slash command system` which means that commands are now in the form of `/command` instead of `*command`.' +
