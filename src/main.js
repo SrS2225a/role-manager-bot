@@ -15,7 +15,7 @@ const commandFolders = fs.readdirSync(`./commands`)
 for (const folder of commandFolders) {
     const commandFiles = fs.readdirSync(`./commands/${folder}`).filter(file => file.endsWith('.js'))
     for (const file of commandFiles) {
-        const command = require(`./commands/${folder}/${file}`)
+        const command = require(`./src/commands/${folder}/${file}`)
         client.commands.set(command.data.name, command)
             if (command.data.name === "dev") {
                 guildCommands.push(command.data.toJSON())
@@ -34,7 +34,7 @@ for (const folder of commandFolders) {
 const eventFiles = fs.readdirSync('./events').filter(file=> file.endsWith('.js'))
 const eventFolders = fs.readdirSync('./events').filter(file=> fs.statSync(`./events/${file}`).isDirectory())
 for (const file of eventFiles) {
-    const event = require(`./events/${file}`)
+    const event = require(`./src/events/${file}`)
     if (event.once) {
         client.once(event.name, (...args) => event.execute(...args))
     } else {
@@ -45,7 +45,7 @@ for (const file of eventFiles) {
 for (const folder of eventFolders) {
     const eventFiles = fs.readdirSync(`./events/${folder}`).filter(file => file.endsWith('.js'))
     for (const file of eventFiles) {
-        const event = require(`./events/${folder}/${file}`)
+        const event = require(`./src/events/${folder}/${file}`)
         if (event.once) {
             client.once(event.name, (...args) => event.execute(...args))
         } else {

@@ -1,5 +1,4 @@
 const {pool} = require("../database");
-const {resolveAsMember} = require("../structures/resolvers");
 module.exports = {
     name: 'channelUpdate',
     once: false,

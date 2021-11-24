@@ -1,4 +1,4 @@
-const packageDetails = require("../package.json");
+const packageDetails = require("../../package.json");
 const {Reminder, Giveaway, Poll, AutoRole, GlobalTasks} = require("../structures/tasks");
 const {ownerPermissions} = require("../structures/permissions");
 const {Collection} = require("discord.js");

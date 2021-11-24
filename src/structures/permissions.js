@@ -75,7 +75,6 @@ function ownerPermissions() {
         }
     ]
     return {permissions}
-    // return message.user.id === '270848136006729728' || '508455796783317002' || '222492698236420099' ? true : (() => {throw {message: "You must own this bot in order to use this command", identifier: 'MissingOwnerPermissions'}})()
 }
 
 module.exports = {userPermissions, rolePermissions, clientPermissions, ownerPermissions}

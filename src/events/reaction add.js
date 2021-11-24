@@ -28,6 +28,7 @@ module.exports = {
                         }
                         await member.roles.add(react.rows[0].role)
                     } else if (react.rows[0].type === "toggle") {
+                        "INSERT INTO reaction VALUES(guild, channel, message, emote, role, type, blacklist)"
                         const roles = await db.query("SELECT role FROM reaction WHERE guild = $1 and channel = $2 and message = $3", [reaction.message.guild.id, reaction.message.channel.id, reaction.message.id])
                         if (roles.rowCount > 0) {
                             // check if the user already has the role in roles and not remove react.rows[0].role

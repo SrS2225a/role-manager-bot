@@ -24,7 +24,7 @@ module.exports = {
             const result = await db.query("SELECT member, SUM(amount) AS a, SUM(amount2) AS b, SUM(amount3) AS c FROM invite WHERE guild = $1 GROUP BY member ORDER BY SUM(amount) DESC, SUM(amount2) DESC, SUM(amount3) DESC", [message.guild.id])
             const table = []
             for (const row of result.rows) {
-                const user = await message.guild.members.cache.get(row.member)
+                const user = message.guild.members.cache.get(row.member)
                 if (user) {
                     table.push([row.a, row.b, row.c, user.user.username + "#" + user.user.discriminator])
                 }

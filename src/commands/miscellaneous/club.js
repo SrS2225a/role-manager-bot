@@ -2,7 +2,6 @@ const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {Formatters, MessageEmbed, Permissions} = require("discord.js");
 const {rolePermissions} = require("../../structures/permissions");
-const Console = require("console");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("club")

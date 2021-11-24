@@ -1,6 +1,5 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {paginator} = require("../../structures/paginator");
 const {Formatters, MessageEmbed} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()

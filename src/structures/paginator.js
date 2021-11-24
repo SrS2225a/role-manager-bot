@@ -66,7 +66,7 @@ class paginator {
                 p.push(entry)
             }
         }
-        let text = ''
+        let text
         if (this.show_entry_count) {
             text = `Page ${page}/${this.maxium_pages} | Total Entries: ${this.entries.length}`
         } else {
@@ -430,7 +430,7 @@ class PaginateWhileRunning {
                 p.push(entry)
             }
         }
-        let text = ''
+        let text
         if (this.show_entry_count) {
             text = `Page ${page}/${this.maxium_pages} | Total Entries: ${this.entries.length}`
         } else {
