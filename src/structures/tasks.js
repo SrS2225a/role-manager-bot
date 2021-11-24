@@ -21,7 +21,7 @@ class Reminder {
         return false
     }
 
-    async finish_reminder(db, timer) {
+    async finish_reminder(db, timer, client) {
         if (!timer.repeat) {
             await db.query("DELETE FROM remind WHERE id = $1 and member = $2", [timer.id, timer.member])
         } else {
@@ -29,6 +29,7 @@ class Reminder {
             await db.query("UPDATE remind SET date = $1, assigned = $2 WHERE id = $3 and member = $4", [timer.date + time, timer.assigned + time, timer.id, timer.member])
         }
         await db.release()
+        await this.dispatch_reminder(client)
     }
 
     async call_reminder(client, timer, db) {
@@ -41,12 +42,11 @@ class Reminder {
                 const channel = client.channels.cache.get(timer.destination) || await client.channels.fetch(timer.destination)
                 await channel.send(msg)
             }
-            await this.finish_reminder(db, timer)
         } catch (e) {
-            await this.dispatch_reminder(client)
             console.log(e)
+        } finally {
+            await this.finish_reminder(db, timer, client)
         }
-        await this.dispatch_reminder(client)
     }
 
     async dispatch_reminder(client) {
@@ -77,9 +77,10 @@ class Poll {
         return false
     }
 
-    async finish_poll(db, poll) {
+    async finish_poll(db, poll, client) {
         await db.query("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", [poll.guild, poll.message, 'poll'])
         await db.release()
+        await this.dispatch_poll(client)
     }
 
     async call_poll(client, poll, db) {
@@ -110,12 +111,11 @@ class Poll {
             }
 
             await msg.edit({embeds: [embed]})
-            await this.finish_poll(db, poll)
         } catch (e) {
-            await this.dispatch_poll(client)
             console.log(e)
+        } finally {
+            await this.finish_poll(db, poll, client)
         }
-        await this.dispatch_poll(client)
     }
 
     async dispatch_poll(client) {
@@ -176,19 +176,19 @@ class Giveaway {
                 .setTitle(embed_content.title)
                 .setDescription(`**Winners:** ${final_winners}\n**Ended:** <t:${Math.round(ends.valueOf() / 1000)}:R>`)
             await msg.edit({embeds: [embed]})
-            await this.finish_giveaway(db, giveaway)
             const winner_msg = await channel.send(`Congratulations, ${final_winners}! You won the giveaway!`)
             await winner_msg.delete({timeout: 10000})
         } catch (e) {
-            await this.dispatch_giveaway(client)
             console.log(e)
+        } finally {
+            await this.finish_giveaway(db, giveaway, client)
         }
-        await this.dispatch_giveaway(client)
     }
 
-    async finish_giveaway(db, giveaway) {
+    async finish_giveaway(db, giveaway, client) {
         await db.query("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", ['finished', giveaway.guild, giveaway.message, 'giveaway'])
         await db.release()
+        await this.dispatch_giveaway(client)
     }
 }
 
@@ -236,10 +236,10 @@ class AutoRole {
              await member.roles.remove(role)
          }
      } catch (e) {
-         await this.dispatch_autorole(client)
          console.log(e)
+     } finally {
+         await this.dispatch_autorole(client)
      }
-     await this.dispatch_autorole(client)
  }
 }
 

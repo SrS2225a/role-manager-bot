@@ -12,22 +12,15 @@ module.exports = {
             const db = await pool.connect()
             const blacklistedCommand = await db.query('SELECT message FROM blacklist WHERE member = $1 and message = $2 and type = $3 LIMIT 1', [interaction.guildId, command.name, 'command'])
             const blockedUser = await db.query("SELECT message FROM blacklist WHERE member = $1 and type = $2 LIMIT 1", [interaction.user.id, 'user'])
+            await db.release()
             if (blacklistedCommand.rows.length) {interaction.reply(`DisabledCommand: ${command.name} command is disabled.`)}
             else if (blockedUser.rows.length) {interaction.reply(`ClientPermissionsMissing: You are currently blocked from using this bot for **${Util.removeMentions(blockedUser.rows[0].message)}**. If you believe that this is an error, please join the support server @ https://discord.gg/JHkhnzDvWG and explain why.`)}
             else {
                 await command.execute(interaction)
                 const channel = interaction.client.channels.cache.get('866678659862626355')
                 await channel.send(`A new command was ran **${command.data.name}** in guild **${interaction.guild.name} (${interaction.guildId})**`)
-                try {
-                    await db.query("BEGIN")
-                    await db.query('UPDATE bot SET ran = ran + 1')
-                    await db.query("COMMIT")
-                } catch (e) {
-                    await db.query("ROLLBACK")
-                    console.error(e.stack)
-                }
+                await db.query('UPDATE bot SET ran = ran + 1')
             }
-            db.release()
         } catch (error) {
             console.log(error.stack)
             if (error.identifier) {
