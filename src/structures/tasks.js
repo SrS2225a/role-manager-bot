@@ -213,7 +213,7 @@ class AutoRole {
              clearTimeout(client?.autorole_timer)
              const now = new Date()
              if (autorole.date >= now) {
-                 client.autorole_timer =  setTimeout(() => this.call_autorole(client, autorole, db), autorole.date.getTime() - now.getTime())
+                 client.autorole_timer = setTimeout(() => this.call_autorole(client, autorole, db), autorole.date.getTime() - now.getTime())
              } else {
                  await this.call_autorole(client, autorole, db)
              }
