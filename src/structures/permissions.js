@@ -5,12 +5,12 @@ function userPermissions(message, permission) {
     } else {
         var _a;
         var required = (_a = permission) !== null && _a !== void 0 ? _a : new Permissions();
-        const permissions = message.channel.permissionsFor(message.user)
+        const permissions = message.channel.permissionsFor(message.user);
         if (!permissions) {
             return (() => {
                 throw {
                     identifier: "ClientPermissionsNoPermissions",
-                    message: "I was unable to resolve my permissions in the command invocation channel!"
+                    message: "I was unable to resolve the end-user's permissions in the command invocation channel!"
                 }
             })()
         }

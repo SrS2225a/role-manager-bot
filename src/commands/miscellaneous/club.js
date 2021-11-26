@@ -1,7 +1,7 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {Formatters, MessageEmbed, Permissions} = require("discord.js");
-const {rolePermissions} = require("../../structures/permissions");
+const {rolePermissions, userPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("club")
@@ -20,7 +20,8 @@ module.exports = {
                 .setRequired(true))
             .addRoleOption(option =>
             option.setName("role")
-                .setDescription("The role required to create clubs")))
+                .setDescription("The role required to create clubs")
+                .setRequired(false)))
         .addSubcommand(subcommand =>
         subcommand
             .setName("create")
@@ -109,15 +110,15 @@ module.exports = {
             if (!category.type === 'GUILD_CATEGORY') {return message.reply("The category argument must be a valid category channel")}
             const role = await message.options.getRole("role")
             const type = await db.query("SELECT system FROM leveling WHERE guild = $1 and system= $2", [message.guildId, 'points'])
-            const check1 = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $5", [message.guildId, 'points', category.id, channel.id, role.id])
+            const check1 = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $5", [message.guildId, 'points', category.id, channel.id, role?.id])
             if (check1.rows.length) {
-                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4", [message.guildId, 'points', category.id, channel.id, role.id])
+                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", [message.guildId, 'points', category.id, channel.id, role?.id])
                 await message.channel.send("Clubs requirement deleted successfully!")
             } else if (!type.rows.length) {
-                await db.query("INSERT INTO leveling(guild, system, role, level, difficulty) VALUES($1, $2, $3, $4, $5)", [message.guildId, 'points', category.id, channel.id, role.id])
+                await db.query("INSERT INTO leveling(guild, system, role, level, difficulty) VALUES($1, $2, $3, $4, $5)", [message.guildId, 'points', category.id, channel.id, role?.id])
                 await message.channel.send("Clubs requirement set successfully!")
             } else {
-                await db.query("UPDATE leveling SET role = $1, level = $2, difficulty = $3 WHERE guild = $4 and system = $5", [category.id, channel.id, role.id, message.guildId, 'points'])
+                await db.query("UPDATE leveling SET role = $1, level = $2, difficulty = $3 WHERE guild = $4 and system = $5", [category.id, channel.id, role?.id, message.guildId, 'points'])
                 await message.channel.send("Club requirement updated successfully!")
             }
         } else if (message.options.getSubcommand() === "create") {
@@ -129,7 +130,7 @@ module.exports = {
             const owners = [await message.options.getMember("representative1"), await message.options.getMember("representative2"), await message.options.getMember("representative3")].filter(item => typeof item === 'string')
             const club = await db.query("SELECT level, role, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])
             if (club.rows.length) {
-                rolePermissions(message, [club.rows[0].difficulty])
+                rolePermissions(message, [club?.rows[0].difficulty || message.guild.roles.everyone.id])
                 await message.reply(`Creating the club with the name ${name}!`)
                 const embed = new MessageEmbed()
                     .setTitle(`${name} Club`)
@@ -182,7 +183,7 @@ module.exports = {
             const club = await db.query("SELECT channel, message, role FROM club WHERE guild = $1 and channel = $2", [message.guildId, channel.id])
             const check2 = await db.query("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])
             if (club.rows.length) {
-                rolePermissions(message, check2.rows[0].difficulty)
+                rolePermissions(message, check2.rows[0].difficulty || message.guild.roles.everyone.id)
                 await message.reply(`Editing the club with the name ${name}`)
                 const clubChannel = await message.guild.channels.fetch(check2.rows[0].level)
                 const msg = await clubChannel.messages.fetch(club.rows[0].message)
@@ -232,7 +233,7 @@ module.exports = {
             const del = await db.query("SELECT channel, message, role FROM club WHERE guild = $1 and channel = $2", [message.guildId, channel.id])
             if (del.rows.length) {
                 const owner = await db.query("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])
-                rolePermissions(message, owner.rows[0].difficulty)
+                rolePermissions(message, [owner.rows[0].difficulty || message.guild.roles.everyone.id])
                 await message.reply(`Deleting the club with the name ${channel.name}`)
                 const menu = await message.guild.roles.fetch(owner.rows[0].difficulty)
                 const main = await message.guild.channels.fetch(owner.rows[0].level)
@@ -262,7 +263,7 @@ module.exports = {
             const club = await db.query("SELECT message, role FROM club WHERE guild = $1 and channel= $2", [message.guildId, channel.id])
             const check3 = await db.query("SELECT difficulty FROM leveling WHERE guild = $1", [message.guildId])
             if (club.rows.length) {
-                rolePermissions(message, check3.rows[0]?.difficulty)
+                userPermissions(message, ["MANAGE_GUILD", "MANAGE_MESSAGES"])
                 const ch = await db.query("SELECT member FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", [message.guildId, member.id, club.rows[0].role, 'club'])
                 if (!ch.rows.length) {
                     let remove = false
