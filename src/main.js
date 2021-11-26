@@ -11,11 +11,11 @@ const client = new Client({intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_M
 const commands = []
 const guildCommands = []
 client.commands = new Collection()
-const commandFolders = fs.readdirSync('src/commands/')
+const commandFolders = fs.readdirSync('commands')
 for (const folder of commandFolders) {
-    const commandFiles = fs.readdirSync(`src/commands/${folder}/`).filter(file => file.endsWith('.js'))
+    const commandFiles = fs.readdirSync(`commands/${folder}/`).filter(file => file.endsWith('.js'))
     for (const file of commandFiles) {
-        const command = require(`../src/commands/${folder}/${file}`)
+        const command = require(`./commands/${folder}/${file}`)
         client.commands.set(command.data.name, command)
             if (command.data.name === "dev") {
                 guildCommands.push(command.data.toJSON())
@@ -31,10 +31,10 @@ for (const folder of commandFolders) {
     await rest.put(Routes.applicationGuildCommands(json["clientID"], '531247629649182750'), {body: guildCommands})
 })()
 
-const eventFiles = fs.readdirSync('src/events').filter(file=> file.endsWith('.js'))
-const eventFolders = fs.readdirSync('src/events').filter(file=> fs.statSync(`src/events/${file}`).isDirectory())
+const eventFiles = fs.readdirSync('events').filter(file=> file.endsWith('.js'))
+const eventFolders = fs.readdirSync('events').filter(file=> fs.statSync(`events/${file}`).isDirectory())
 for (const file of eventFiles) {
-    const event = require(`../src/events/${file}`)
+    const event = require(`./events/${file}`)
     if (event.once) {
         client.once(event.name, (...args) => event.execute(...args))
     } else {
@@ -43,9 +43,9 @@ for (const file of eventFiles) {
 
 }
 for (const folder of eventFolders) {
-    const eventFiles = fs.readdirSync(`src/events/${folder}`).filter(file => file.endsWith('.js'))
+    const eventFiles = fs.readdirSync(`events/${folder}`).filter(file => file.endsWith('.js'))
     for (const file of eventFiles) {
-        const event = require(`../src/events/${folder}/${file}`)
+        const event = require(`./events/${folder}/${file}`)
         if (event.once) {
             client.once(event.name, (...args) => event.execute(...args))
         } else {

@@ -62,7 +62,6 @@ function display_time(duration, display_to=7) {
     const result = []
     for(let x = 0; x < display_to; x++) {
         const value = Math.floor(duration / intervals[x][1])
-        console.log(Math.floor(duration / intervals[x][1]))
         if(value) {
             duration -= value * intervals[x][1]
             result.push(Math.round(value) + ' ' + intervals[x][0])
