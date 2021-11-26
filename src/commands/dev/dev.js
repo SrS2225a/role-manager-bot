@@ -126,6 +126,7 @@ module.exports = {
                 for (const file of commandFiles) {
                     const command = require(`../../commands/${folder}/${file}`)
                     if (command.data.name === pull) {
+                        message.client.commands.delete(command.data.name)
                         message.client.commands.set(command.data.name, command)
                         await message.reply(`Successfully loaded ${command.data.name}`)
                         break
