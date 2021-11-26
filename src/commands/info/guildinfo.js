@@ -59,13 +59,13 @@ module.exports = {
                 {name: "Roles", value: Formatters.codeBlock(roles.length), inline: true},
                 {name: "Categories", value: Formatters.codeBlock(category_count), inline: true},
                 {name: "Verification", value: Formatters.codeBlock(guild.verificationLevel), inline: true},
-                {name: "System Channel", value: Formatters.codeBlock(guild.systemChannel), inline: true},
+                {name: "System Channel", value: Formatters.codeBlock(guild.systemChannel.name), inline: true},
                 {name: "Vanity URL", value: Formatters.codeBlock(guild.vanityURLCode), inline: true},
                 {name: "2FA", value: Formatters.codeBlock(guild.mfaLevel), inline: true},
                 {name: "Explicit Content", value: Formatters.codeBlock(guild.explicitContentFilter), inline: true},
                 {name: "Notifications", value: Formatters.codeBlock(guild.defaultMessageNotifications), inline: true},
-                {name: "Splash", value: guild.splash?Formatters.codeBlock(`['Click Me'](${guild.splash.url})`):Formatters.codeBlock('False'), inline: true},
-                {name: "Banner", value: guild.banner?Formatters.codeBlock(`['Click Me'](${guild.banner.url})`):Formatters.codeBlock('False'), inline: true})
+                {name: "Splash", value: guild.splash?Formatters.codeBlock(`['Click Me'](${guild.splashURL()})`):Formatters.codeBlock('False'), inline: true},
+                {name: "Banner", value: guild.banner?Formatters.codeBlock(`['Click Me'](${guild.bannerURL()})`):Formatters.codeBlock('False'), inline: true})
         if (guild.description) {embed.setDescription(guild.description)}
         await message.reply({embeds: [embed]});
 
