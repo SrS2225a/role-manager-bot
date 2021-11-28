@@ -270,12 +270,15 @@ module.exports = {
         } else if (message.options.getSubcommand() === "sql") {
             const query = message.options.getString("argument")
             try {
-                await message.deferReply()
                 const result = await db.query(query)
                 if (result.rows.length === 0) {
-                    await message.editReply("The query did not return anything")
+                    await message.reply("The query did not return anything")
                 } else {
-                    await message.editReply(Formatters.codeBlock(result.rows), "json")
+                    const paginate = new paginator(message, JSON.stringify(result.rows, null, 2).split('\n'))
+                    paginate.per_page = 40
+                    paginate.show_entry_count = false
+                    paginate.lang = "json"
+                    await paginate.paginate()
                 }
             } catch (error) {
                 await message.channel.send(`\`\`\`js\n${error.stack}\`\`\``)

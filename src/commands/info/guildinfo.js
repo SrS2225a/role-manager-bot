@@ -64,8 +64,8 @@ module.exports = {
                 {name: "2FA", value: Formatters.codeBlock(guild.mfaLevel), inline: true},
                 {name: "Explicit Content", value: Formatters.codeBlock(guild.explicitContentFilter), inline: true},
                 {name: "Notifications", value: Formatters.codeBlock(guild.defaultMessageNotifications), inline: true},
-                {name: "Splash", value: guild.splash?Formatters.codeBlock(`['Click Me'](${guild.splashURL()})`):Formatters.codeBlock('False'), inline: true},
-                {name: "Banner", value: guild.banner?Formatters.codeBlock(`['Click Me'](${guild.bannerURL()})`):Formatters.codeBlock('False'), inline: true})
+                {name: "Splash", value: guild.splash?Formatters.codeBlock(`[Click Here](${guild.splashURL()})`):Formatters.codeBlock('False'), inline: true},
+                {name: "Banner", value: guild.banner?Formatters.codeBlock(`[Click Here](${guild.bannerURL()})`):Formatters.codeBlock('False'), inline: true})
         if (guild.description) {embed.setDescription(guild.description)}
         await message.reply({embeds: [embed]});
 

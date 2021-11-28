@@ -308,8 +308,8 @@ module.exports = {
                 .addField("Total time", `${display_time(month[0] + week[0] + day[0], 6)} voice and ${display_time(month[1] + week[1] + day[1], 6)} stage`, true)
                 .addField("Average per day", `${display_time((month[0] + week[0] + day[0]) / (date.rows[0]?.lookback || 30), 6)} voice and ${display_time((month[1] + week[1] + day[1]) / (date.rows[0]?.lookback || 30), 6)} stage`, true)
                 .addField("Average per user", `${display_time((month[0] + week[0] + day[0]) / (totalUserCount.rows[0].count), 6)} voice and ${display_time((month[1] + week[1] + day[1]) / (totalUserCount.rows[0].count), 6)} stage`, true)
-                .addField("Top 5 users", topUser, true)
-                .addField("Top 5 channels", topChannel, true)
+                .addField("Top users", topUser, true)
+                .addField("Top channels", topChannel, true)
             const chart = new ChartJSNodeCanvas({width: 800, height: 600,  plugins: {
                     globalVariableLegacy: ['chartjs-adapter-moment']}})
             const chartData = {

@@ -10,6 +10,7 @@ module.exports = {
             .setDescription("The user to check invites for.")
             .setRequired(false)),
     async execute(message) {
+        // TODO: Add support to show invites overtime as a graph.
         const db = await pool.connect()
         const user = message.options.getUser("user") || message.user
         const totalInvites = await db.query("SELECT SUM(amount)::integer AS a, SUM(amount2)::integer AS b, SUM(amount3)::integer AS c FROM invite WHERE guild = $1 and member = $2 GROUP BY member", [message.guild.id, user.id])

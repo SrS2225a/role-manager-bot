@@ -8,6 +8,7 @@ class paginator {
         this.channel = context.channel
         this.entries = entries;
         this.per_page = 20
+        this.lang = ''
         let pages = Math.floor(this.entries.length / this.per_page)
         let left_over = this.entries.length % this.per_page
         if (left_over) (pages += 1)
@@ -50,7 +51,7 @@ class paginator {
                 this.embed.setFooter(text)
             }
         }
-        this.embed.setDescription(Formatters.codeBlock(p.join('\n')))
+        this.embed.setDescription(Formatters.codeBlock(this.lang, p.join('\n')))
     }
 
     #prepare_message(entries, page) {
@@ -85,7 +86,7 @@ class paginator {
                 await this.message.editReply({embeds: [this.embed], components: [components]})
             } else {
                 if (this.maxium_pages > 1) {
-                    await this.message.reply({embeds: [this.em2bed], components: [components]})
+                    await this.message.reply({embeds: [this.embed], components: [components]})
                 } else {
                     await this.message.reply({embeds: [this.embed]})
                 }
@@ -307,7 +308,7 @@ class PaginatorAsTable {
             await first_page
         }
         const filter = i => i.user.id === this.author.id
-        const collector = this.channel.createMessageComponentCollector({filter, time: 60000})
+        const collector = this.channel.createMessageComponentCollector({filter, time: 128000})
         collector.on('collect', async i => {
             if (i.customId === 'firstPage') {
                 await this.#show_page(1, i)
@@ -481,275 +482,5 @@ class PaginateWhileRunning {
         })
     }
 }
-
-// class PaginateWithConfirm extends paginator {
-//     constructor(context, entries, title, response, complete, give) {
-//         super(context, {
-//             entries: entries,
-//         });
-//         this.title = title
-//         this.response = response
-//         this.complete = complete
-//         this.give = give
-//     }
-//     async getButtons(page) {
-//         let disableButtons = [false, false]
-//         if (page === this.maxium_pages) {
-//             disableButtons = [false, true]
-//         } else if (page === 1) {
-//             disableButtons = [true, false]
-//         }
-//         if (this.maxium_pages === 2) {
-//             return [new MessageActionRow()
-//                 .addComponents(
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[0])
-//                         .setCustomId('back')
-//                         .setEmoji('◀')/ class PaginateWithConfirm extends paginator {
-//     constructor(context, entries, title, response, complete, give) {
-//         super(context, {
-//             entries: entries,
-//         });
-//         this.title = title
-//         this.response = response
-//         this.complete = complete
-//         this.give = give
-//     }
-//     async getButtons(page) {
-//         let disableButtons = [false, false]
-//         if (page === this.maxium_pages) {
-//             disableButtons = [false, true]
-//         } else if (page === 1) {
-//             disableButtons = [true, false]
-//         }
-//         if (this.maxium_pages === 2) {
-//             return [new MessageActionRow()
-//                 .addComponents(
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[0])
-//                         .setCustomId('back')
-//                         .setEmoji('◀')
-//                         .setStyle('PRIMARY'),
-//                     new MessageButton()
-//                         .setCustomId('stop')
-//                         .setEmoji('⏹')
-//                         .setStyle('DANGER'),
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[1])
-//                         .setCustomId('next')
-//                         .setEmoji('▶')
-//                         .setStyle('PRIMARY')
-//                 ),
-//                 new MessageActionRow()
-//                     .addComponents(
-//                         new MessageButton()
-//                             .setCustomId('accept')
-//                             .setEmoji('✅')
-//                             .setLabel('Accept')
-//                             .setStyle('SECONDARY'),
-//                         new MessageButton()
-//                             .setCustomId('deny')
-//                             .setEmoji('❎')
-//                             .setLabel('Deny')
-//                             .setStyle('SECONDARY')
-//                     )]
-//         } else {
-//             return [new MessageActionRow()
-//                 .addComponents(
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[0])
-//                         .setCustomId('firstPage')
-//                         .setEmoji('⏪')
-//                         .setStyle('PRIMARY'),
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[0])
-//                         .setCustomId('back')
-//                         .setEmoji('◀')
-//                         .setStyle('PRIMARY'),
-//                     new MessageButton()
-//                         .setCustomId('stop')
-//                         .setEmoji('⏹')
-//                         .setStyle('DANGER'),
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[1])
-//                         .setCustomId('next')
-//                         .setEmoji('▶')
-//                         .setStyle('PRIMARY'),
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[1])
-//                         .setCustomId('lastPage')
-//                         .setEmoji('⏩')
-//                         .setStyle('PRIMARY')
-//                 ),
-//                 new MessageActionRow()
-//                     .addComponents(
-//                         new MessageButton()
-//                             .setCustomId('accept')
-//                             .setEmoji('✅')
-//                             .setLabel('Accept')
-//                             .setStyle('SECONDARY'),
-//                         new MessageButton()
-//                             .setCustomId('deny')
-//                             .setEmoji('❎')
-//                             .setLabel('Deny')
-//                             .setStyle('SECONDARY')
-//                     )]
-//         }
-//     }
-//
-//     async paginate() {
-//         const first_page = await this.show_page(1, null, true)
-//         if (!first_page) {
-//             await first_page
-//         }
-//         const collector = this.message.createMessageComponentCollector()
-//         collector.on('collect', async i => {
-//             if (i.customId === 'firstPage') {
-//                 await this.show_page(1, i)
-//             } else if (i.customId === 'back') {
-//                 await this.show_page(this.current_page - 1, i)
-//             } else if (i.customId === 'stop') {
-//                 await i.message.delete()
-//                 this.paginating = false
-//             } else if (i.customId === 'next') {
-//                 await this.show_page(this.current_page + 1, i)
-//             } else if (i.customId === 'lastPage') {
-//                 await this.show_page(this.maxium_pages, i)
-//             } else if (i.customId === 'accept') {
-//                 const em = new MessageEmbed()
-//                     .setTitle(this.title[0])
-//                     .setDescription(this.response[0])
-//                     .setColor('GREEN')
-//                 if (this.give) {await this.author.add(this.give)}
-//                 await this.author.send({embeds: [em]})
-//                 this.paginating = false
-//             } else if (i.customId === 'deny') {
-//                 const em = new MessageEmbed()
-//                     .setTitle(this.title[1])
-//                     .setDescription(this.response[1])
-//                     .setColor('GREEN')
-//                 await this.author.send({embeds: [em]})
-//                 this.paginating = false
-//             }
-//             await i.deferUpdate();
-//         })
-//         collector.on('end', async i => {
-//             this.paginating = false
-//             this.complete.reply('This response has been sent!')
-//         })
-//     }
-// }
-
-//                         .setStyle('PRIMARY'),
-//                     new MessageButton()
-//                         .setCustomId('stop')
-//                         .setEmoji('⏹')
-//                         .setStyle('DANGER'),
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[1])
-//                         .setCustomId('next')
-//                         .setEmoji('▶')
-//                         .setStyle('PRIMARY')
-//                 ),
-//                 new MessageActionRow()
-//                     .addComponents(
-//                         new MessageButton()
-//                             .setCustomId('accept')
-//                             .setEmoji('✅')
-//                             .setLabel('Accept')
-//                             .setStyle('SECONDARY'),
-//                         new MessageButton()
-//                             .setCustomId('deny')
-//                             .setEmoji('❎')
-//                             .setLabel('Deny')
-//                             .setStyle('SECONDARY')
-//                     )]
-//         } else {
-//             return [new MessageActionRow()
-//                 .addComponents(
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[0])
-//                         .setCustomId('firstPage')
-//                         .setEmoji('⏪')
-//                         .setStyle('PRIMARY'),
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[0])
-//                         .setCustomId('back')
-//                         .setEmoji('◀')
-//                         .setStyle('PRIMARY'),
-//                     new MessageButton()
-//                         .setCustomId('stop')
-//                         .setEmoji('⏹')
-//                         .setStyle('DANGER'),
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[1])
-//                         .setCustomId('next')
-//                         .setEmoji('▶')
-//                         .setStyle('PRIMARY'),
-//                     new MessageButton()
-//                         .setDisabled(disableButtons[1])
-//                         .setCustomId('lastPage')
-//                         .setEmoji('⏩')
-//                         .setStyle('PRIMARY')
-//                 ),
-//                 new MessageActionRow()
-//                     .addComponents(
-//                         new MessageButton()
-//                             .setCustomId('accept')
-//                             .setEmoji('✅')
-//                             .setLabel('Accept')
-//                             .setStyle('SECONDARY'),
-//                         new MessageButton()
-//                             .setCustomId('deny')
-//                             .setEmoji('❎')
-//                             .setLabel('Deny')
-//                             .setStyle('SECONDARY')
-//                     )]
-//         }
-//     }
-//
-//     async paginate() {
-//         const first_page = await this.show_page(1, null, true)
-//         if (!first_page) {
-//             await first_page
-//         }
-//         const collector = this.message.createMessageComponentCollector()
-//         collector.on('collect', async i => {
-//             if (i.customId === 'firstPage') {
-//                 await this.show_page(1, i)
-//             } else if (i.customId === 'back') {
-//                 await this.show_page(this.current_page - 1, i)
-//             } else if (i.customId === 'stop') {
-//                 await i.message.delete()
-//                 this.paginating = false
-//             } else if (i.customId === 'next') {
-//                 await this.show_page(this.current_page + 1, i)
-//             } else if (i.customId === 'lastPage') {
-//                 await this.show_page(this.maxium_pages, i)
-//             } else if (i.customId === 'accept') {
-//                 const em = new MessageEmbed()
-//                     .setTitle(this.title[0])
-//                     .setDescription(this.response[0])
-//                     .setColor('GREEN')
-//                 if (this.give) {await this.author.add(this.give)}
-//                 await this.author.send({embeds: [em]})
-//                 this.paginating = false
-//             } else if (i.customId === 'deny') {
-//                 const em = new MessageEmbed()
-//                     .setTitle(this.title[1])
-//                     .setDescription(this.response[1])
-//                     .setColor('GREEN')
-//                 await this.author.send({embeds: [em]})
-//                 this.paginating = false
-//             }
-//             await i.deferUpdate();
-//         })
-//         collector.on('end', async i => {
-//             this.paginating = false
-//             this.complete.reply('This response has been sent!')
-//         })
-//     }
-// }
-
 
 module.exports = {paginator, PaginatorAsTable, PaginateWhileRunning}

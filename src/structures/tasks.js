@@ -224,7 +224,7 @@ class AutoRole {
  }
 
  async call_autorole(client, autorole, db) {
-     await db.query("DELETE FROM autorole WHERE guild = $1 and member = $2 and role = $3 and date = $4", [autorole.guild, autorole.member, autorole.role, autorole.date])
+     await db.query("DELETE FROM autorole WHERE guild = $1 and member = $2 and role = $3 and action = $4", [autorole.guild, autorole.member, autorole.role, autorole.action])
      await db.release()
      try {
          const guild = client.guilds.cache.get(autorole.guild)

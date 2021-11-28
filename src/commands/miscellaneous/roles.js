@@ -6,7 +6,6 @@ module.exports = {
         .setDescription("Shows a list of all the roles in the server"),
     async execute(message) {
         const roles = message.guild.roles.cache
-        console.log(roles.map(role => role.name))
         const paginate = new paginator(message, roles.map(role => role.name))
         paginate.show_points=true
         await paginate.paginate()
