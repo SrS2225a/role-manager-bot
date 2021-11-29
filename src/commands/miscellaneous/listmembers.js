@@ -14,8 +14,10 @@ module.exports = {
             .setRequired(false)),
     async execute(message) {
         const role = await message.options.getRole("role")
-        const flag = await message.options.getBoolean("has") || false
-        const pages = flag ? new paginator(message, role.members.map(member => member.user.username + "#" + member.user.discriminator)) :  new paginator(message, !role.members.map(member => member.user.username + "#" + member.user.discriminator))
+        const flag = await message.options.getBoolean("has") || true
+        const result = flag ? message.guild.members.cache.filter(member => member.roles.cache.has(role.id)) : message.guild.members.cache.filter(member => !member.roles.cache.has(role.id))
+        if (result.size === 0) return message.reply("No members found")
+        const pages = new paginator(message, result.map(member => member.user.tag))
         pages.show_points = true
         await pages.paginate()
     }

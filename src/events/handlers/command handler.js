@@ -27,7 +27,7 @@ module.exports = {
                 await interaction.channel.send(`${error.identifier}: ${Util.removeMentions(error.message)}`)
             } else {
                 const embed = new MessageEmbed()
-                    .setColor('RANDOM')
+                    .setColor('WHITE')
                     .setTitle("An unexpected error has occurred")
                     .setDescription(`**This error has automatically been sent to the bot developers and will work to sort this out ASAP**\n• [For more support, visit the support server here](https://discord.gg/JHkhnzDvWG)\n\n${Formatters.codeBlock('js', error)}`)
                 interaction.channel.send({embeds: [embed]});
