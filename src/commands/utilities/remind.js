@@ -47,7 +47,7 @@ module.exports = {
             }
             const embed = new MessageEmbed()
                 .setTitle("Reminders")
-                .setColor(0x00FF00)
+                .setColor('WHITE')
                 .setFooter(`You have ${reminders.rows.length} reminders`)
             for (const reminder of reminders.rows) {
                 const channel = message.client.channels.cache.get(reminder.destination) || await message.client.channels.fetch(reminder.destination)

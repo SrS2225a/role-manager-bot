@@ -25,6 +25,7 @@ module.exports = {
             }
             const embed = new MessageEmbed()
                 .setTitle("Channel Info")
+                .setColor('WHITE')
                 .setFields({name: "Channel Name", value: Formatters.codeBlock(channel.name), inline: true},
                     {name: "Category", value: Formatters.codeBlock(channel.parent.name), inline: true},
                     {name: "Channel ID", value: Formatters.codeBlock(channel.id)},

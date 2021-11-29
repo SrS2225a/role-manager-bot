@@ -26,7 +26,7 @@ module.exports = {
             const embed = new MessageEmbed()
                 .setTitle(`${user.username}'s Avatar`)
                 .setImage(user.displayAvatarURL({dynamic: true, size: 2048}))
-                .setColor('RANDOM')
+                .setColor('WHITE')
             message.reply({embeds: [embed]})
         }
     }

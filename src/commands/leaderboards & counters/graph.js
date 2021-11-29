@@ -62,14 +62,13 @@ module.exports = {
             const embed = new MessageEmbed()
                 .setTitle(`${message.guild.name} Member Graph`)
                 .setDescription(`Showing the last ${lookback[0]?.lookback || 30} days.`)
-                .setColor(0x00AE86)
-                .addField("Members Joined", `${month[0]} (${Math.round(month[0] / (month[0] + month[1]) * 100)}%)`, true)
-                .addField("Members Left", `${month[1]} (${Math.round(month[1] / (month[0] + month[1]) * 100)}%)`, true)
-                .addField("Total Members", `${month[0] + month[1]}`, true)
-
-                .addField("Members Per Day", `${Math.round(month[0] / (lookback[0]?.lookback || 30))}`, true)
-                .addField("Net Change", `${month[0] - month[1]}`, true)
+                .setColor('WHITE')
+                .addField("Members Joined", `${month[0]}`, true)
+                .addField("Members Left", `${month[1]}`, true)
+                .addField("Total Members", `${message.guild.memberCount}`, true)
+                .addField("Member Retention", `${Math.round(month[0] / (month[0] + month[1]) * 100)}%`, true)
                 .addField("Average Change", `${Math.round((month[0] - month[1]) / (month[0] + month[1]) * 100)}%`, true)
+                .addField("Net Change", `${month[0] - month[1]}`, true)
                 .addField("Day", `${day[0]} joins, ${day[1]} leaves`, true)
                 .addField("Week", `${week[0]} joins, ${week[1]} leaves`, true)
                 .addField("Month", `${month[0]} joins, ${month[1]} leaves`, true)
@@ -184,7 +183,7 @@ module.exports = {
                 topChannel += `<#${row.channel}> - ${row.sum}\n`
             }
             const embed = new MessageEmbed()
-                .setColor(0x00AE86)
+                .setColor('WHITE')
                 .setTitle(`Messages in ${message.guild.name}`)
                 .setDescription(`Showing the last ${date.rows[0]?.lookback || 30} days`)
                 .addField("Daily Average", `${Math.round(day / (day + week + month) * 100)}% With ${day} messages`, true)
@@ -299,17 +298,16 @@ module.exports = {
                 topChannel += `<#${row.channel}> - ${display_time(row.b, 6)} \n`
             }
             const embed = new MessageEmbed()
-                .setColor(0x00AE86)
+                .setColor('WHITE')
                 .setTitle(`Voice Activity for ${message.guild.name}`)
                 .setDescription(`Showing the last ${date.rows[0]?.lookback || 30} days`)
                 .addField("Day", `${display_time(day[0], 6)} voice and ${display_time(day[1], 6)} stage`, true)
                 .addField("Week", `${display_time(week[0], 6)} voice and ${display_time(week[1], 6)} stage`, true)
                 .addField("Month", `${display_time(month[0], 6)} voice and ${display_time(month[1], 6)} stage`, true)
-                .addField("Total time", `${display_time(month[0] + week[0] + day[0], 6)} voice and ${display_time(month[1] + week[1] + day[1], 6)} stage`, true)
-                .addField("Average per day", `${display_time((month[0] + week[0] + day[0]) / (date.rows[0]?.lookback || 30), 6)} voice and ${display_time((month[1] + week[1] + day[1]) / (date.rows[0]?.lookback || 30), 6)} stage`, true)
-                .addField("Average per user", `${display_time((month[0] + week[0] + day[0]) / (totalUserCount.rows[0].count), 6)} voice and ${display_time((month[1] + week[1] + day[1]) / (totalUserCount.rows[0].count), 6)} stage`, true)
+                .addField("Average per user", `${display_time(Math.round(month[0] / totalUserCount.rows[0].count), 6)} voice and ${display_time(Math.round(month[1] / totalUserCount.rows[0].count), 6)} stage`, true)
                 .addField("Top users", topUser, true)
                 .addField("Top channels", topChannel, true)
+
             const chart = new ChartJSNodeCanvas({width: 800, height: 600,  plugins: {
                     globalVariableLegacy: ['chartjs-adapter-moment']}})
             const chartData = {

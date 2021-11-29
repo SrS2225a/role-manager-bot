@@ -15,13 +15,14 @@ module.exports = {
                         .setDescription('Hi there, if you are wondering why your commands are no longer working the reason being is that we have moved to discords new `slash command system` which means that commands are now in the form of `/command` instead of `*command`.' +
                             'This is because message content will become a message intent in March of 2022, requiring bots to apply to use them. (See https://support.discord.com/hc/en-us/articles/4410940809111 for more information).' +
                             '\n\nYou can invite the bot with the new permission scope here: https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot%20applications.commands')
+                        .setColor('WHITE')
                     await message.channel.send({embeds: [embed]})
                 }
 
                 const graph = await db.query("SELECT messages, day, member, channel FROM message WHERE guild = $1 and member = $2 and channel = $3 and day = $4 LIMIT 1", [message.guild.id, message.author.id, message.channel.id, new Date()]);
                 if (graph.rowCount === 0) {
                     await db.query("INSERT INTO message (guild, member, channel, messages, day) VALUES ($1, $2, $3, 1, $4)", [message.guild.id, message.author.id, message.channel.id, new Date()]);
-                    await db.query("DELETE FROM message WHERE day < $1", [new Date(Date.now() - 10368000000)]);
+                    await db.query("DELETE FROM message WHERE day < $1", [new Date(Date.now() - 8640000000)]);
                 } else {
                     await db.query("UPDATE message SET messages = messages + 1 WHERE guild = $1 and member = $2 and channel = $3 and day = $4", [message.guild.id, message.author.id, message.channel.id, new Date()]);
                 }
@@ -102,11 +103,7 @@ module.exports = {
                                 })
                             }
                         } else {
-                            await message.delete()
-                            const forgotSend = await message.channel.send({
-                                content: `${Formatters.userMention(message.author.id)} just forgot how to count!`,
-                                timeout: 5000
-                            });
+                            const forgotSend = await message.channel.send({content: `${Formatters.userMention(message.author.id)} just forgot how to count!`,});
                             setTimeout(async () => {
                                 await forgotSend.delete();
                             }, 5000);
@@ -118,7 +115,6 @@ module.exports = {
                             }
                         }
                     } else {
-                        await message.delete()
                         const lonelySend = await message.channel.send({content: `${Formatters.userMention(message.author.id)} is lonely and needs someone to count with!`});
                         setTimeout(async () => {
                             await lonelySend.delete();

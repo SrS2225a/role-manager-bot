@@ -10,7 +10,7 @@ module.exports = {
             const member = await reaction.message.guild.members.fetch(user.id);
             // change custom emoji to id if needed
             const react = await db.query("SELECT * FROM reaction WHERE guild = $1 and channel = $2 and message = $3 and emote = $4", [reaction.message.guild.id, reaction.message.channel.id, reaction.message.id, reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name])
-            if (react.rowCount > 0 && !member.bot) {
+            if (!member.user.bot && react.rowCount > 0) {
                 if (!member.roles.cache.has(react.rows[0]?.blacklist)) {
                     if (react.rows[0].type === "once") {
                         const roles = await db.query("SELECT role FROM reaction WHERE guild = $1 and channel = $2 and message = $3", [reaction.message.guild.id, reaction.message.channel.id, reaction.message.id])
@@ -28,7 +28,6 @@ module.exports = {
                         }
                         await member.roles.add(react.rows[0].role)
                     } else if (react.rows[0].type === "toggle") {
-                        "INSERT INTO reaction VALUES(guild, channel, message, emote, role, type, blacklist)"
                         const roles = await db.query("SELECT role FROM reaction WHERE guild = $1 and channel = $2 and message = $3", [reaction.message.guild.id, reaction.message.channel.id, reaction.message.id])
                         if (roles.rowCount > 0) {
                             // check if the user already has the role in roles and not remove react.rows[0].role

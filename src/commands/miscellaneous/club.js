@@ -136,6 +136,7 @@ module.exports = {
                     .setTitle(`${name} Club`)
                     .setDescription(`${description} \n\n**Representatives:** \n${owners.map(owner => Formatters.userMention(owner?.user.id)).join(' ')}\n\n React with ☑ to join`)
                     .setImage(graphic)
+                    .setColor('WHITE')
                 const created = await message.guild.roles.create({
                     name: name,
                     color: 'RANDOM'
@@ -223,6 +224,7 @@ module.exports = {
                     .setTitle(`${name} Club`)
                     .setDescription(` ${description} \n\n**Representatives:** \n${owners.map(member => Formatters.userMention(member.id))} \n\n React with ☑ to join`)
                     .setImage(graphic)
+                    .setColor('WHITE')
                 await msg.edit({embeds: [embed]})
                 await message.editReply({content: `Club ${name} edited successfully!`})
             } else {
@@ -261,7 +263,6 @@ module.exports = {
             const channel = await message.options.getChannel("channel")
             const reason = await message.options.getString("reason") || undefined
             const club = await db.query("SELECT message, role FROM club WHERE guild = $1 and channel= $2", [message.guildId, channel.id])
-            const check3 = await db.query("SELECT difficulty FROM leveling WHERE guild = $1", [message.guildId])
             if (club.rows.length) {
                 userPermissions(message, ["MANAGE_GUILD", "MANAGE_MESSAGES"])
                 const ch = await db.query("SELECT member FROM owner WHERE guild = $1 and member = $2 and message = $3 and type = $4", [message.guildId, member.id, club.rows[0].role, 'club'])

@@ -61,7 +61,7 @@ module.exports = {
             const embed = new MessageEmbed()
                 .setTitle(topic)
                 .setDescription(`${questions.map((question, index) => `${indicators[index]} ${question}`).join("\n")} \n\nEnds <t:${Math.round(delta.valueOf() / 1000)}:R>`)
-                .setColor("#00ff00")
+                .setColor('WHITE')
                 .setFooter(`This is a ${multiple_choice} poll`)
 
             // let rows = []
@@ -96,7 +96,7 @@ module.exports = {
                     const delta = new Date(row.date)
                     return `${row.vote.map(vote => vote.indicator).join("")} [${row.message}](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - Ends ${delta.toLocaleString()}`
                 }).join("\n"))
-                .setColor("#00ff00")
+                .setColor('WHITE')
             await message.reply({embeds: [embed]})
         } else if (message.options.getSubcommand() === "end") {
             const poll = await db.query("SELECT * FROM vote WHERE guild = $1 AND id = $2 AND type = $3", [message.guild.id, message.options.getString("poll"), "poll"])

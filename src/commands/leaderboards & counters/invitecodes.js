@@ -3,7 +3,7 @@ const {pool} = require("../../database");
 const {Formatters, MessageEmbed} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("inviteinfo")
+        .setName("invitecodes")
         .setDescription("Shows info about how many members you invited or someone else's")
         .addUserOption(option => option
             .setName("user")

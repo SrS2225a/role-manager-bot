@@ -45,6 +45,7 @@ module.exports = {
             .filter(x => x)
         const embed = new MessageEmbed()
             .setTitle("Guild Info")
+            .setColor('WHITE')
             .setThumbnail(message.guild.iconURL())
             .addFields({name: "Guild Name", value: Formatters.codeBlock(guild.name), inline: true},
                 {name: "Owner", value: Formatters.codeBlock(owner.user.username + '#' + owner.user.discriminator), inline: true},

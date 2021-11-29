@@ -99,6 +99,7 @@ class Poll {
             const embed = new MessageEmbed()
                 .setTitle("Poll Results")
                 .setDescription(`${embed_content.title} \n\nEnded <t:${Math.round(poll.date / 1000)}:R>`)
+                .setColor('WHITE')
 
             for (const reaction of reactions) {
                 const react = reaction[1]
@@ -175,6 +176,7 @@ class Giveaway {
             const embed = new MessageEmbed()
                 .setTitle(embed_content.title)
                 .setDescription(`**Winners:** ${final_winners}\n**Ended:** <t:${Math.round(ends.valueOf() / 1000)}:R>`)
+                .setColor('WHITE')
             await msg.edit({embeds: [embed]})
             const winner_msg = await channel.send(`Congratulations, ${final_winners}! You won the giveaway!`)
             await winner_msg.delete({timeout: 10000})

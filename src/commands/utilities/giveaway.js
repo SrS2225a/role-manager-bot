@@ -65,7 +65,7 @@ module.exports = {
             const embed = new MessageEmbed()
                 .setTitle(name)
                 .setDescription(`React with 🎉 to enter!\n\n${requirement ? `**Requirements:** ${requirement}\n` : ""} **Winners:** ${winners} \n**Ends:** <t:${Math.round(delta.valueOf() / 1000)}:R>`)
-                .setColor("#ff0000")
+                .setColor('WHITE')
             const msg = await message.channel.send({embeds: [embed]});
             await msg.react("🎉");
             await db.query("INSERT INTO vote(guild, message, date, win, type, channel, id) VALUES($1, $2, $3, $4, $5, $6, $7)", [message.guild.id, msg.id, delta, winners, "giveaway", message.channel.id, id]);
@@ -78,7 +78,7 @@ module.exports = {
             }
             const embed = new MessageEmbed()
                 .setTitle("Current giveaways")
-                .setColor("#ff0000")
+                .setColor('WHITE')
                 .setTimestamp();
             for (const row of rows.rows) {
                 const delta = new Date(row.date)

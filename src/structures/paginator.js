@@ -14,7 +14,7 @@ class paginator {
         if (left_over) (pages += 1)
         this.maxium_pages = pages
         this.content = ''
-        this.embed = new MessageEmbed().setColor('RANDOM')
+        this.embed = new MessageEmbed().setColor('WHITE')
         this.paginating = entries.length > this.per_page
         this.show_entry_count = true
         this.show_points = false
@@ -201,7 +201,7 @@ class PaginatorAsTable {
         let left_over = this.entries.length % this.per_page
         if (left_over) (pages += 1)
         this.maxium_pages = pages
-        this.embed = new MessageEmbed().setColor('RANDOM')
+        this.embed = new MessageEmbed().setColor('WHITE')
         this.paginating = entries.length > this.per_page
         this.show_entry_count = true
         this.heading = []

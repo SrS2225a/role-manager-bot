@@ -22,7 +22,7 @@ module.exports = {
         })
         const embed = new MessageEmbed()
             .setTitle("About Dionysus")
-            .setColor('RANDOM')
+            .setColor('WHITE')
             .addFields(
                 {name: "Credits", value: "**Main Devs**\n<@!270848136006729728> <@!508455796783317002>\n**Contributors**\n<@!332180997653135383>", inline: true},
                 {name: "Url's", value: "Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot)\nOpen Source: [Click Here](https://github.com/SrS2225a/role-manager-bot/tree/master)\nSupport: [Click Here](https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here](https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here](https://trello.com/b/Y86Q7qKA/dionysus-bot)\ntop.gg: [Click Here](https://top.gg/bot/437447118127366154)", inline: true},
