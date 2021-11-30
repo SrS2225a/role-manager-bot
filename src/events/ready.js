@@ -19,11 +19,12 @@ module.exports = {
         // define bot.set for usage with .set
         bot.invites = new Collection()
         // noinspection ES6MissingAwait
-        bot.guilds.cache.forEach(async (guild) => {
-            // check if the bot can fetch the guilds invites
-            if (!guild.me.permissions.has("MANAGE_GUILD")) return;
-            const fetchedInvites = await guild.invites.fetch()
-            bot.invites.set(guild.id, new Map(fetchedInvites?.map(invite => [invite.code, invite.uses])))
+        bot.guilds.cache.forEach(async guild => {
+            guild.invites.fetch().then(invites => {
+                bot.invites.set(guild.id, new Map(invites.map(invite => [invite.code, invite.uses])))
+            }).catch(err => {
+                console.log("errored", err)
+            })
         })
 
         // set permissions

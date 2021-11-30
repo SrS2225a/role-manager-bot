@@ -17,6 +17,7 @@ module.exports = {
         const setting = await message.options.getString("setting") || null
         if (!setting) {
             ident_flag = true
+            message.deferReply()
         }
         if (setting === 'club' || ident_flag) {
             const clubs = await db.query("SELECT role, level, type, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])
@@ -26,7 +27,7 @@ module.exports = {
                 const channel = await message.guild.channels.fetch(club.level)
                 const role = await message.guild.roles.fetch(club.type)
                 const give = await message.guild.roles.fetch(club.difficulty)
-                clubs_table.push([category.name, channel.name, role.name, give.name])
+                clubs_table.push([category?.name, channel?.name, role?.name, give?.name])
             }
 
             if (!clubs_table.length === 0) {
@@ -44,7 +45,7 @@ module.exports = {
             for (const result of custom.rows) {
                 const role = await message.guild.roles.fetch(result.role)
                 const position = await message.guild.roles.fetch(result.position)
-                custom_table.push([result.system, role.name, position.name, result.amount, result.tag, result.remove])
+                custom_table.push([result?.system, role?.name, position?.name, result?.amount, result?.tag, result?.remove])
             }
             if (!custom_table.length === 0) {
                 sent = true
@@ -61,7 +62,7 @@ module.exports = {
             for (const result of count.rows) {
                 const channel = await message.guild.channels.fetch(result.channel)
                 const role = await message.guild.roles.fetch(result.role)
-                count_table.push([channel.name, role.name, result.count, display_time(result.delay)])
+                count_table.push([channel?.name, role?.name, result?.count, display_time(result?.delay)])
             }
             if (!count_table.length === 0) {
                 sent = true
@@ -77,7 +78,7 @@ module.exports = {
             let boost_table = []
             for (const result of booster.rows) {
                 const role = await message.guild.roles.fetch(result.role)
-                boost_table.push([role.name, result.date])
+                boost_table.push([role?.name, result?.date])
             }
             if (!boost_table.length === 0) {
                 sent = true
@@ -93,7 +94,7 @@ module.exports = {
             let invite_table = []
             for (const result of invite.rows) {
                 const role = await message.guild.roles.fetch(result.role)
-                invite_table.push([role.name, result.date])
+                invite_table.push([role?.name, result?.date])
             }
             if (!invite_table.length === 0) {
                 sent = true
@@ -110,7 +111,7 @@ module.exports = {
             for (const result of overwrite.rows) {
                 const channel = await message.guild.channels.fetch(result.member)
                 const role = await message.guild.roles.fetch(result.role)
-                overwrite_table.push([channel.name, role.name])
+                overwrite_table.push([channel?.name, role?.name])
             }
             if (!overwrite_table.length === 0) {
                 sent = true
@@ -126,7 +127,7 @@ module.exports = {
             const position = await db.query("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or type = $3", [message.guildId, 'create', 'join'])
             for (const result of position.rows) {
                 const role = await message.guild.roles.fetch(result.role)
-                position_table.push([result.type, role.name, display_time(result.member)])
+                position_table.push([result?.type, role?.name, display_time(result?.member)])
             }
             const table = new AsciiTable()
                 .setHeading('Type', 'Role', 'Time')
@@ -139,7 +140,7 @@ module.exports = {
             let autorole_table = []
             for (const result of autorole.rows) {
                 const role = await message.guild.roles.fetch(result.role)
-                autorole_table.push([result.type, role.name, display_time(result.member)])
+                autorole_table.push([result?.type, role?.name, display_time(result?.member)])
             }
             if(!autorole_table.length === 0) {
                 sent = true
@@ -155,7 +156,7 @@ module.exports = {
             const sticky_table = []
             for (const result of sticky.rows) {
                 const role = await message.guild.roles.fetch(result.role)
-                sticky_table.push([role.name])
+                sticky_table.push([role?.name])
             }
             if (!sticky_table.length === 0) {
                 sent = true
@@ -189,7 +190,7 @@ module.exports = {
             const flag_table = []
             for (const result of flags.rows) {
                 const role = await message.guild.roles.fetch(result.role)
-                flag_table.push([role.name, result.date])
+                flag_table.push([role?.name, result?.date])
             }
             if(!flag_table.length === 0) {
                 sent = true
@@ -207,7 +208,7 @@ module.exports = {
                 const channel = await message.guild.channels.fetch(result.type)
                 const role = await message.guild.roles.fetch(result.role)
                 const reward = await message.guild.roles.fetch(result.difficulty)
-                partnership_table.push([channel.name, role.name, reward.name, result.level])
+                partnership_table.push([channel?.name, role?.name, reward?.name, result?.level])
             }
             if (!partnership_table.length === 0) {
                 sent = true
@@ -225,7 +226,7 @@ module.exports = {
             for (const result of leveling.rows) {
                 const role = await message.guild.roles.fetch(result.role)
                 const channel = await message.guild.channels.fetch(result.level)
-                leveling_table.push([result.system, channel.name, role.name, result.difficulty])
+                leveling_table.push([result?.system, channel?.name, role?.name, result?.difficulty])
             }
             if (!leveling_table.length === 0) {
                 const table = new AsciiTable()
@@ -242,7 +243,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 const channel = await message.guild.channels.fetch(result.channel)
                 const blacklist = await message.guild.roles.fetch(result.blacklist)
-                reaction_table.push([role?.name, channel?.name, blacklist?.name, result?.message, result?.emote, result.type])
+                reaction_table.push([role?.name, channel?.name, blacklist?.name, result?.message, result?.emote, result?.type])
             }
             if (!reaction_table.length === 0) {
                 sent = true
@@ -253,7 +254,7 @@ module.exports = {
                 if (ident_flag) {await message.user.send(reactionSend)} else {await message.reply(reactionSend)}
             }
             if (!sent) {
-                await message.reply("The list of current settings has been sent to your dm!")
+                await message.editReply("The list of current settings has been sent to your dm!")
             }
         }
     }
