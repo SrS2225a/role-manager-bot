@@ -12,12 +12,12 @@ module.exports = {
     async execute(message) {
         userPermissions(message, ["MANAGE_GUILD"])
         const db = await pool.connect();
-        const result = await db.query("SELECT role FROM reward WHERE guild = $1 and channel = $2 and type = $3", [message.guild.id, message.options.getChannel('channel').id, 'poj'])
+        const result = await db.query("SELECT role FROM reward WHERE guild = $1 and role = $2 and type = $3", [message.guild.id, message.options.getChannel('channel').id, 'poj'])
         if (result.rowCount === 0) {
-            await db.query("INSERT INTO reward(guild, channel, type) VALUES($1, $2, $3)", [message.guild.id, message.options.getChannel('channel').id, 'poj'])
+            await db.query("INSERT INTO reward(guild, role, type) VALUES($1, $2, $3)", [message.guild.id, message.options.getChannel('channel').id, 'poj'])
             message.reply(`Set the ping on join to ${message.options.getChannel('channel').name}`)
         } else {
-            await db.query("DELETE FROM reward WHERE guild = $1 and channel = $2 and type = $3", [message.guild.id, message.options.getChannel('channel').id, 'poj'])
+            await db.query("DELETE FROM reward WHERE guild = $1 and role = $2 and type = $3", [message.guild.id, message.options.getChannel('channel').id, 'poj'])
             message.reply(`Set the ping on join to ${message.options.getChannel('channel').name}`)
         }
         await db.release();
