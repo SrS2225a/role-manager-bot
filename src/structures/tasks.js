@@ -431,5 +431,32 @@ class GlobalTasks {
     }
 }
 
+class DeleteExpiringInvites {
+    async dispatch_delete_invites(client) {
+        // run then timeout for 12 hours
+        this.client = client
+        await this.run()
+    }
 
-module.exports = {Reminder, Poll, Giveaway, AutoRole, GlobalTasks}
+    async run() {
+        // noinspection ES6MissingAwait
+        this.client.guilds.cache.invites.fetch().then(async (invites) => {
+            // get the invite that will expire next
+            const next = invites.find(invite => invite.maxAge > 0)
+            if (next) {
+                // wait for the invite to expire
+                setTimeout(() => {
+                    this.client.invites.get(next.guild.id)?.delete(next.code)
+                },Date.now() - next.createdTimestamp)
+                await this.dispatch_delete_invites(this.client)
+            } else {
+                // we have no invites that will expire, wait for 12 hours
+                setTimeout(() => {
+                    this.dispatch_delete_invites(this.client)
+                },12 * 60 * 60 * 1000)
+            }
+        })
+    }
+}
+
+module.exports = {Reminder, Poll, Giveaway, AutoRole, GlobalTasks, DeleteExpiringInvites}
