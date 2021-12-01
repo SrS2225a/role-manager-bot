@@ -260,6 +260,7 @@ class GlobalTasks {
             // fetch the member list, then filter for the premiumSince property on the member and insert them into the database
             for (const get of guild.rows) {
                 const guild = this.client.guilds.cache.get(get.guild)
+                if (!guild) continue
                 const announce = await this.db.query("SELECT announce FROM settings WHERE guild = $1", [guild.id])
                 const boosting = this.db.query("SELECT date, role FROM boost WHERE type = $1 and guild = $2", ['boost', guild.id])
                 for (const boost of guild.members.cache.filter(x => x.premiumSince)) {
@@ -302,6 +303,7 @@ class GlobalTasks {
         if (guild.rowCount > 0) {
             for (const get of guild.rows) {
                 const guild = this.client.guilds.cache.get(get.guild)
+                if (!guild) continue
                 const announce = await this.db.query("SELECT announce FROM settings WHERE guild = $1", [guild.id])
                 const totals = await this.db.query("SELECT SUM(amount), member FROM invite WHERE guild = $1 GROUP BY member", [guild.id])
                 const invite = await this.db.query("SELECT date, role FROM boost WHERE guild = $1 and type = $2", [guild.id, 'invite'])
@@ -332,6 +334,7 @@ class GlobalTasks {
         if (guild.rowCount > 0) {
             for (const get of guild.rows) {
                 const guild = this.client.guilds.cache.get(get.guild)
+                if (!guild) continue
                 const flags = await this.db.query("SELECT role, flag FROM flags WHERE guild = $1", [guild.id])
                 // if configured automatically gives a role depending on what public flags a member has
                 for (const members of guild.members.cache) {
@@ -365,6 +368,7 @@ class GlobalTasks {
         if (guild.rowCount > 0) {
             for (const get of guild.rows) {
                 const guild = this.client.guilds.cache.get(get.guild)
+                if (!guild) continue
                 const position = await this.db.query("SELECT role, member, type FROM roles WHERE guild = $1 and type = $2 or type = $3", [guild.id, 'create', 'join'])
                 if (position.rowCount > 0) {
                     for (const members of guild.members.cache) {
