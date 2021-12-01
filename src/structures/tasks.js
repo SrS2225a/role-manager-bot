@@ -440,7 +440,7 @@ class DeleteExpiringInvites {
 
     async run() {
         // noinspection ES6MissingAwait
-        this.client.guilds.cache.invites.fetch().then(async (invites) => {
+        this.client.guilds.cache.invites?.fetch().then(async (invites) => {
             // get the invite that will expire next
             const next = invites.find(invite => invite.maxAge > 0)
             if (next) {
@@ -455,6 +455,11 @@ class DeleteExpiringInvites {
                     this.dispatch_delete_invites(this.client)
                 },12 * 60 * 60 * 1000)
             }
+        }).catch(err => {
+            console.log(err)
+            setTimeout(() => {
+                this.dispatch_delete_invites(this.client)
+            },12 * 60 * 60 * 1000)
         })
     }
 }
