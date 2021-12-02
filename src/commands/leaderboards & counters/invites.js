@@ -1,4 +1,4 @@
-const {SlashCommandBuilder} = require("@discordjs/builders");
+const {SlashCommandBuilder, ContextMenuCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {MessageEmbed} = require("discord.js");
 module.exports = {
@@ -9,6 +9,9 @@ module.exports = {
             .setName("user")
             .setDescription("The user to check invites for.")
             .setRequired(false)),
+    context: new ContextMenuCommandBuilder()
+        .setName("Invites")
+        .setType(2),
     async execute(message) {
         // TODO: Add support to show invites overtime as a graph.
         const db = await pool.connect()

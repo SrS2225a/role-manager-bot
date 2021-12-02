@@ -186,9 +186,10 @@ module.exports = {
                 .setColor('WHITE')
                 .setTitle(`Messages in ${message.guild.name}`)
                 .setDescription(`Showing the last ${date.rows[0]?.lookback || 30} days`)
-                .addField("Daily Average", `${Math.round(day / (day + week + month) * 100)}% With ${day} messages`, true)
-                .addField("Weekly Average", `${Math.round(week / (day + week + month) * 100)}% With ${week} messages`, true)
-                .addField("Monthly Average", `${Math.round(month / (day + week + month) * 100)}% With ${month} messages`, true)
+                .addField("Day", `${day} messages`, true)
+                .addField("Week", `${week} messages`, true)
+                .addField("Month", `${month} messages`, true)
+                .addField("Average Messages", `${Math.round(y.reduce((a, b) => a + b, 0) / y.length)} messages`, true)
                 .addField("Top Users", topUser, true)
                 .addField("Top Channels", topChannel, true)
             const chart = new ChartJSNodeCanvas({width: 800, height: 600, plugins: {

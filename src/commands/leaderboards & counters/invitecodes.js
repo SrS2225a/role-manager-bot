@@ -9,7 +9,6 @@ module.exports = {
             .setName("user")
             .setDescription("The user to get the invite info of")
             .setRequired(false)),
-
     async execute(message) {
         const db = await pool.connect()
         const user = message.options.getUser("user") || message.user

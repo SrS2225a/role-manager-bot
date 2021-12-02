@@ -4,7 +4,6 @@ module.exports = {
     once: false,
     async execute(member, invite) {
         const db = await pool.connect()
-        console.log(invite)
         try {
             const res = await db.query("SELECT invite FROM invite WHERE guild = $1 and invite.invite = $2 and member = $3", [member.guild.id, invite.code, invite.inviter.id])
             if (res.rowCount > 0) {

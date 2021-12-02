@@ -194,7 +194,8 @@ module.exports = {
             try {
                 // eslint-disable-next-line no-eval
                 const now = Date.now()
-                const output = eval(`const discord = require('discord.js'); ${code}`)
+                const output = eval(`const discord = require('discord.js'); \nconst client = message.client \n${code}`)
+                console.log(output)
                 await message.deferReply()
                 if (output instanceof Promise) {
                     await output.then(async (result) => {
@@ -212,6 +213,8 @@ module.exports = {
                         for await (const value of res) {
                             // replace discord token with a placeholder
                             const output = value.toString().replace(json["token"], '<TOKEN>')
+                            // if an object decode it
+
                             await pages.paginate(output)
                         }
                     })
@@ -228,6 +231,7 @@ module.exports = {
                     }
                     const result = generator(output)
                     for await (const value of result) {
+                        console.log(value)
                         // replace discord token with a placeholder
                         const output = value.toString().replace(json["token"], '<TOKEN>')
                         await pages.paginate(output)

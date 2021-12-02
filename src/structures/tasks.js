@@ -86,7 +86,7 @@ class Poll {
     async call_poll(client, poll, db) {
         try {
             const channel = client.channels.cache.get(poll.channel) || await client.channels.fetch(poll.channel)
-            const msg = await channel.messages.fetch(poll.message)
+            const msg = await channel.messages.cache.get(poll.message) || await channel.messages.fetch(poll.message)
             const reactions = msg.reactions.cache
             const indicators = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹"]
             const embed_content = msg.embeds[0]
@@ -167,7 +167,7 @@ class Giveaway {
     async call_giveaway(client, giveaway, db) {
         try {
             const channel = client.channels.cache.get(giveaway.channel) || await client.channels.fetch(giveaway.channel)
-            const msg = await channel.messages.fetch(giveaway.message)
+            const msg = await channel.messages.cache.get(giveaway.message) || await channel.messages.fetch(giveaway.message)
             const embed_content = msg.embeds[0]
             const ends = new Date(giveaway.date)
             const reactions = await msg.reactions.cache.get('🎉').users.fetch()

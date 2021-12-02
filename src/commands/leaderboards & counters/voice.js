@@ -1,4 +1,4 @@
-const {SlashCommandBuilder} = require("@discordjs/builders");
+const {SlashCommandBuilder, ContextMenuCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {MessageEmbed} = require("discord.js");
 const {display_time} = require("../../structures/converters");
@@ -10,6 +10,9 @@ module.exports = {
             .setName("user")
             .setDescription("The user to view voice time for")
             .setRequired(false)),
+    context: new ContextMenuCommandBuilder()
+        .setName("Voice")
+        .setType(2),
     async execute(message) {
         const db = await pool.connect()
         const user = message.options.getUser("user") || message.user

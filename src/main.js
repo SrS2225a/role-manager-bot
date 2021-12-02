@@ -16,12 +16,18 @@ for (const folder of commandFolders) {
     const commandFiles = fs.readdirSync(`commands/${folder}/`).filter(file => file.endsWith('.js'))
     for (const file of commandFiles) {
         const command = require(`./commands/${folder}/${file}`)
-        client.commands.set(command.data.name, command)
+        // register command.data or command.context
+        if (command.data) {
+            client.commands.set(command.data.name, command)
             if (command.data.name === "dev") {
                 guildCommands.push(command.data.toJSON())
-            } else {
-                commands.push(command.data.toJSON());
             }
+            commands.push(command.data.toJSON())
+        }
+        if (command.context) {
+            client.commands.set(command.context.name, command)
+            commands.push(command.context.toJSON())
+        }
     }
 }
 
@@ -29,6 +35,7 @@ for (const folder of commandFolders) {
     const rest = new REST({version: '9'}).setToken(json['token'])
     await rest.put(Routes.applicationCommands(json["clientID"]), {body: commands})
     await rest.put(Routes.applicationGuildCommands(json["clientID"], '531247629649182750'), {body: guildCommands})
+
 })()
 
 const eventFiles = fs.readdirSync('events').filter(file=> file.endsWith('.js'))

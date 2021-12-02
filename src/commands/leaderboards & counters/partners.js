@@ -1,4 +1,4 @@
-const {SlashCommandBuilder} = require("@discordjs/builders");
+const {SlashCommandBuilder, ContextMenuCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {MessageEmbed} = require("discord.js");
 module.exports = {
@@ -9,6 +9,9 @@ module.exports = {
             .setName("user")
             .setDescription("The user to check the partners of.")
             .setRequired(false)),
+    context: new ContextMenuCommandBuilder()
+        .setName("Partners")
+        .setType(2),
     async execute(message) {
         const db = await pool.connect()
         const user = message.options.getUser("user") || message.user

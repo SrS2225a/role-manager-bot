@@ -13,7 +13,7 @@ module.exports = {
             .setDescription("Creates a poll")
             .addStringOption(option => option
                 .setName("questions")
-                .setDescription("The questions for the poll. To add more questions, add a column between each one")
+                .setDescription("The questions for the poll. To add more questions, add a comma between each one")
                 .setRequired(true))
             .addStringOption(option => option
                 .setName("topic")
@@ -50,7 +50,7 @@ module.exports = {
             } else if (questions.length > 20) {
                 return await message.reply("You can only provide a maximum of 20 questions");
             }
-            if (time === null) {
+            if (time === undefined) {
                 return await message.reply("Invalid duration")
             } else if (time < 0) {
                 return await message.reply("Duration must be in the future")
@@ -63,21 +63,6 @@ module.exports = {
                 .setDescription(`${questions.map((question, index) => `${indicators[index]} ${question}`).join("\n")} \n\nEnds <t:${Math.round(delta.valueOf() / 1000)}:R>`)
                 .setColor('WHITE')
                 .setFooter(`This is a ${multiple_choice} poll`)
-
-            // let rows = []
-            // let buttons = []
-            // for (let i = 0; i < questions.length; i++) {
-            //     buttons.push(new MessageButton()
-            //         .setEmoji(`${indicators[i]}`)
-            //         .setStyle("PRIMARY")
-            //         .setCustomId(`${indicators[i]}`))
-            // }
-            // buttons.forEach((button, i) => {
-            //     if (i % 5 === 0) {
-            //         rows.push(new MessageActionRow())
-            //     }
-            //     rows[Math.floor(i / 5)].addComponents(button)
-            // })
             const interaction = await message.channel.send({embeds: [embed]})
             await indicators.forEach(emoji => interaction.react(emoji))
             const id = Math.random().toString(36).substr(2, 8)
