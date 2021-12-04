@@ -9,10 +9,12 @@ module.exports = {
         if(!command) return
         try {
             const db = await pool.connect()
-            const blacklistedCommand = await db.query('SELECT message FROM blacklist WHERE member = $1 and message = $2 and type = $3 LIMIT 1', [interaction.guildId, command.name, 'command'])
+            console.log(interaction.guildId, interaction.commandName)
+            const blacklistedCommand = await db.query('SELECT message FROM blacklist WHERE member = $1 and message = $2 and type = $3 LIMIT 1', [interaction.guildId, interaction.commandName, 'command'])
+            console.log(blacklistedCommand.rows)
             const blockedUser = await db.query("SELECT message FROM blacklist WHERE member = $1 and type = $2 LIMIT 1", [interaction.user.id, 'user'])
             await db.release()
-            if (blacklistedCommand.rows.length) {interaction.reply(`DisabledCommand: ${command.name} command is disabled.`)}
+            if (blacklistedCommand.rows.length) {interaction.reply(`DisabledCommand: ${interaction.commandName} command is disabled.`)}
             else if (blockedUser.rows.length) {interaction.reply(`ClientPermissionsMissing: You are currently blocked from using this bot for **${Util.removeMentions(blockedUser.rows[0].message)}**. If you believe that this is an error, please join the support server @ https://discord.gg/JHkhnzDvWG and explain why.`)}
             else {
                 await command.execute(interaction)

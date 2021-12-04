@@ -22,21 +22,28 @@ module.exports = {
         const db = await pool.connect()
         if (message.options.getSubcommand() === "enable") {
             const command = message.options.getString("command")
-            message.client.application.commands.fetch(command).then(async cmd => {
-                if (!cmd) {
-                    message.channel.send("That command doesn't exist!")
-                } else {
+            const commands = await message.client.application.commands.fetch()
+            commands.forEach(async cmd => {
+                if (cmd.name === command) {
                     await db.query("DELETE FROM blacklist WHERE member = $1 and message = $2 and type = $3", [message.guildId, cmd.name, 'command'])
+                    message.reply(`Enabled command ${cmd.name}`)
+                }
+                if (!cmd) {
+                    message.reply("That command doesn't exist!")
+                } else {
                 }
             })
-            message.reply("Command enabled!")
         } else if (message.options.getSubcommand() === "disable") {
             const command = message.options.getString("command")
-            message.client.application.commands.fetch(command).then(async cmd => {
-                if (!cmd) {
-                    message.channel.send("That command doesn't exist!")
-                } else {
+            const commands = await message.client.application.commands.fetch()
+            commands.forEach(async cmd => {
+                if (cmd.name === command) {
                     await db.query("INSERT INTO blacklist (member, message, type) VALUES ($1, $2, $3)", [message.guildId, cmd.name, 'command'])
+                    message.reply(`Disabled command ${cmd.name}`)
+                }
+                if (!cmd) {
+                    message.reply("That command doesn't exist!")
+                } else {
                 }
             })
         }
