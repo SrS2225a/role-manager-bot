@@ -2,7 +2,7 @@ const {SlashCommandBuilder} = require("@discordjs/builders");
 const {paginator} = require("../../structures/paginator");
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("roles")
+        .setName("listroles")
         .setDescription("Shows a list of all the roles in the server"),
     async execute(message) {
         const roles = message.guild.roles.cache

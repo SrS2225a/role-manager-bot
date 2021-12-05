@@ -1,5 +1,5 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
-const {userPermissions} = require("../../structures/permissions");
+const {userPermissions, clientPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("role")
@@ -49,6 +49,7 @@ module.exports = {
                 .setRequired(true))),
     execute: async (message) => {
         userPermissions(message, "MANAGE_ROLES");
+        clientPermissions(message, "MANAGE_ROLES");
         if(message.options.getSubcommand() === "create") {
             const role = await message.guild.roles.create({
                 data: {

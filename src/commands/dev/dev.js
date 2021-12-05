@@ -126,8 +126,8 @@ module.exports = {
                 for (const file of commandFiles) {
                     const command = require(`../../commands/${folder}/${file}`)
                     if (command.data.name === pull) {
-                        message.client.commands.delete(command.data.name)
-                        message.client.commands.set(command.data.name, command)
+                        await message.client.commands.delete(command.data.name)
+                        await message.client.commands.set(command.data.name, command)
                         await message.reply(`Successfully loaded ${command.data.name}`)
                         break
                     }
@@ -195,7 +195,6 @@ module.exports = {
                 // eslint-disable-next-line no-eval
                 const now = Date.now()
                 const output = eval(`const discord = require('discord.js'); \nconst client = message.client \n${code}`)
-                console.log(output)
                 await message.deferReply()
                 if (output instanceof Promise) {
                     await output.then(async (result) => {
@@ -231,7 +230,6 @@ module.exports = {
                     }
                     const result = generator(output)
                     for await (const value of result) {
-                        console.log(value)
                         // replace discord token with a placeholder
                         const output = value.toString().replace(json["token"], '<TOKEN>')
                         await pages.paginate(output)
@@ -274,6 +272,7 @@ module.exports = {
         } else if (message.options.getSubcommand() === "sql") {
             const query = message.options.getString("argument")
             try {
+                await message.deferReply()
                 const result = await db.query(query)
                 if (result.rows.length === 0) {
                     await message.reply("The query did not return anything")

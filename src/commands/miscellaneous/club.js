@@ -1,7 +1,8 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {Formatters, MessageEmbed, Permissions} = require("discord.js");
-const {rolePermissions, userPermissions} = require("../../structures/permissions");
+const {rolePermissions, userPermissions, clientPermissions} = require("../../structures/permissions");
+const {checkChannelType} = require("../../structures/resolvers");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("club")
@@ -105,9 +106,8 @@ module.exports = {
     async execute(message) {
         const db = await pool.connect()
         if (message.options.getSubcommand() === "setup") {
-            const channel = await message.options.getChannel("channel")
-            const category =  await message.options.getChannel("channel")
-            if (!category.type === 'GUILD_CATEGORY') {return message.reply("The category argument must be a valid category channel")}
+            const channel = checkChannelType('GUILD_TEXT', await message.options.getChannel("channel"))
+            const category = checkChannelType('GUILD_CATEGORY', await message.options.getChannel("category"))
             const role = await message.options.getRole("role")
             const type = await db.query("SELECT system FROM leveling WHERE guild = $1 and system= $2", [message.guildId, 'points'])
             const check1 = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4 and type = $5 and difficulty = $5", [message.guildId, 'points', category.id, channel.id, role?.id])
@@ -126,6 +126,7 @@ module.exports = {
             const name = await message.options.getString("name")
             const description = await message.options.getString("description")
             const graphic = await message.options.getString("url")
+            clientPermissions(message, ['MANAGE_CHANNELS', 'MANAGE_ROLES', 'MANAGE_MESSAGES', 'ADD_REACTIONS', 'EMBED_LINKS'])
             if (/(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(graphic)) {return message.reply("The graphic argument must be a valid url")}
             const owners = [await message.options.getMember("representative1"), await message.options.getMember("representative2"), await message.options.getMember("representative3")].filter(item => typeof item === 'string')
             const club = await db.query("SELECT level, role, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])
@@ -172,13 +173,14 @@ module.exports = {
                 await started.pin()
                 await message.editReply({content: `Club ${name} created successfully!`})
             } else {
-                await message.channel.reply("Clubs has not been set up yet by this guild!")
+                await message.reply("Clubs has not been set up yet by this guild!")
             }
         } else if (message.options.getSubcommand() === "edit") {
-            const channel = await message.options.getChannel("channel")
+            const channel = checkChannelType('GUILD_TEXT', await message.options.getChannel("channel"))
             const name = await message.options.getString("name")
             const description = await message.options.getString("description")
             const graphic = await message.options.getString("url")
+            clientPermissions(message, ['MANAGE_CHANNELS', 'MANAGE_ROLES'])
             if (/(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(graphic)) {return message.reply("The graphic argument must be a valid url")}
             const owners = [await message.options.getMember("representative1"), await message.options.getMember("representative2"), await message.options.getMember("representative3")]
             const club = await db.query("SELECT channel, message, role FROM club WHERE guild = $1 and channel = $2", [message.guildId, channel.id])
@@ -231,7 +233,8 @@ module.exports = {
                 await message.channel.send("I could not find that club!")
             }
         } else if (message.options.getSubcommand() === "delete") {
-            const channel = await message.options.getChannel("club")
+            const channel = checkChannelType('GUILD_TEXT', await message.options.getChannel("club"))
+            clientPermissions(message, ['MANAGE_CHANNELS', 'MANAGE_ROLES'])
             const del = await db.query("SELECT channel, message, role FROM club WHERE guild = $1 and channel = $2", [message.guildId, channel.id])
             if (del.rows.length) {
                 const owner = await db.query("SELECT level, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])

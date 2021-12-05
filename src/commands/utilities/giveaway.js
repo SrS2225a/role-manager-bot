@@ -1,5 +1,5 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
-const {userPermissions} = require("../../structures/permissions");
+const {userPermissions, clientPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");
 const {ConvertDate} = require("../../structures/converters");
 const {MessageEmbed} = require("discord.js");
@@ -48,6 +48,7 @@ module.exports = {
         userPermissions(message, ["MANAGE_MESSAGES"]);
         const db = await pool.connect()
         if (message.options.getSubcommand() === "create") {
+            clientPermissions(message, ["ADD_REACTIONS", "EMBED_LINKS"]);
             const name = message.options.getString("name");
             const duration = ConvertDate(message.options.getString("duration"));
             const winners = message.options.getInteger("winners");

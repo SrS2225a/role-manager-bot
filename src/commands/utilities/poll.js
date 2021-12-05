@@ -1,7 +1,7 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {ConvertDate} = require("../../structures/converters");
 const {MessageEmbed} = require("discord.js");
-const {userPermissions} = require("../../structures/permissions");
+const {userPermissions, clientPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");
 const {Poll} = require("../../structures/tasks");
 module.exports = {
@@ -41,6 +41,7 @@ module.exports = {
         userPermissions(message, ["MANAGE_MESSAGES"]);
         const db = await pool.connect()
         if (message.options.getSubcommand() === "create") {
+            clientPermissions(message, ["ADD_REACTIONS", "EMBED_LINKS"]);
             const questions = message.options.getString("questions").split(",");
             const topic = message.options.getString("topic");
             const time = ConvertDate(message.options.getString("duration"))
@@ -66,11 +67,11 @@ module.exports = {
             const interaction = await message.channel.send({embeds: [embed]})
             await indicators.forEach(emoji => interaction.react(emoji))
             const id = Math.random().toString(36).substr(2, 8)
-            console.log(message.guild.id, interaction.id, delta, multiple_choice, "poll", message.channel.id, id)
             await db.query("INSERT INTO vote(guild, message, date, win, type, channel, id) VALUES($1, $2, $3, $4, $5, $6, $7)", [message.guild.id, interaction.id, delta, multiple, "poll", message.channel.id, id]);
             await new Poll().dispatch_poll(message.client)
             return await message.reply(`Poll created with id: ${id}`);
         } else if (message.options.getSubcommand() === "list") {
+            clientPermissions(message, ["EMBED_LINKS"]);
             const rows = await db.query("SELECT * FROM vote WHERE guild = $1 AND type = $2", [message.guild.id, "poll"])
             if (rows.length === 0) {
                 return await message.reply("There are no polls running")

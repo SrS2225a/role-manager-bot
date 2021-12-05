@@ -27,7 +27,7 @@ function resolveAsChannel_Role(message, args) {
     if (args) {
         const role = resolveById(args, message.guild) ?? resolveByQuery(args, message.guild);
         return role ? role : (() => {
-            throw {identifier: "RoleNotFound", message: `I could not find the role ${args}!`}
+            throw {identifier: "ChannelOrRoleNotFound", message: `I could not find the channel or role ${args}!`}
         })()
 
         function resolveById(args, guild) {
@@ -66,7 +66,9 @@ async function resolveMessage(message, parameter) {
     function getMessageFromChannel(channels, messages) {
         const channel = message.client.channels.cache.get(channels)
         if(!channel) return null
-        return channel.messages.fetch(messages)
+        const message = channel.messages.cache.get(messages)
+        if(!message) return null
+        return message
     }
 
     async function resolveByLink(message, parameter) {
@@ -86,8 +88,17 @@ async function resolveMessage(message, parameter) {
     if(msg) {return msg} else {(() => {throw {identifier: "ArgumentMessageError", message: `I could not find the message ${parameter}`}})()}
 }
 
+async function checkChannelType(parameter, channel) {
+    if (channel.type === parameter) {
+        return channel
+    } else {
+        (() => {throw {identifier: "ArgumentChannelTypeError", message: `The channel ${channel.name} is not a ${parameter}!`}})()
+    }
+}
+
 module.exports = {
     resolveAsChannel_Dm_Here,
     resolveAsChannel_Role,
-    resolveMessage
+    resolveMessage,
+    checkChannelType
 }

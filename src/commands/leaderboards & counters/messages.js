@@ -20,6 +20,7 @@ module.exports = {
         if (messages.rowCount === 0) return message.reply("You have not sent any messages in this server.")
         const embed = new MessageEmbed()
             .setTitle(`${user.username}'s Messages`)
+            .setColor('WHITE')
             .setDescription(messages.rows.map(row => `**<#${row.channel}>** - ${row.sum}`).join("\n"))
             .setFooter(`${user.username} is in ${place.rows[0].count} place with ${messages.rows.reduce((acc, cur) => acc + cur.sum, 0)} messages.`)
         message.reply({embeds: [embed]})

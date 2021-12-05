@@ -9,9 +9,7 @@ module.exports = {
         if(!command) return
         try {
             const db = await pool.connect()
-            console.log(interaction.guildId, interaction.commandName)
             const blacklistedCommand = await db.query('SELECT message FROM blacklist WHERE member = $1 and message = $2 and type = $3 LIMIT 1', [interaction.guildId, interaction.commandName, 'command'])
-            console.log(blacklistedCommand.rows)
             const blockedUser = await db.query("SELECT message FROM blacklist WHERE member = $1 and type = $2 LIMIT 1", [interaction.user.id, 'user'])
             await db.release()
             if (blacklistedCommand.rows.length) {interaction.reply(`DisabledCommand: ${interaction.commandName} command is disabled.`)}

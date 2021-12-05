@@ -2,6 +2,7 @@ const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const emote = require('../../emojis.json')
 const {resolveMessage} = require("../../structures/resolvers");
+const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("reactionrole")

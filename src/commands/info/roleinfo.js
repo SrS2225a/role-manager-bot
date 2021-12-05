@@ -24,7 +24,7 @@ module.exports = {
         }
         const embed = new MessageEmbed()
             .setTitle("Role Info")
-            .setColor(role.color)
+            .setColor('WHITE')
             .addFields({name: "Role Name", value: Formatters.codeBlock(role.name), inline: true},
                 {name: "Role ID", value: Formatters.codeBlock(role.id), inline: true},
                 {name: "Created At", value: Formatters.codeBlock(Intl.DateTimeFormat('en-US', {dateStyle: 'long', timeStyle: 'long'}).format(role.createdAt))},

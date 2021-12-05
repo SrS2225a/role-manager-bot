@@ -30,6 +30,7 @@ module.exports = {
                 // const nextLvl = Math.floor(Math.pow(lvl, difficulty.rows[0].difficulty) * 100);)
                 const embed = new MessageEmbed()
                     .setTitle(`${user ? user.username : message.author.username}'s rank`)
+                    .setColor('WHITE')
                     .addFields(
                         {name: "Rank", value: rank.toString(), inline: true},
                         {name: "Level", value: lvl.toString(), inline: true},
@@ -40,6 +41,7 @@ module.exports = {
             } else {
                 const embed = new MessageEmbed()
                     .setTitle(`${user ? user.username : message.author.username}'s rank`)
+                    .setColor('WHITE')
                     .addFields(
                         {name: "Rank", value: "0", inline: true},
                         {name: "Level", value: "0", inline: true},

@@ -3,12 +3,8 @@ const {pool} = require("../../database");
 const {MessageEmbed, MessageAttachment} = require("discord.js");
 const {ChartJSNodeCanvas} = require("chartjs-node-canvas");
 const {ConvertDate, display_time} = require("../../structures/converters");
+const {clientPermissions} = require("../../structures/permissions");
 
-// function getDayDelta(date) {
-//     const today = new Date();
-//     const diff = today.getTime() - date.getTime();
-//     return Math.ceil(diff / (1000 * 3600 * 24));
-// }
 function getDayDelta(value) {
     const date = (Date.now() - ConvertDate((value || 30).toString() + ' days') * 1000)
     return new Date(date)
@@ -29,6 +25,7 @@ module.exports = {
             .setDescription("Displays a graph of the number of voice members in the server.")),
     async execute(message) {
         const db = await pool.connect()
+        clientPermissions(message, ["EMBED_LINKS", "ATTACH_FILES"])
         if (message.options.getSubcommand() === "members") {
             const lookback = await db.query("SELECT lookback FROM settings WHERE guild = $1", [message.guild.id])
             const members = await db.query("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 order by day", [message.guildId, getDayDelta(lookback.rows[0]?.lookback || 30)])

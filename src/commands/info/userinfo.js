@@ -35,7 +35,7 @@ module.exports = {
 
         const embed = new MessageEmbed()
             .setTitle("User Info")
-            .setColor(user.displayColor)
+            .setColor('WHITE')
             .setThumbnail(user.user.displayAvatarURL( {dynamic: true} ))
             .setImage(user.user.bannerURL({dynamic: true, size: 512}))
             .addFields(

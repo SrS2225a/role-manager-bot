@@ -20,7 +20,7 @@ module.exports = {
             const embed = new MessageEmbed()
                 .setTitle(`${user.username}'s Banner`)
                 .setImage(user.bannerURL({dynamic: true, size: 2048}))
-                .setColor('RANDOM')
+                .setColor('WHITE')
             message.reply({embeds: [embed]})
         } else {
             const embed = new MessageEmbed()

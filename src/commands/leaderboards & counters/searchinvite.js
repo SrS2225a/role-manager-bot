@@ -20,7 +20,7 @@ module.exports = {
         const embed = new MessageEmbed()
             .setTitle(`Invite: ${message.options.getString("invite")}`)
             .setDescription(`${row.amount} joins, ${row.amount2 ? `${row.amount2} ` : "0"} leaves, ${row.amount3 ? `${row.amount3} ` : "0"} fakes. (${(total.rows[0].amount - total.rows[0].amount2 + total.rows[0].amount3) || 0})`)
-            .setColor(0x00FF00)
+            .setColor('WHITE')
         await message.reply({embeds: [embed]})
         await db.release()
     }

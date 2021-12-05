@@ -22,6 +22,7 @@ module.exports = {
             const total = totalInvites.rows[0].a - (totalInvites.rows[0].b + totalInvites.rows[0].c)
             const embed = new MessageEmbed()
                 .setTitle(`${user.username}'s Invites`)
+                .setColor('WHITE')
                 .setDescription(`${total} total invites.`)
                 .addField("Joins", totalInvites.rows[0].a.toString(), true)
                 .addField("Leaves", totalInvites.rows[0].b.toString(), true)

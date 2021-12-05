@@ -1,4 +1,5 @@
 const {Permissions} = require("discord.js")
+const json = require("../config.json");
 function userPermissions(message, permission) {
     if (message.user.id === '270848136006729728' || '508455796783317002' || '222492698236420099') {
         return true
@@ -38,9 +39,8 @@ function rolePermissions(message, role) {
 }
 
 function clientPermissions(message, permission) {
-    var _a;
-    var required = (_a = permission) !== null && _a !== void 0 ? _a : new Permissions();
-    const permissions = message.channel.permissionsFor(message.client.id)
+    const required = new Permissions(permission);
+    const permissions = message.channel.permissionsFor(message.client.user.id)
     if (!permissions) {
         return (() => {
             throw {
@@ -49,11 +49,11 @@ function clientPermissions(message, permission) {
             }
         })()
     }
-    const missing = permissions.missing(required)
+    const missing = permissions.missing(required.bitfield)
     return missing.length === 0 ? true : (() => {
         throw {
             identifier: "MissingClientPermissions",
-            message: `I am missing the following permission(s) to run this command: ${permission.join(', ')}`
+            message: `I am missing the following permission(s) to run this command: ${missing.join(', ')}`
         }
     })()
 }

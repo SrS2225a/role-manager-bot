@@ -22,6 +22,7 @@ module.exports = {
         if (result.rowCount === 0) return message.reply(`${user.username} has not completed any partnerships`)
         const embed = new MessageEmbed()
             .setTitle(`${user.username}'s partnerships`)
+            .setColor('WHITE')
             .setDescription(`${user.username} has completed ${result.rows[0].number} partnerships`)
             .addField("Place", place.rows[0].count.toString())
         await message.reply({embeds: [embed]})

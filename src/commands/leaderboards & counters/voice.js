@@ -21,6 +21,7 @@ module.exports = {
         if (voice.rowCount === 0) return message.channel.send("You have not yet recorded any voice time")
         const embed = new MessageEmbed()
             .setTitle(`${user.username}'s Voice Time`)
+            .setColor('WHITE')
             .setDescription(`${voice.rows.map(row => `**<#${row.channel}>**: ${display_time(row.a + row.b, 6)}`).join("\n")}`)
             .addField("Total Voice Time", display_time(voice.rows.map(row => row.a + row.b).reduce((acc, val) => acc + val, 0), 6))
             .setFooter(`You are in place #${place.rows[0].count} with your voice time`)
