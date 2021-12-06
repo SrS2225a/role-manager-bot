@@ -19,7 +19,7 @@ module.exports = {
             .setColor('WHITE')
         for (const invite of total.rows) {
             const channel = await message.guild.channels.cache.get(invite.channel)
-            embed.addField(`${invite.invite} - #${channel?.name || 'deleted-channel'}`, `${Formatters.bold(invite.amount)} joins, ${Formatters.bold(invite.amount2)} leaves, ${Formatters.bold(invite.amount3)} fakes (${Formatters.bold(invite.amount - invite.amount2 + invite.amount3)})`)
+            embed.addField(`${invite.invite} - #${channel?.name || 'deleted-channel'}`, `${Formatters.bold(invite.amount)} joins, ${Formatters.bold(invite.amount2)} leaves, ${Formatters.bold(invite.amount3)} fakes (${Formatters.bold(invite.amount - (invite.amount2 + invite.amount3))})`)
         }
         await message.reply({embeds: [embed]})
         await db.release()

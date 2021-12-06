@@ -1,5 +1,6 @@
 const {MessageEmbed, Formatters} = require("discord.js");
 const {SlashCommandBuilder} = require("@discordjs/builders");
+const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("userinfo")
@@ -9,6 +10,7 @@ module.exports = {
                 .setDescription("The user to get information about")
                 .setRequired(false)),
     async execute(message) {
+        clientPermissions(message, ["EMBED_LINKS"]);
         const user = await message.options.getMember('member') || message.member
         await user.user.fetch(true)
         let userPermissions = []

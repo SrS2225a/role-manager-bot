@@ -45,7 +45,6 @@ module.exports = {
             if (memberJoin.rowCount > 0) {
                 await db.query("UPDATE member SET joins = joins + 1 WHERE guild = $1 and day = $2", [member.guild.id, new Date()])
             } else {
-                await db.query("DELETE FROM member WHERE day < $1", [new Date(Date.now() - 8640000000)])
                 await db.query("INSERT INTO member (guild, day, joins, leaves) VALUES ($1, $2, 1, 0)", [member.guild.id, new Date()])
             }
             // end member join graph

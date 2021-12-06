@@ -3,11 +3,13 @@ const si = require('systeminformation');
 const {pool} = require("../../database.js");
 const {display_time} = require("../../structures/converters");
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("about")
         .setDescription("Shows info about the bot"),
     async execute(message) {
+        clientPermissions(message, ["EMBED_LINKS"]);
         const db = await pool.connect();
         await message.deferReply()
         const ran = await db.query('SELECT ran FROM bot LIMIT 1')

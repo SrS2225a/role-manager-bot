@@ -28,6 +28,7 @@ module.exports = {
             .setName("blacklist")
             .setDescription("The optional role that is needed to use the reaction role")),
     async execute(message) {
+        clientPermissions(message, ["ADD_REACTIONS"]);
         const db = await pool.connect()
         const msg = await resolveMessage(message, message.options.getString("message"))
         const emoji = message.options.getString("emoji")

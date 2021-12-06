@@ -1,5 +1,6 @@
 const {MessageEmbed, Formatters} = require("discord.js");
 const {SlashCommandBuilder} = require("@discordjs/builders");
+const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("channelinfo")
@@ -9,6 +10,7 @@ module.exports = {
             .setDescription("The channel to get information about")
             .setRequired(false)),
     async execute(message) {
+        clientPermissions(message, ["EMBED_LINKS"]);
         const channel = await message.options.getChannel('channel') || message.channel
         if (channel.isThread()) {
             let yes = []

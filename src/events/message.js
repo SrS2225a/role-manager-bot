@@ -22,7 +22,6 @@ module.exports = {
                 const graph = await db.query("SELECT messages, day, member, channel FROM message WHERE guild = $1 and member = $2 and channel = $3 and day = $4 LIMIT 1", [message.guild.id, message.author.id, message.channel.id, new Date()]);
                 if (graph.rowCount === 0) {
                     await db.query("INSERT INTO message (guild, member, channel, messages, day) VALUES ($1, $2, $3, 1, $4)", [message.guild.id, message.author.id, message.channel.id, new Date()]);
-                    await db.query("DELETE FROM message WHERE day < $1", [new Date(Date.now() - 8640000000)]);
                 } else {
                     await db.query("UPDATE message SET messages = messages + 1 WHERE guild = $1 and member = $2 and channel = $3 and day = $4", [message.guild.id, message.author.id, message.channel.id, new Date()]);
                 }

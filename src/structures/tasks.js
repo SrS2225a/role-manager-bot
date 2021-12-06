@@ -431,6 +431,12 @@ class GlobalTasks {
                 }
             }
         }
+        this.deleteExpiredAnalytics()
+    }
+
+    async deleteExpiredAnalytics() {
+        await this.db.query("DELETE FROM message WHERE day < $1", [new Date(Date.now() - 8640000000)]);
+        await this.db.query("DELETE FROM member WHERE day < $1", [new Date(Date.now() - 8640000000)])
         await this.db.release()
     }
 }

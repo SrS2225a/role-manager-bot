@@ -1,5 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {MessageEmbed} = require("discord.js");
+const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("avatar")
@@ -13,6 +14,7 @@ module.exports = {
             .setDescription("Whether or not to show the banner instead")
             .setRequired(false)),
     async execute(message) {
+        clientPermissions(message, ["EMBED_LINKS"]);
         const user = await message.options.getUser('user') || message.user
         await user.fetch(true)
         if (message.options.getBoolean("banner")) {

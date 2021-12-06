@@ -1,5 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {Formatters, MessageEmbed} = require("discord.js");
+const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("roleinfo")
@@ -9,6 +10,7 @@ module.exports = {
                 .setDescription("The role to get information about")
                 .setRequired(true)),
     async execute(message) {
+        clientPermissions(message, ["EMBED_LINKS"]);
         const role = await message.options.getRole('role')
         let rolePermissions = []
         for (const rolePerms of role.permissions.toArray()) {
