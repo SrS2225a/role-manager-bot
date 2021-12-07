@@ -10,9 +10,9 @@ module.exports = {
             .setDescription("The channel to get information about")
             .setRequired(false)),
     async execute(message) {
-        clientPermissions(message, ["EMBED_LINKS"]);
         const channel = await message.options.getChannel('channel') || message.channel
         if (channel.isThread()) {
+            clientPermissions(message, ['MANAGE_MESSAGES', 'EMBED_LINKS'])
             let yes = []
             let no = []
             for (const [, overwrite] of channel.permissionOverwrites.cache) {
@@ -41,6 +41,7 @@ module.exports = {
                     {name: "Type", value: Formatters.codeBlock(channel.type), inline: true})
             await message.reply({embeds: [embed]})
         } else if (channel.isVoice()) {
+            clientPermissions(message, ['EMBED_LINKS'])
             let yes = []
             let no = []
             for (const [, overwrite] of channel.permissionOverwrites.cache) {
@@ -68,6 +69,7 @@ module.exports = {
             await message.reply({embeds: [embed]})
         }
         else if (channel.isText()) {
+            clientPermissions(message, ['EMBED_LINKS', 'MANAGE_MESSAGES', 'MANAGE_GUILD', 'MANAGE_WEBHOOKS'])
             let yes = []
             let no = []
             for (const [, overwrite] of channel.permissionOverwrites.cache) {
@@ -112,6 +114,7 @@ module.exports = {
                     {name: "Type", value: Formatters.codeBlock(channel.type), inline: true})
             await message.reply({embeds: [embed]})
         } else if (channel.type === 'GUILD_CATEGORY') {
+            clientPermissions(message, ['EMBED_LINKS'])
             let yes = []
             let no = []
             for (const [, overwrite] of channel.permissionOverwrites.cache) {

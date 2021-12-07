@@ -247,7 +247,7 @@ module.exports = {
             } else if (message.options.getSubcommand() === "voice") {
                 clientPermissions(message, "MANAGE_CHANNELS")
                 const settings = await db.query("SELECT role, position, tag FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'voice'])
-                rolePermissions(message, settings.rows[0].role)
+                rolePermissions(message, settings.rows[0]?.role)
                 const result = await db.query("SELECT member FROM roles WHERE guild = $1 and member = $2 and type = $3 LIMIT 1", [message.guild.id, message.user.id, 'voice'])
                 if (result.rowCount === 0) {
                     const channel = await message.guild.channels.create(settings.rows[0]?.tag ? `${message.options.getString("name")} (${settings.rows[0].tag})` : message.options.getString("name"), {

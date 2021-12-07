@@ -17,8 +17,8 @@ module.exports = {
         const db = await pool.connect()
         const user = message.options.getUser("user") || message.user
         const voice = await db.query("SELECT channel, SUM(voice)::integer AS a, SUM(voice2)::integer AS b FROM voice WHERE guild = $1 and member = $2 GROUP BY channel ORDER BY sum(voice) DESC, sum(voice2) DESC", [message.guild.id, user.id])
-        const place = await db.query("SELECT COUNT(*) FROM (SELECT member, SUM(voice)::integer AS a, SUM(voice2)::integer AS b FROM voice WHERE guild = $1 GROUP BY member ORDER BY sum(voice) DESC, sum(voice2) DESC) AS t WHERE a >= $2 AND b >= $3", [message.guild.id, voice.rows[0].a, voice.rows[0].b])
         if (voice.rowCount === 0) return message.channel.send("You have not yet recorded any voice time")
+        const place = await db.query("SELECT COUNT(*) FROM (SELECT member, SUM(voice)::integer AS a, SUM(voice2)::integer AS b FROM voice WHERE guild = $1 GROUP BY member ORDER BY sum(voice) DESC, sum(voice2) DESC) AS t WHERE a >= $2 AND b >= $3", [message.guild.id, voice.rows[0]?.a, voice.rows[0].b])
         const embed = new MessageEmbed()
             .setTitle(`${user.username}'s Voice Time`)
             .setColor('WHITE')
