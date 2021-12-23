@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {clientPermissions} = require("../../structures/permissions");
+const {clientPermissions, userPermissions} = require("../../structures/permissions");
 
 async function resolveMember(member, message) {
     async function resolveById(member, message) {
@@ -49,6 +49,7 @@ module.exports = {
                 .setRequired(true))),
     async execute(message) {
         const db = await pool.connect()
+        userPermissions(message, ["MANAGE_ROLES"]);
         clientPermissions(message, ["MANAGE_ROLES"])
         if (message.options.getSubcommand() === "add") {
             const role = message.options.getRole("role")

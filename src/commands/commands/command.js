@@ -1,5 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
+const {userPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("command")
@@ -20,6 +21,7 @@ module.exports = {
                 .setRequired(true))),
     async execute(message) {
         const db = await pool.connect()
+        userPermissions(message, "MANAGE_GUILD");
         if (message.options.getSubcommand() === "enable") {
             const command = message.options.getString("command")
             const commands = await message.client.application.commands.fetch()

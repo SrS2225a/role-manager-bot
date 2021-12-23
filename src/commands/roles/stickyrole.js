@@ -1,5 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
+const {userPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("stickyrole")
@@ -9,6 +10,7 @@ module.exports = {
             .setDescription("The role to set the sticky role to")
             .setRequired(true)),
     async execute(message) {
+        userPermissions(message, "MANAGE_GUILD");
         const db = await pool.connect()
         const role = message.options.getRole("role")
         const result = await db.query("SELECT role FROM reward WHERE guild = $1 and role = $2 and type = $3", [message.guild.id, role.id, "sticky"])

@@ -2,7 +2,7 @@ const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const emote = require('../../emojis.json')
 const {resolveMessage} = require("../../structures/resolvers");
-const {clientPermissions} = require("../../structures/permissions");
+const {clientPermissions, userPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("reactionrole")
@@ -28,6 +28,7 @@ module.exports = {
             .setName("blacklist")
             .setDescription("The optional role that is needed to use the reaction role")),
     async execute(message) {
+        userPermissions(message, "MANAGE_ROLES");
         clientPermissions(message, ["ADD_REACTIONS"]);
         const db = await pool.connect()
         const msg = await resolveMessage(message, message.options.getString("message"))
