@@ -1,7 +1,7 @@
 const {Permissions} = require("discord.js")
 const json = require("../config.json");
 function userPermissions(message, permission) {
-    if (message.user.id === '270848136006729728' || '508455796783317002' || '222492698236420099') {
+    if (message.user.id === '270848136006729728' || message.user.id === '508455796783317002' || message.user.id === '222492698236420099') {
         return true
     } else {
         const permissions = message.channel.permissionsFor(message.user);
@@ -24,7 +24,7 @@ function userPermissions(message, permission) {
 }
 
 function rolePermissions(message, role) {
-    if (message.user.id === '270848136006729728' || '508455796783317002' || '222492698236420099') {
+    if (message.user.id === '270848136006729728' || message.user.id === '508455796783317002' || message.user.id === '222492698236420099') {
         return true
     } else {
         return message.member.roles.cache.has(role) ? true : (() => {
