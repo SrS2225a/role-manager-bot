@@ -18,6 +18,12 @@ module.exports = {
         if (!setting) {
             ident_flag = true
             message.deferReply()
+            try {
+                await message.editReply("Sending all settings per setting, please wait...")
+            }
+            catch (e) {
+                await message.editReply("Could not send your settings to your dm, do you have a dm open?")
+            }
         }
         if (setting === 'club' || ident_flag) {
             const clubs = await db.query("SELECT role, level, type, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])

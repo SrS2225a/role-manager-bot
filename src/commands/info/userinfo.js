@@ -46,12 +46,12 @@ module.exports = {
                 {name: "Key Permissions", value: Formatters.codeBlock(userPermissions.join(', ')), inline: false},
                 {name: "Created At", value: Formatters.codeBlock(Intl.DateTimeFormat('en-US', {dateStyle: 'long', timeStyle: 'long'}).format(user.user.createdAt)), inline: false},
                 {name: "Joined At", value: Formatters.codeBlock(Intl.DateTimeFormat('en-US', {dateStyle: 'long', timeStyle: 'long'}).format(user.joinedAt)), inline: false},
-                {name: "Booster", value: Formatters.codeBlock((user.premium_since) ? user.premium_since:"False"), inline: false},
+                {name: "Booster", value: Formatters.codeBlock((user.user.premium_since) ? user.user.premium_since:"False"), inline: false},
                 {name: "Public Flags", value: Formatters.codeBlock(user.public_flags?.toArray().join(', ') || "None"), inline: false},
-                {name: "Join Position", value: Formatters.codeBlock(joinPos), inline: true},
+                {name: "Join Position", value: Formatters.codeBlock(joinPos || 0), inline: true},
                 {name: "Color", value: Formatters.codeBlock(user.displayHexColor), inline: true},
                 {name: "Bot", value: Formatters.codeBlock(user.user.bot), inline: true},
-                {name: `Roles [${roles.length}]`, value: roles.join(" "), inline: false}
+                {name: `Roles [${roles.length}]`, value: roles.join(" ") || "None", inline: false}
 
             )
         await message.reply({embeds: [embed]});
