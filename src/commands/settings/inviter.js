@@ -3,7 +3,7 @@ const {userPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("reward")
+        .setName("inviter")
         .setDescription("Sets what role to give when someone is invited")
         .addRoleOption(role => role
             .setName("role")
@@ -21,10 +21,10 @@ module.exports = {
         const result = await db.query("SELECT role FROM boost WHERE guild = $1 and role = $2 and date = $3 and type = $4", [message.guild.id, message.options.getRole('role').id, message.options.getInteger('amount'), 'inviter'])
         if (result.rowCount === 0) {
             await db.query("INSERT INTO boost(guild, role, date, type) VALUES($1, $2, $3, $4)", [message.guild.id, message.options.getRole('role').id, message.options.getInteger('amount'), 'inviter'])
-            message.reply(`Set the inviter to ${message.options.getRole('role').id} for ${message.options.getInteger('amount')} days`)
+            message.reply(`Set the inviter reward to ${message.options.getRole('role').id} for ${message.options.getInteger('amount')} invites`)
         } else {
             await db.query("DELETE FROM boost WHERE guild = $1 and role = $2 and date = $3 and type = $4", [message.guild.id, message.options.getRole('role').id, message.options.getInteger('amount'), 'inviter'])
-            message.reply(`Set the inviter to ${message.options.getRole('role').name} for ${message.options.getInteger('amount')} days`)
+            message.reply(`Removed the inviter reward to ${message.options.getRole('role').name} for ${message.options.getInteger('amount')} invites`)
         }
         await db.release()
     }

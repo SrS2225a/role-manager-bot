@@ -137,6 +137,7 @@ module.exports = {
                                         await message.member.roles.add({roles: [role]});
                                         const channel = await message.guild.channels.cache.get(partner.rows[i].channel);
                                         await channel.send({content: `Congratulations ${Formatters.userMention(message.author.id)}! You have completed ${partner.rows[0].level} partners!`});
+                                        break
                                     }
                                 }
                             }
