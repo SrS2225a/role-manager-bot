@@ -17,6 +17,16 @@ module.exports = {
     async execute(member) {
         const db = await pool.connect()
         try {
+            // for member join graph
+            // increment member joins by 1 else add on a new date
+            const memberJoin = await db.query("SELECT joins FROM member WHERE guild = $1 and day = $2 LIMIT 1", [member.guild.id, new Date()])
+            if (memberJoin.rowCount === 0) {
+                await db.query("INSERT INTO member (guild, day, joins, leaves) VALUES ($1, $2, 1, 0)", [member.guild.id, new Date()])
+            } else {
+                await db.query("UPDATE member SET joins = joins + 1 WHERE guild = $1 and day = $2", [member.guild.id, new Date()])
+            }
+            // end member join graph
+
             // for sticky roles
             const sticky = await db.query("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3", [member.guild.id, member.id, "sticky"])
             for (const stickyRole of sticky.rows) {
@@ -38,16 +48,6 @@ module.exports = {
                 }
             }
             // end ping on join
-
-            // for member join graph
-            // increment member joins by 1 else add on a new date
-            const memberJoin = await db.query("SELECT joins FROM member WHERE guild = $1 and day = $2 LIMIT 1", [member.guild.id, new Date()])
-            if (memberJoin.rowCount > 0) {
-                await db.query("UPDATE member SET joins = joins + 1 WHERE guild = $1 and day = $2", [member.guild.id, new Date()])
-            } else {
-                await db.query("INSERT INTO member (guild, day, joins, leaves) VALUES ($1, $2, 1, 0)", [member.guild.id, new Date()])
-            }
-            // end member join graph
 
             // for member join role
             const auto = await db.query("SELECT role, member AS delay, type FROM roles WHERE guild = $1 and type = $2 or type = $3", [member.guild.id, "add", "remove"])
