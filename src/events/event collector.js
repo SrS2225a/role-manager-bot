@@ -5,7 +5,7 @@ module.exports = {
     async execute(reaction, mem) {
         try {
             // check if user is bot
-            if (reaction.emoji.name === '🎉' && !reaction.message.author.bot) {
+            if (reaction.emoji.name === '🎉' && !mem.bot) {
                 function removeEntree(error) {
                     reaction.users.remove(user.id)
                     try {
