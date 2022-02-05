@@ -1,6 +1,6 @@
 const {MessageActionRow, MessageButton, Formatters, MessageEmbed} = require("discord.js");
 var AsciiTable = require('ascii-table')
-class paginator {
+class paginators {
     constructor(context, entries) {
         this.bot = context.client.bot
         this.message = context
@@ -483,4 +483,4 @@ class PaginateWhileRunning {
     }
 }
 
-module.exports = {paginator, PaginatorAsTable, PaginateWhileRunning}
+module.exports = {paginator: paginators, PaginatorAsTable, PaginateWhileRunning}

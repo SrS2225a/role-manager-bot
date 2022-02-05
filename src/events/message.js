@@ -1,5 +1,6 @@
 const {pool} = require("../database");
 const {Formatters, Util, MessageEmbed} = require("discord.js");
+const {HelpMenu} = require("../structures/menus");
 module.exports = {
     name: 'messageCreate',
     once: false,
@@ -10,13 +11,8 @@ module.exports = {
                 // code for message graph
                 // increment member messages by 1 else add on a new date and delete where the date is older than 120 days
                 if (message.content.includes(`<@!${message.client.user.id}>` || message.content.includes(`<@${message.client.user.id}>`))) {
-                    const embed = new MessageEmbed()
-                        .setTitle('Moved To Discords Slash Command System')
-                        .setDescription('Hi there, if you are wondering why your commands are no longer working the reason being is that we have moved to discords new `slash command system` which means that commands are now in the form of `/command` instead of `*command`.' +
-                            'This is because message content will become a message intent in March of 2022, requiring bots to apply to use them. (See https://support.discord.com/hc/en-us/articles/4410940809111 for more information).' +
-                            '\n\nYou can invite the bot with the new permission scope here: https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot%20applications.commands')
-                        .setColor('WHITE')
-                    await message.channel.send({embeds: [embed]})
+                    const help = new HelpMenu()
+                    await help.startHelp(message)
                 }
 
                 const graph = await db.query("SELECT messages, day, member, channel FROM message WHERE guild = $1 and member = $2 and channel = $3 and day = $4 LIMIT 1", [message.guild.id, message.author.id, message.channel.id, new Date()]);

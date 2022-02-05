@@ -145,14 +145,13 @@ module.exports = {
                 let overwrites = [{
                     id: created.id,
                     allow: [Permissions.FLAGS.VIEW_CHANNEL]
-                }, {
-                    id: message.guild.roles.everyone.id,
-                    deny: [Permissions.FLAGS.VIEW_CHANNEL]
-                }]
+                }, {id: message.guild.roles.everyone.id, deny: [Permissions.FLAGS.VIEW_CHANNEL]}]
                 const give = await message.guild.roles.fetch(club.rows[0].difficulty)
                 for (const owner of owners) {
                     await owner?.roles.add(created)
                     await owner?.roles.add(give)
+                    //get voice state
+                    await owner.voice.disconnect()
                     overwrites.push({
                         id: owner?.user.id,
                         allow: [Permissions.FLAGS.MENTION_EVERYONE, Permissions.FLAGS.MANAGE_MESSAGES, Permissions.FLAGS.MANAGE_CHANNELS],

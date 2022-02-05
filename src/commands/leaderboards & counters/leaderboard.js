@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {PaginatorAsTable} = require("../../structures/paginator");
+const {PaginatorAsTable} = require("../../structures/paginators");
 const {display_time} = require("../../structures/converters");
 module.exports = {
     data: new SlashCommandBuilder()

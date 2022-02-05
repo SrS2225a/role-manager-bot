@@ -70,7 +70,7 @@ class Poll {
     }
 
     async get_active_polls(db) {
-        const poll = await db.query("SELECT * FROM vote WHERE date < (current_date + $1::interval) and type = $2 ORDER BY date LIMIT 1", ['48 days', 'poll']);
+        const poll = await db.query("SELECT * FROM vote WHERE date < (current_date + $1::interval) and type = $2 ORDER BY date LIMIT 1", ['48 days', 3]);
         if (poll.rowCount > 0) {
             return poll.rows[0]
         }
@@ -78,7 +78,7 @@ class Poll {
     }
 
     async finish_poll(db, poll, client) {
-        await db.query("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", [poll.guild, poll.message, 'poll'])
+        await db.query("DELETE FROM vote WHERE guild = $1 and message = $2 and type = $3", [poll.guild, poll.message, 3])
         await db.release()
         await this.dispatch_poll(client)
     }
@@ -144,43 +144,110 @@ class Giveaway {
     async dispatch_giveaway(client) {
         const db = await pool.connect()
         const giveaway = await this.get_active_giveaways(db)
-        await db.release()
         if (giveaway) {
             clearTimeout(client?.giveaway_timer)
             const now = new Date()
-            if (giveaway.date >= now) {
-                client.giveaway_timer =  setTimeout(async () => await this.call_giveaway(client, giveaway, db), giveaway.date.getTime() - now.getTime())
+            // if is delayed start, wait for the appropriate amount of time, then start the giveaway
+            if (giveaway.type === 0) {
+                const date = new Date(giveaway.options.time_requirement)
+                if (date >= now) {
+                    client.giveaway_timer = setTimeout(async () => await this.trigger_giveaway_start(client, giveaway, db), date.getTime() - now.getTime())
+                } else {
+                    await this.trigger_giveaway_start(client, giveaway, db)
+                }
             } else {
-                await this.call_giveaway(client, giveaway, db)
+                if (giveaway.date >= now) {
+                    client.giveaway_timer = setTimeout(async () => await this.call_giveaway(client, giveaway, db), giveaway.date.getTime() - now.getTime())
+                } else {
+                    await this.call_giveaway(client, giveaway, db)
+                }
             }
         }
     }
 
     async get_active_giveaways(db) {
-        const giveaway = await db.query("SELECT * FROM vote WHERE date < (current_date + $1::interval) and type = $2 ORDER BY date LIMIT 1", ['48 days', 'giveaway'])
+        const giveaway = await db.query("SELECT * FROM vote WHERE date < (current_date + $1::interval) and type = $2 or type = $3 ORDER BY date LIMIT 1", ['48 days', 0, 1])
         if (giveaway.rowCount > 0) {
             return giveaway.rows[0]
         }
         return false
     }
 
+    async trigger_giveaway_start(client, giveaway, db) {
+        const channel = client.channels.cache.get(giveaway.channel) || await client.channels.fetch(giveaway.channel)
+        const msg = channel.messages.cache.get(giveaway.message) || await channel.messages.fetch(giveaway.message)
+        const select = await db.query("SELECT * FROM vote WHERE type = $1 and id = $2 and guild = $3 and message = $4 and channel = $5", [0, giveaway.id, giveaway.guild, giveaway.message, giveaway.channel])
+        const guild = client.guilds.cache.get(giveaway.guild)
+        const requirements = `${giveaway.options.role_requirement ? `\nRole requirement: ${guild.roles.cache.get(giveaway.options.role_requirement).name}` : ""}${giveaway.options.message_requirement ? `\nMessage requirement: ${giveaway.options.message_requirement}` : ""}${giveaway.options.voice_requirement ? `\nVoice requirement: ${giveaway.options.voice_requirement}` : ""}`
+        const multiplier = `${giveaway.options.role_multiplier_role ? `\nRole multiplier: ${guild.roles.cache.get(giveaway.options.role_multiplier_role).name}` : ""} x ${giveaway.options.role_multiplier ? `${giveaway.options.role_multiplier}` : ""}`
+        const embed = new MessageEmbed()
+            .setTitle(msg.embeds[0].title)
+            .setDescription(`React with 🎉 button to enter!\n\n${giveaway.options ? `**Requirements:** ${requirements}\n` : ""}${giveaway.options.role_multiplier_role ? `**Multiplier:** ${multiplier}`: ""}**Winners:** ${select.rows[0].win} \n**Ends:** <t:${Math.round(select.rows[0].date.valueOf() / 1000)}:R>`)
+            .setColor('WHITE')
+        await msg.edit({embeds: [embed]})
+        await msg.react('🎉')
+        await db.query("UPDATE vote SET type = $1 WHERE id = $2 and guild = $3 and message = $4 and channel = $5", [1, giveaway.id, giveaway.guild, giveaway.message, giveaway.channel])
+        await db.release()
+        await this.dispatch_giveaway(client)
+    }
+
     async call_giveaway(client, giveaway, db) {
         try {
-            const channel = client.channels.cache.get(giveaway.channel) || await client.channels.fetch(giveaway.channel)
-            const msg = await channel.messages.cache.get(giveaway.message) || await channel.messages.fetch(giveaway.message)
-            const embed_content = msg.embeds[0]
-            const ends = new Date(giveaway.date)
-            const reactions = await msg.reactions.cache.get('🎉').users.fetch()
-            const winner = reactions.filter(x => x.id !== client.user.id).random(giveaway.win)
-            const final_winners = (winner.length > 0 ? winner.map(x => Formatters.userMention(x.id)).join(', ') : "No Winners")
-            const embed = new MessageEmbed()
-                .setTitle(embed_content.title)
-                .setDescription(`**Winners:** ${final_winners}\n**Ended:** <t:${Math.round(ends.valueOf() / 1000)}:R>`)
-                .setColor('WHITE')
-            await msg.edit({embeds: [embed]})
-            const winner_msg = await channel.send(`Congratulations, ${final_winners}! You won the giveaway!`)
-            await winner_msg.delete({timeout: 10000})
-        } catch (e) {
+            // figure out a suitable weighted random with a number of chosen users from the list of winners
+            async function apply_multipliers(winners, weights) {
+                if (weights === 1) {
+                    return winners.random(giveaway.win)
+                } else {
+                    const win = []
+                    for (const user of winners) {
+                        const member = client.guilds.cache.get(giveaway.guild)?.members.cache.get(user[0]) || await client.guilds.cache.get(giveaway.guild)?.members.fetch(user[0])
+                        if (member.roles.cache.has(giveaway.options?.role_multiplier)) {
+                            win.push({id: user, weight: Math.floor(Math.random() * winners.size + weights)})
+                        } else {
+                            win.push({id: user, weight: Math.floor(Math.random() * winners.size)})
+                        }
+                   }
+                    let running_total = giveaway.win;
+                    const chosen = [];
+                    while (running_total > 0) {
+                        const weight = [];
+                        running_total -= 1
+                        let i = 0;
+                        for (i = 0; i < win.length; i++) {
+                            weight[i] = win[i].weight + (weight[i - 1] || 0)
+                        }
+                        const random =  Math.floor(Math.random() * weight[weight.length - 1])
+                        for (i = 0; i < weight.length; i++) {
+                            if (random < weight[i]) {
+                                break
+                            }
+                        }
+                        chosen.push(win[i])
+                        win.splice(i, 1)
+                    }
+                    return chosen
+                }
+            }
+
+                const channel = client.channels.cache.get(giveaway.channel) || await client.channels.fetch(giveaway.channel)
+                const msg = await channel.messages.cache.get(giveaway.message) || await channel.messages.fetch(giveaway.message)
+                const embed_content = msg.embeds[0]
+                const ends = new Date(giveaway.date)
+                const reactions = await msg.reactions.cache.get('🎉').users.fetch()
+                const winners = await apply_multipliers(reactions.filter(x => x.id !== client.user.id), giveaway.options?.role_multiplier_amount || 1)
+                const final_winners = (winners.length > 0 ? winners.map(x => Formatters.userMention(x.id)).join(', ') : "No Winners")
+                const embed = new MessageEmbed()
+                    .setTitle(embed_content.title)
+                    .setDescription(`**Winners:** ${final_winners}\n**Ended:** <t:${Math.round(ends.valueOf() / 1000)}:R>`)
+                    .setColor('WHITE')
+                await msg.edit({embeds: [embed]})
+                const winner_msg = await channel.send(`Congratulations, ${final_winners}! You won the giveaway!`)
+                await winner_msg.delete()
+                if (giveaway.options?.role_reward) {
+                    const role = client.guilds.cache.get(giveaway.guild).roles.cache.get(giveaway.options.role_reward)
+                    await winners.forEach(async x => await x.roles.add(role))
+                }
+            } catch (e) {
             console.log(e)
         } finally {
             await this.finish_giveaway(db, giveaway, client)
@@ -188,7 +255,7 @@ class Giveaway {
     }
 
     async finish_giveaway(db, giveaway, client) {
-        await db.query("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", ['finished', giveaway.guild, giveaway.message, 'giveaway'])
+        await db.query("UPDATE vote SET type = $1 WHERE guild = $2 and message = $3 and type = $4", [2, giveaway.guild, giveaway.message, 1])
         await db.release()
         await this.dispatch_giveaway(client)
     }

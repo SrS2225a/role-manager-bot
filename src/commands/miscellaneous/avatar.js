@@ -5,31 +5,65 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName("avatar")
         .setDescription("Enlarges a members avatar")
-        .addUserOption(option =>
-            option.setName('user')
-                .setDescription("The avatar to enlarge")
-                .setRequired(false))
-        .addBooleanOption(option => option
-            .setName("banner")
-            .setDescription("Whether or not to show the banner instead")
-            .setRequired(false)),
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("default")
+                .setDescription("Shows the default avatar")
+                .addUserOption(option =>
+                    option
+                        .setName("user")
+                        .setRequired(false)
+                        .setDescription("The user to show the avatar of")
+                ))
+        .addSubcommand(subcommand =>
+            // show the avatar of the users server avatar
+            subcommand
+                .setName("server")
+                .setDescription("Shows the server avatar")
+                .addUserOption(option =>
+                    option
+                        .setName("user")
+                        .setRequired(false)
+                        .setDescription("The user to show the avatar of")
+                ))
+        .addSubcommand(subcommand =>
+            // show the avatar of the users avatar
+            subcommand
+                .setName("banner")
+                .setDescription("Shows the banner avatar")
+                .addUserOption(option =>
+                    option
+                        .setName("user")
+                        .setRequired(false)
+                        .setDescription("The user to show the banner of")
+                )),
     async execute(message) {
+        // turn the boolean option into a subcommand with the additional option of getting the users server avatar
         clientPermissions(message, ["EMBED_LINKS"]);
-        const user = await message.options.getUser('user') || message.user
-        await user.fetch(true)
-        if (message.options.getBoolean("banner")) {
-            // fetch user banner
-            const embed = new MessageEmbed()
-                .setTitle(`${user.username}'s Banner`)
-                .setImage(user.bannerURL({dynamic: true, size: 2048}))
-                .setColor('WHITE')
-            message.reply({embeds: [embed]})
-        } else {
+        if (message.options.getSubcommand() === "default") {
+            const user = await message.options.getUser('user') || message.user
+            await user.fetch(true)
             const embed = new MessageEmbed()
                 .setTitle(`${user.username}'s Avatar`)
-                .setImage(user.displayAvatarURL({dynamic: true, size: 2048}))
-                .setColor('WHITE')
-            message.reply({embeds: [embed]})
+                .setImage(user.displayAvatarURL({format: "png", dynamic: true, size: 2048}))
+                .setColor("WHITE")
+            await message.reply({embeds: [embed]})
+        } else if (message.options.getSubcommand() === "server") {
+            // get the member
+            const user = await message.options.getUser('user') || message.member
+            const embed = new MessageEmbed()
+                .setTitle(`${user.username}'s Server Avatar`)
+                .setImage(user.displayAvatarURL({format: "png", dynamic: true, size: 2048}))
+                .setColor("WHITE")
+            await message.reply({embeds: [embed]})
+        } else if (message.options.getSubcommand() === "banner") {
+            const user = await message.options.getUser('user') || message.user
+            await user.fetch(true)
+            const embed = new MessageEmbed()
+                .setTitle(`${user.username}'s Banner`)
+                .setImage(user.bannerURL({format: "png", dynamic: true, size: 2048}))
+                .setColor("WHITE")
+            await message.reply({embeds: [embed]})
         }
     }
 }

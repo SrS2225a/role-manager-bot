@@ -1,5 +1,5 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
-const {paginator} = require("../../structures/paginator");
+const {paginator} = require("../../structures/paginators");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("listroles")

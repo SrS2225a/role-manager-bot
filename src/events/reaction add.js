@@ -7,7 +7,7 @@ module.exports = {
         // attempt to resolve the user as a member
         const db = await pool.connect()
         try {
-            const member = await reaction.message.guild.members.fetch(user.id);
+            const member = reaction.message.guild.members.cache.get(user.id) || await reaction.message.guild.members.fetch(user.id);
             // change custom emoji to id if needed
             const react = await db.query("SELECT * FROM reaction WHERE guild = $1 and channel = $2 and message = $3 and emote = $4", [reaction.message.guild.id, reaction.message.channel.id, reaction.message.id, reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name])
             if (!member.user.bot && react.rowCount > 0) {
@@ -60,5 +60,6 @@ module.exports = {
         } finally {
             await db.release()
         }
+
     }
 }

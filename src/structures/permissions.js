@@ -1,5 +1,4 @@
 const {Permissions} = require("discord.js")
-const json = require("../config.json");
 function userPermissions(message, permission) {
     if (message.user.id === '270848136006729728' || message.user.id === '508455796783317002' || message.user.id === '222492698236420099') {
         return true
@@ -30,7 +29,7 @@ function rolePermissions(message, role) {
         return message.member.roles.cache.has(role) ? true : (() => {
             throw {
                 identifier: "MissingRolePermissions",
-                message: `You are missing the following roles(s) to run this command: ${message.guild.roles.cache.get(role).name}`
+                message: `You are missing the following roles(s) to run this command: ${message.guild.roles.cache.get(role)?.name}`
             }
         })()
     }

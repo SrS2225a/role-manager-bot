@@ -10,7 +10,7 @@ module.exports = {
             .setDescription("The suggestion to suggest")
             .setRequired(true)),
     async execute(message) {
-        const db = await pool.connect
+        const db = await pool.connect()
         const vote = ['✔', '❌']
         const result = db.query("SELECT suggest FROM settings WHERE guild = $1", message.guild.id)
         if (result.rows.length) {
@@ -26,5 +26,6 @@ module.exports = {
         } else {
             await message.channel.send("Suggestions are currently not enabled by this server!")
         }
+        await db.release()
     }
 }

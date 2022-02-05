@@ -1,32 +1,16 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {userPermissions, clientPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");
-const {ConvertDate} = require("../../structures/converters");
 const {MessageEmbed} = require("discord.js");
 const {Giveaway} = require("../../structures/tasks");
+const {GiveawayCreator} = require("../../structures/menus");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("giveaway")
         .setDescription("Creates a giveaway")
         .addSubcommand(subcommand => subcommand
             .setName("create")
-            .setDescription("Creates a giveaway")
-            .addStringOption(option => option
-                .setName("name")
-                .setDescription("The name of the giveaway")
-                .setRequired(true))
-            .addStringOption(option => option
-                .setName("duration")
-                .setDescription("The duration of the giveaway")
-                .setRequired(true))
-            .addIntegerOption(option => option
-                .setName("winners")
-                .setDescription("The number of winners")
-                .setRequired(true))
-            .addStringOption(option => option
-                .setName("requirement")
-                .setDescription("The optional requirement for the giveaway")
-                .setRequired(false)))
+            .setDescription("Creates a giveaway"))
         .addSubcommand(subcommand => subcommand
             .setName("list")
             .setDescription("Lists all current running giveaways"))
@@ -48,32 +32,11 @@ module.exports = {
         userPermissions(message, ["MANAGE_MESSAGES"]);
         const db = await pool.connect()
         if (message.options.getSubcommand() === "create") {
-            clientPermissions(message, ["ADD_REACTIONS", "EMBED_LINKS"]);
-            const name = message.options.getString("name");
-            const duration = ConvertDate(message.options.getString("duration"));
-            const winners = message.options.getInteger("winners");
-            const requirement = message.options.getString("requirement");
-            if (duration === null) {
-                return message.reply("Invalid duration");
-            } else if (duration < 0) {
-                return await message.reply("Duration must be in the future")
-            }
-            if (winners < 1) {
-                return await message.reply("You must have at least one winner")
-            }
-            const delta = new Date(Date.now() + duration * 1000)
-            const id = Math.random().toString(36).substr(2, 8)
-            const embed = new MessageEmbed()
-                .setTitle(name)
-                .setDescription(`React with 🎉 to enter!\n\n${requirement ? `**Requirements:** ${requirement}\n` : ""} **Winners:** ${winners} \n**Ends:** <t:${Math.round(delta.valueOf() / 1000)}:R>`)
-                .setColor('WHITE')
-            const msg = await message.channel.send({embeds: [embed]});
-            await msg.react("🎉");
-            await db.query("INSERT INTO vote(guild, message, date, win, type, channel, id) VALUES($1, $2, $3, $4, $5, $6, $7)", [message.guild.id, msg.id, delta, winners, "giveaway", message.channel.id, id]);
-            await new Giveaway().dispatch_giveaway(message.client)
-            return await message.reply(`Giveaway created with id: ${id}`);
+            clientPermissions(message, ["ADD_REACTIONS", "EMBED_LINKS", "MANAGE_MESSAGES"]);
+            const giveaway = new GiveawayCreator()
+            await giveaway.createGiveaway(message)
         } else if (message.options.getSubcommand() === "list") {
-            const rows = await db.query("SELECT * FROM vote WHERE guild=$1 AND type='giveaway'", [message.guild.id]);
+            const rows = await db.query("SELECT * FROM vote WHERE guild=$1 AND type=0 or type=1", [message.guild.id]);
             if (rows.rowCount === 0) {
                 return await message.reply("There are no active giveaways running");
             }
@@ -83,7 +46,11 @@ module.exports = {
                 .setTimestamp();
             for (const row of rows.rows) {
                 const delta = new Date(row.date)
-                embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nEnds <t:${Math.round(delta.valueOf() / 1000)}:R>`)
+                if (row.type === 1) {
+                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nEnds <t:${Math.round(delta.valueOf() / 1000)}:R>`)
+                } else {
+                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nStarts <t:${Math.round(delta.valueOf() / 1000)}:R>`)
+                }
             }
             return await message.reply({embeds: [embed]});
         } else if (message.options.getSubcommand() === "end") {
@@ -109,6 +76,6 @@ module.exports = {
             await new Giveaway().call_giveaway(message, rows, db)
             return await message.reply("Giveaway rerolled");
         }
-        await pool.release(db)
+        await db.release()
     }
 }

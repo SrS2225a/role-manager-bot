@@ -198,6 +198,7 @@ module.exports = {
     async execute(message) {
         const db = await pool.connect()
         if (message.options.getSubcommandGroup() === "create") {
+            // TO DO: Revise /custom command to be a menu command (current system is too much)
             if (message.options.getSubcommand() === "role") {
                 clientPermissions(message, "MANAGE_ROLES")
                 const settings = await db.query("SELECT role, position, role FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'role'])

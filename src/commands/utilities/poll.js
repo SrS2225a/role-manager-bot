@@ -67,7 +67,7 @@ module.exports = {
             const interaction = await message.channel.send({embeds: [embed]})
             await indicators.forEach(emoji => interaction.react(emoji))
             const id = Math.random().toString(36).substr(2, 8)
-            await db.query("INSERT INTO vote(guild, message, date, win, type, channel, id) VALUES($1, $2, $3, $4, $5, $6, $7)", [message.guild.id, interaction.id, delta, multiple, "poll", message.channel.id, id]);
+            await db.query("INSERT INTO vote(guild, message, date, win, type, channel, id) VALUES($1, $2, $3, $4, $5, $6, $7)", [message.guild.id, interaction.id, delta, multiple, 3, message.channel.id, id]);
             await new Poll().dispatch_poll(message.client)
             return await message.reply(`Poll created with id: ${id}`);
         } else if (message.options.getSubcommand() === "list") {
