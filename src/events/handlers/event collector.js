@@ -1,4 +1,4 @@
-const {pool} = require("../database");
+const {pool} = require("../../database");
 module.exports = {
     name: 'messageReactionAdd',
     once: false,
