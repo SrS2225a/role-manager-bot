@@ -22,7 +22,14 @@ module.exports = {
             .setDescription("Displays a graph of the number of messages sent in the server."))
         .addSubcommand(subcommand => subcommand
             .setName("voice")
-            .setDescription("Displays a graph of the number of voice members in the server.")),
+            .setDescription("Displays a graph of the number of voice members in the server."))
+        .addSubcommand(subcommand => subcommand
+                .setName("invites")
+                .setDescription("Shows someones invites over a period of time.")
+            .addUserOption(option => option
+                .setName("user")
+                .setDescription("The user to show invites for.")
+                .setRequired(false))),
     async execute(message) {
         const db = await pool.connect()
         clientPermissions(message, ["EMBED_LINKS", "ATTACH_FILES"])
@@ -380,6 +387,11 @@ module.exports = {
             const attachment = new MessageAttachment(chart.renderToStream(chartData), "graph.png")
             embed.setImage("attachment://graph.png")
             message.reply({embeds: [embed], files: [attachment]})
+        }
+        else if (message.options.getSubcommand() === "invites") {
+         //    // Invite tracking as in
+         //    // Graphically showing someone’s invite over time
+         // const user = message.options.getUser("user") || message.user
         }
         await db.release()
     }
