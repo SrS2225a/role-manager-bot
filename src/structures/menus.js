@@ -239,7 +239,7 @@ class GiveawayCreator {
                 } else {
                     // check if the number is a number
                     if (parseInt(collected.first().content)) {
-                        if (parseInt(collected.first().content) <= 1) {
+                        if (parseInt(collected.first().content) >= 1) {
                             this.giveArray.push(collected.first().content)
                             collected.first().delete()
                         } else {
@@ -399,7 +399,6 @@ class GiveawayCreator {
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
-                this.addRoleRequirement(message)
             })
     }
 
@@ -420,27 +419,28 @@ class GiveawayCreator {
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
-                this.addMessageRequirement(message)
             })
     }
 
     async addVoiceRequirement(message) {
-        await message.channel.send("Please enter the voice requirement! (in seconds)")
+        await message.channel.send("Please enter the voice requirement!")
         const filter = (m) => m.user === message.author;
         await message.channel.awaitMessages({filter, time: 60000, max: 1})
             .then(async (collected) => {
-                if (parseInt(collected.first().content)) {
-                    this.json.voice_requirement = parseInt(collected.first().content)
-                    await message.channel.send("Added voice requirement!")
-                    await this.giveawayOptions(message, this.giveArray)
-                } else {
-                    await message.channel.send("That's not a valid number!")
+                const toDate = ConvertDate(collected.first().content)
+                if (toDate === undefined) {
+                    message.channel.send("That's not a valid date!")
                     await this.addVoiceRequirement(message)
+                } else if (toDate <= 0) {
+                    message.channel.send("You can't set voice time in the past!")
+                    await this.addVoiceRequirement(message)
+                } else {
+                    this.json.voice_requirement = toDate
+                    await message.channel.send("Added voice requirement!")
                 }
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
-                this.addVoiceRequirement(message)
             })
     }
 
@@ -461,7 +461,6 @@ class GiveawayCreator {
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
-                this.addTimeRequirement(message)
             })
     }
 
@@ -482,7 +481,6 @@ class GiveawayCreator {
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
-                this.addRoleMultiplier(message)
             })
         await message.channel.awaitMessages({filter, time: 60000, max: 1})
             .then(async (collected) => {
@@ -498,7 +496,6 @@ class GiveawayCreator {
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
-                this.addRoleMultiplier(message)
             })
     }
 
@@ -520,7 +517,6 @@ class GiveawayCreator {
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
-                this.addRoleReward(message)
             })
     }
 

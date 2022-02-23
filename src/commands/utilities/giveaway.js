@@ -29,6 +29,8 @@ module.exports = {
                 .setDescription("The id of the giveaway")
                 .setRequired(true))),
     async execute(message) {
+        // giveaways issues
+        // 1, change all vote of type parameters to int. 2, Dionysus is thinking a giveaway is active even though it is not from the event collector code. 3, will not accept more than 1 winner.
         userPermissions(message, ["MANAGE_MESSAGES"]);
         const db = await pool.connect()
         if (message.options.getSubcommand() === "create") {
@@ -55,7 +57,7 @@ module.exports = {
             return await message.reply({embeds: [embed]});
         } else if (message.options.getSubcommand() === "end") {
             const id = message.options.getString("id");
-            const rows = await db.query("SELECT * FROM vote WHERE id=$1 AND guild=$2 AND type='giveaway'", [id, message.guild.id]);
+            const rows = await db.query("SELECT * FROM vote WHERE id=$1 AND guild=$2 AND type=0 or type=1", [id, message.guild.id]);
             if (rows.rowCount === 0) {
                 return await message.reply("Invalid giveaway id");
             }
@@ -69,7 +71,7 @@ module.exports = {
             return await message.reply("Giveaway ended");
         } else if (message.options.getSubcommand() === "reroll") {
             const id = message.options.getString("id");
-            const rows = await db.query("SELECT * FROM vote WHERE id=$1 AND guild=$2 AND type='finished'", [id, message.guild.id]);
+            const rows = await db.query("SELECT * FROM vote WHERE id=$1 AND guild=$2 AND type=2", [id, message.guild.id]);
             if (rows.rowCount === 0) {
                 return await message.reply("Invalid giveaway id or the giveaway has not ended yet");
             }
