@@ -57,7 +57,7 @@ module.exports = {
             return await message.reply({embeds: [embed]});
         } else if (message.options.getSubcommand() === "end") {
             const id = message.options.getString("id");
-            const rows = await db.query("SELECT * FROM vote WHERE id=$1 AND guild=$2 AND type=0 or type=1", [id, message.guild.id]);
+            const rows = await db.query("SELECT * FROM vote WHERE id=$1 AND guild=$2", [id, message.guild.id]);
             if (rows.rowCount === 0) {
                 return await message.reply("Invalid giveaway id");
             }
@@ -66,7 +66,7 @@ module.exports = {
             if (delta < Date.now()) {
                 return await message.reply("Giveaway has already ended");
             }
-            await db.query("UPDATE vote SET date = $1 WHERE guild= $2 and id = $3 and type = $4", [new Date(), message.guild.id, id, 'giveaway']);
+            await db.query("UPDATE vote SET date = $1 WHERE guild= $2 and id = $3", [new Date(), message.guild.id, id]);
             await new Giveaway().dispatch_giveaway(message.client)
             return await message.reply("Giveaway ended");
         } else if (message.options.getSubcommand() === "reroll") {

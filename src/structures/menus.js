@@ -552,6 +552,7 @@ class GiveawayCreator {
         }
         await db.release()
         await new Giveaway().dispatch_giveaway(message.client)
+        await message.channel.send("Giveaway started with ID: " + id)
     }
 }
 
