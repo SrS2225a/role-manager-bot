@@ -122,7 +122,6 @@ module.exports = {
         } else if (message.options.getSubcommand() === "load") {
             let pull = message.options.getString("argument")
             const commandFolders = fs.readdirSync(`./commands`)
-            const eventFolders = fs.readdirSync(`./events`)
             for (const folder of commandFolders) {
                 const commandFiles = fs.readdirSync(`./commands/${folder}`).filter(file => file.endsWith('.js'))
                 for (const file of commandFiles) {
@@ -136,28 +135,24 @@ module.exports = {
                     }
                 }
             }
-            for (const folder of eventFolders) {
-                const eventFiles = fs.readdirSync(`./events/${folder}`).filter(file => file.endsWith('.js'))
-                for (const file of eventFiles) {
-                    const event = require(`../../events/${folder}/${file}`)
-                    if (event.data.name === pull) {
-                        await message.client.events.delete(event.data.name)
-                        await message.client.events.set(event.data.name, event)
-                        resolveEvents(message.client)
-                        await message.reply(`Successfully loaded ${event.data.name}`)
-                        break
-                    }
+            const eventFiles = fs.readdirSync(`./events`).filter(file => file.endsWith('.js'))
+            for (const file of eventFiles) {
+                const event = require(`../../events/${file}`)
+                if (event.name === pull) {
+                    await message.client.events.delete(event.data.name)
+                    await message.client.events.set(event.data.name, event)
+                    resolveEvents(message.client)
+                    await message.reply(`Successfully loaded ${event.data.name}`)
+                    break
                 }
             }
         } else if (message.options.getSubcommand() === "unload") {
             let pull = message.options.getString("argument")
             const commandFolders = fs.readdirSync(`./commands`)
-            const eventFolders = fs.readdirSync(`./events`)
             for (const folder of commandFolders) {
                 const commandFiles = fs.readdirSync(`./commands/${folder}`).filter(file => file.endsWith('.js'))
                 for (const file of commandFiles) {
                     const command = require(`../../commands/${folder}/${file}`)
-                    console.log(command)
                     if (command.data.name === pull) {
                         await message.client.commands.delete(command.data.name)
                         resolveCommands(message.client)
@@ -166,16 +161,14 @@ module.exports = {
                     }
                 }
             }
-            for (const folder of eventFolders) {
-                const eventFiles = fs.readdirSync(`./events/${folder}`).filter(file => file.endsWith('.js'))
-                for (const file of eventFiles) {
-                    const event = require(`../../events/${folder}/${file}`)
-                    if (event.data.name === pull) {
-                        await message.client.events.delete(event.data.name)
-                        resolveEvents(message.client)
-                        await message.reply(`Successfully unloaded ${event.data.name}`)
-                        break
-                    }
+            const eventFiles = fs.readdirSync(`./events`).filter(file => file.endsWith('.js'))
+            for (const file of eventFiles) {
+                const event = require(`../../events/${file}`)
+                if (event.name === pull) {
+                    await message.client.events.delete(event.data.name)
+                    resolveEvents(message.client)
+                    await message.reply(`Successfully unloaded ${event.data.name}`)
+                    break
                 }
             }
         } else if (message.options.getSubcommand() === "shutdown") {

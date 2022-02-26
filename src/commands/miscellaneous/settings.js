@@ -129,11 +129,14 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 position_table.push([result?.type, role?.name, display_time(result?.member)])
             }
-            const table = new AsciiTable()
-                .setHeading('Type', 'Role', 'Time')
-                .addRowMatrix(position_table)
-            const positionTable = `**Auto Position Settings** ${Formatters.codeBlock(table.toString())}`
-            if (ident_flag) {await message.user.send(positionTable)} else {await message.reply(positionTable)}
+            if (!position_table.length === 0) {
+                sent = true
+                const table = new AsciiTable()
+                    .setHeading('Type', 'Role', 'Time')
+                    .addRowMatrix(position_table)
+                const positionSend = `**Auto Position Settings** \n${Formatters.codeBlock(table.toString())}`
+                if (ident_flag) {await message.user.send(positionSend)} else {await message.reply(positionSend)}
+            }
         }
         if (setting === 'autorole' || ident_flag) {
             const autorole = await db.query("SELECT type, role, member FROM roles WHERE guild = $1 and type = $2 or type = $3", [message.guildId, 'add', 'remove'])
