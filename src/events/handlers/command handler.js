@@ -23,7 +23,7 @@ module.exports = {
         } catch (error) {
             console.log(error.stack)
             if (error.identifier) {
-                await interaction.channel.send(`${error.identifier}: ${Util.removeMentions(error.message)}`)
+                await interaction.reply({content: `${error.identifier}: ${Util.removeMentions(error.message)}`, ephemeral: true})
             } else {
                 const embed = new MessageEmbed()
                     .setColor('WHITE')

@@ -17,13 +17,7 @@ module.exports = {
         const setting = await message.options.getString("setting") || null
         if (!setting) {
             ident_flag = true
-            message.deferReply()
-            try {
-                await message.editReply("Sending all settings per setting, please wait...")
-            }
-            catch (e) {
-                await message.editReply("Could not send your settings to your dm, do you have a dm open?")
-            }
+            await message.reply("Sending all settings to your dm, please wait...")
         }
         if (setting === 'club' || ident_flag) {
             const clubs = await db.query("SELECT role, level, type, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])
@@ -228,13 +222,13 @@ module.exports = {
         if (setting === 'leveling' || ident_flag) {
             const leveling = await db.query("SELECT system, difficulty, role, level FROM leveling WHERE guild = $1 and not system = $2 and not system = $3", [message.guildId, 'partners', 'points'])
             let leveling_table = []
-            console.log(leveling)
             for (const result of leveling.rows) {
                 const role = await message.guild.roles.fetch(result.role)
                 const channel = await message.guild.channels.fetch(result.level)
                 leveling_table.push([result?.system, channel?.name, role?.name, result?.difficulty])
             }
             if (!leveling_table.length === 0) {
+                sent = true
                 const table = new AsciiTable()
                     .setHeading('Type', 'Channel', 'Role', 'Value')
                     .addRowMatrix(leveling_table)
@@ -259,7 +253,7 @@ module.exports = {
                 const reactionSend = `**Reaction Settings** \n${Formatters.codeBlock(table.toString())}`
                 if (ident_flag) {await message.user.send(reactionSend)} else {await message.reply(reactionSend)}
             }
-            if (!sent) {
+            if (sent && ident_flag) {
                 await message.editReply("The list of current settings has been sent to your dm!")
             }
         }
