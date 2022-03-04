@@ -7,7 +7,7 @@ const {resolveAsChannel_Dm_Here} = require("../../structures/resolvers");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("remind")
-        .setDescription("Sends a reminder to a user or channel.")
+        .setDescription("Sends a reminder to a user or channel")
         .addSubcommand(subcommand => subcommand
             .setName("create")
             .setDescription("Creates a reminder")

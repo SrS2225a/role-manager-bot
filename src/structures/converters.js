@@ -49,7 +49,7 @@ function ConvertDate(time) {
                 });
                 return years + months + weeks + days + hours + minutes + seconds
             } else {
-                return 0
+                return undefined
             }
         } else {
             return date.time

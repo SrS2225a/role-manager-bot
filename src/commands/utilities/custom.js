@@ -4,7 +4,7 @@ const {rolePermissions, clientPermissions} = require("../../structures/permissio
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("custom")
-        .setDescription("Lets you manage your custom ")
+        .setDescription("Lets you manage your custom roles or channels")
         .addSubcommandGroup(group => group
             .setName("create")
             .setDescription("Allows you to create a custom role, text or voice channel")

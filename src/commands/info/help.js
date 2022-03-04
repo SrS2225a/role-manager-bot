@@ -1,26 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {MessageEmbed} = require("discord.js");
 const {HelpMenu} = require("../../structures/menus");
-
-async function startCollector() {
-    const filter = i => i.user.id === this.author.id
-    const collector = this.channel.createMessageComponentCollector({filter, time: 128000})
-    collector.on('collect', async i => {
-        if (i.customId === 'firstPage') {
-            await this.show_page(1, i)
-        } else if (i.customId === 'back') {
-            await this.show_page(this.current_page - 1, i)
-        } else if (i.customId === 'stop') {
-            await i.message.delete()
-        } else if (i.customId === 'next') {
-            await this.show_page(this.current_page + 1, i)
-        } else if (i.customId === 'lastPage') {
-            await this.show_page(this.maxium_pages, i)
-        }
-        await i.deferUpdate();
-    })
-}
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("help")
@@ -60,7 +40,7 @@ module.exports = {
                          .setTitle(`${command.data.name} Help`)
                          .setDescription(`${command.data.description}`)
 
-                         .addField("Subcommands", `**Subcommands:**\n${subcommand}`, true)
+                         .addField("Subcommands", `\n${subcommand}`, true)
                      message.reply({embeds: [embed]});
                  } else {
                      const embed = new MessageEmbed()

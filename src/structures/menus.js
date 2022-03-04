@@ -212,7 +212,7 @@ class GiveawayCreator {
 
         ).catch(() => {
             message.channel.send("You didn't respond in time.")
-            cont = 2
+            cont = 1
         })
         if (cont === 1) {
             await message.deleteReply()
@@ -243,19 +243,18 @@ class GiveawayCreator {
                             this.giveArray.push(collected.first().content)
                             collected.first().delete()
                         } else {
-                            message.channel.send("You must have at least one winner.")
-                            // restart collector
+                            message.channel.send("You must have at least one winner. Try again.")
                             cout = 2
                         }
                     } else {
-                        message.channel.send("That's not a number!")
+                        message.channel.send("That's not a number! Try again.")
                         cout = 2
                     }
                 }
             }
         ).catch(() => {
             message.channel.send("You didn't respond in time.")
-            cout = 2
+            cout = 1
         })
         if (cout === 1) {
             await message.deleteReply()
@@ -279,14 +278,15 @@ class GiveawayCreator {
             collected => {
                 if (collected.first().content.toLowerCase() === 'exit') {
                     // exit out of the function
+                    console.log("exit")
                     cout = 1
                 } else {
                     const toDate = ConvertDate(collected.first().content)
                     if (toDate === undefined) {
-                        message.channel.send("That's not a valid date!")
+                        message.channel.send("That's not a valid date! Try again.")
                         cout = 2
                     } else if (toDate <= 0) {
-                        message.channel.send("You can't set a giveaway to start in the past!")
+                        message.channel.send("You can't set a giveaway to start in the past! Try again.")
                         cout = 2
                     } else {
                         this.giveArray.push(toDate)
@@ -297,7 +297,7 @@ class GiveawayCreator {
             }
         ).catch(() => {
             message.channel.send("You didn't respond in time!")
-            cout = 2
+            cout = 1
         })
         if (cout === 1) {
             await message.deleteReply()
