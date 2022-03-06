@@ -197,7 +197,7 @@ class GiveawayCreator {
         await message.editReply({embeds: [defaultEmbedSelection1], ephemeral: true})
             // take input from user and store it in a variable before editing the message with the next embed
         const filter = i => i.user === message.author;
-        await message.channel.awaitMessages({filter, max: 1, time: 60000}).then(
+        await message.channel.awaitMessages({filter, max: 1, time: 20000}).then(
             collected => {
                 if (collected.first().content.toLowerCase() === 'exit') {
                     // exit out of the function of function
@@ -232,7 +232,7 @@ class GiveawayCreator {
             .setFooter("You can exit this by typing 'exit'")
         await message.editReply({embeds: [defaultEmbedSelection2]})
         const filter = i => i.user === message.author;
-        await message.channel.awaitMessages({filter, max: 1, time: 60000}).then(
+        await message.channel.awaitMessages({filter, max: 1, time: 20000}).then(
             collected => {
                 if (collected.first().content.toLowerCase() === 'exit') {
                     cout = 1
@@ -262,7 +262,7 @@ class GiveawayCreator {
             await this.selection2(message)
         } else {
             await this.selection3(message)
-        }
+        }                    console.log("exit")
     }
 
     async selection3(message) {
@@ -274,11 +274,10 @@ class GiveawayCreator {
             .setFooter("You can exit this by typing 'exit'")
         await message.editReply({embeds: [defaultEmbedSelection3]})
         const filter = i => i.user === message.author;
-        await message.channel.awaitMessages({filter, max: 1, time: 60000}).then(
+        await message.channel.awaitMessages({filter, max: 1, time: 20000}).then(
             collected => {
                 if (collected.first().content.toLowerCase() === 'exit') {
                     // exit out of the function
-                    console.log("exit")
                     cout = 1
                 } else {
                     const toDate = ConvertDate(collected.first().content)
@@ -356,7 +355,7 @@ class GiveawayCreator {
     async giveawayOptions(message) {
         const filter = (m) => m.user === message.author;
         // dropdown collector with button
-        const collector = message.channel.createMessageComponentCollector(filter, {time: 120000, componentType: 'SELECT_MENU'})
+        const collector = message.channel.createMessageComponentCollector(filter, {time: 240000, componentType: 'SELECT_MENU'})
         collector.on("collect", async (m) => {
             await m.deferUpdate()
             if (m.values === undefined) {
@@ -385,7 +384,7 @@ class GiveawayCreator {
     async addRoleRequirement(message) {
         await message.channel.send("Please enter the role you would like to add.")
         const filter = (m) => m.user === message.author;
-        await message.channel.awaitMessages({filter, time: 60000, max: 1})
+        await message.channel.awaitMessages({filter, time: 20000, max: 1})
             .then(async (collected) => {
                 const role = await resolveRole(message, collected.first().content)
                 if (role) {
@@ -393,7 +392,6 @@ class GiveawayCreator {
                     await message.channel.send("Added role requirement!")
                 } else {
                     await message.channel.send("That role doesn't exist!")
-                    await this.addRoleRequirement(message)
                 }
                 await collected.first().delete()
             })
@@ -406,14 +404,13 @@ class GiveawayCreator {
         // send message prompt
         await message.channel.send("Please enter the message requirement!")
         const filter = (m) => m.user === message.author;
-        await message.channel.awaitMessages({filter, time: 60000, max: 1})
+        await message.channel.awaitMessages({filter, time: 20000, max: 1})
             .then(async (collected) => {
                 if (parseInt(collected.first().content)) {
                     this.json.message_requirement = parseInt(collected.first().content)
                     await message.channel.send("Added message requirement!")
                 } else {
                     await message.channel.send("That's not a valid number!")
-                    await this.addMessageRequirement(message)
                 }
                 await collected.first().delete()
             })
@@ -425,15 +422,13 @@ class GiveawayCreator {
     async addVoiceRequirement(message) {
         await message.channel.send("Please enter the voice requirement!")
         const filter = (m) => m.user === message.author;
-        await message.channel.awaitMessages({filter, time: 60000, max: 1})
+        await message.channel.awaitMessages({filter, time: 20000, max: 1})
             .then(async (collected) => {
                 const toDate = ConvertDate(collected.first().content)
                 if (toDate === undefined) {
                     message.channel.send("That's not a valid date!")
-                    await this.addVoiceRequirement(message)
                 } else if (toDate <= 0) {
                     message.channel.send("You can't set voice time in the past!")
-                    await this.addVoiceRequirement(message)
                 } else {
                     this.json.voice_requirement = toDate
                     await message.channel.send("Added voice requirement!")
@@ -447,7 +442,7 @@ class GiveawayCreator {
     async addTimeRequirement(message) {
         await message.channel.send("Please enter the time requirement!")
         const filter = (m) => m.user === message.author;
-        await message.channel.awaitMessages({filter, time: 60000, max: 1})
+        await message.channel.awaitMessages({filter, time: 20000, max: 1})
             .then(async (collected) => {
                 const duration = ConvertDate(collected.first().content)
                 if (duration) {
@@ -455,7 +450,6 @@ class GiveawayCreator {
                     await message.channel.send("Added time requirement!")
                 } else {
                     await message.channel.send("That's not a valid duration!")
-                    await this.addTimeRequirement(message)
                 }
                 await collected.first().delete()
             })
@@ -467,7 +461,7 @@ class GiveawayCreator {
     async addRoleMultiplier(message) {
         await message.channel.send("Please enter the role multiplier!")
         const filter = (m) => m.user === message.author;
-        await message.channel.awaitMessages({filter, time: 60000, max: 1})
+        await message.channel.awaitMessages({filter, time: 20000, max: 1})
             .then(async (collected) => {
                 const role = await resolveRole(message, collected.first().content)
                 if (role) {
@@ -475,14 +469,13 @@ class GiveawayCreator {
                     await message.channel.send("Added role multiplier role! Now add the multiplier!")
                 } else {
                     await message.channel.send("That's not a valid role!")
-                    await this.addRoleMultiplier(message)
                 }
                 await collected.first().delete()
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
             })
-        await message.channel.awaitMessages({filter, time: 60000, max: 1})
+        await message.channel.awaitMessages({filter, time: 20000, max: 1})
             .then(async (collected) => {
                 if (parseInt(collected.first().content)) {
                     this.json.role_multiplier = parseInt(collected.first().content)
@@ -490,7 +483,6 @@ class GiveawayCreator {
 
                 } else {
                     await message.channel.send("That's not a valid number!")
-                    await this.addRoleMultiplier(message)
                 }
                 await collected.first().delete()
             })
@@ -502,7 +494,7 @@ class GiveawayCreator {
     async addRoleReward(message) {
         await message.channel.send("Please enter the role reward!")
         const filter = (m) => m.user === message.author;
-        await message.channel.awaitMessages({filter, time: 60000, max: 1})
+        await message.channel.awaitMessages({filter, time: 20000, max: 1})
             .then(async (collected) => {
                 const role = resolveRole(message, collected.first().content)
                 if (role) {
@@ -511,7 +503,6 @@ class GiveawayCreator {
                     await this.giveawayOptions(message, this.giveArray)
                 } else {
                     await message.channel.send("That's not a valid role!")
-                    await this.addRoleReward(message)
                 }
                 await collected.first().delete()
             })
