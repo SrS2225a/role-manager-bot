@@ -5,9 +5,9 @@ module.exports = {
     async execute(member, invite) {
         const db = await pool.connect()
         try {
-            const res = await db.query("SELECT invite FROM invite WHERE guild = $1 and invite.invite = $2 and member = $3", [member.guild.id, invite.code, invite.inviter.id])
+            const res = await db.query("SELECT invite FROM invite WHERE guild = $1 and invite.invite = $2 and member = $3 and day = $4", [member.guild.id, invite.code, invite.inviter.id, new Date()])
             if (res.rowCount > 0) {
-                await db.query("UPDATE invite SET amount = $1 WHERE guild = $2 and invite.invite = $3 and member = $4", [invite.uses, member.guild.id, invite.code, invite.inviter.id])
+                await db.query("UPDATE invite SET amount = amount +1 WHERE guild = $1 and invite.invite = $2 and member = $3 and day = $4", [member.guild.id, invite.code, invite.inviter.id, new Date()])
                 const inviteReward = await db.query("SELECT * FROM boost WHERE guild = $1 and type = $2", [member.guild.id, 'inviter'])
                 if (inviteReward.rowCount > 0) {
                     for (let i = 0; i < inviteReward.rowCount; i++) {
@@ -24,7 +24,7 @@ module.exports = {
                     }
                 }
             } else {
-                await db.query("INSERT INTO invite VALUES($1, $2, $3, $4, 0, 0, $5)", [member.guild.id, invite.inviter.id, invite.code, invite.uses, invite.channel.id])
+                await db.query("INSERT INTO invite VALUES($1, $2, $3, 1, 0, 0, $4)", [member.guild.id, invite.inviter.id, invite.code, new Date()])
             }
             await db.query("INSERT INTO invite2 VALUES($1, $2, $3)", [member.guild.id, member.id, invite.code])
         } catch (err) {

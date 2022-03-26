@@ -26,9 +26,9 @@ module.exports = {
         .addSubcommand(subcommand => subcommand
                 .setName("invites")
                 .setDescription("Shows someones invites over a period of time.")
-            .addUserOption(option => option
-                .setName("user")
-                .setDescription("The user to show invites for.")
+            .addStringOption(option => option
+                .setName("invite")
+                .setDescription("The invite code to check.")
                 .setRequired(false))),
     async execute(message) {
         const db = await pool.connect()
@@ -138,7 +138,7 @@ module.exports = {
                         legend: {
                             labels: {
                                 font: {
-                                    size: 16
+                                    size: 18
                                 },
                                 color: 'white',
                                 textDecoration: 'ltr'
@@ -248,7 +248,7 @@ module.exports = {
                         legend: {
                             labels: {
                                 font: {
-                                    size: 16
+                                    size: 18
                                 },
                                 color: 'white',
                                 textDecoration: 'ltr'
@@ -375,7 +375,7 @@ module.exports = {
                         legend: {
                             labels: {
                                 font: {
-                                    size: 16
+                                    size: 18
                                 },
                                 color: 'white',
                                 textDecoration: 'ltr'
@@ -389,9 +389,114 @@ module.exports = {
             message.reply({embeds: [embed], files: [attachment]})
         }
         else if (message.options.getSubcommand() === "invites") {
-         //    // Invite tracking as in
-         //    // Graphically showing someone’s invite over time
-         // const user = message.options.getUser("user") || message.user
+            // Invite tracking as in
+            // Graphically showing someone’s invites over time
+            const invite = message.options.getUser("invite") || message.user
+            const date = await db.query("SELECT lookback FROM settings WHERE guild = $1", [message.guild.id])
+            const invites = await db.query("SELECT sum(amount)::integer AS a, sum(amount2)::integer AS b, sum(amount3)::integer AS c, day FROM invite WHERE guild = $1 and member = $2 and day > $3 GROUP BY day ORDER BY day", [message.guild.id, invite.id, getDayDelta(date.rows[0]?.lookback || 30)])
+            let day = [0, 0]
+            let week = [0, 0]
+            let month = [0, 0]
+            const x = []
+            const y = []
+            if (invites.rows.length === 0) {
+                message.reply("Could not find that user!")
+                return
+            }
+
+            const max = Math.round(Date.parse(invites.rows[0].day))
+            for (const row of invites.rows) {
+                row.day = Math.round(Date.parse(row.day))
+                x.push(row.day)
+                y.push(row.a + (row.b - row.c))
+
+                if (row.day === max) {
+                    day[0] += row.a
+                    day[1] += row.b + row.c
+                } else if (max - 24 * 60 * 60 * 1000 <= row.day) {
+                    week[0] += row.a
+                    week[1] += row.b + row.c
+                }
+                month[0] += row.a
+                month[1] += row.b + row.c
+            }
+
+            const embed = new MessageEmbed()
+                .setColor('WHITE')
+                // invite joins over time
+                .setTitle(`${invite.username + '#' + invite.discriminator} Invite Joins`)
+                .setDescription(`Showing the last ${date.rows[0]?.lookback || 30} days.`)
+                .addField("Day", `${day[0]} Joins, ${day[1]} False`, true)
+                .addField("Week", `${week[0]} Joins, ${week[1]} False`, true)
+                .addField("Month", `${month[0]} Joins, ${month[1]} False`, true)
+                .addField("Average", `${Math.round(month[0] / (month[1] + week[1] + day[1]))} Joins, ${Math.round(month[1] / (month[1] + week[1] + day[1]))} Leaves`, true)
+                .addField("Total", invites.rows.reduce((a, b) => a + b.a + b.b - b.c, 0).toString(), true)
+                .addField("\u200b", "\u200b")
+
+            const chart = new ChartJSNodeCanvas({width: 800, height: 600, plugins: {globalVariableLegacy: ['chartjs-adapter-moment']}})
+            const chartData = {
+                type: 'line',
+                data: {
+                    labels: x,
+                    datasets: [
+                        {
+                            label: 'Invites',
+                            backgroundColor: "rgba(0, 174, 134, 0.2)",
+                            borderColor: "rgba(0, 174, 134, 1)",
+                            data: y,
+                            fill: 'origin',
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            ticks: {
+                                font: {
+                                    size: 14,
+                                    weight: "bold"
+                                },
+                                color: 'white'
+                            },
+                            grid: {
+                                color: 'white'
+                            },
+                            type: "time",
+                            time: {
+                                unit: "day",
+                                tooltipFormat: "MMM DD"
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                font: {
+                                    size: 14,
+                                    weight: "bold"
+                                },
+                                color: 'white'
+                            },
+                            grid: {
+                                color: 'white'
+                            }
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                font: {
+                                    size: 18,
+                                },
+                                color: 'white',
+                                textDecoration: 'ltr'
+                            }
+                        }
+                    }
+                }
+            }
+            const attachment = new MessageAttachment(chart.renderToStream(chartData), 'graph.png')
+            embed.setImage('attachment://graph.png')
+            message.reply({embeds: [embed], files: [attachment]})
         }
         await db.release()
     }

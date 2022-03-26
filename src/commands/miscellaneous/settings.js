@@ -30,7 +30,7 @@ module.exports = {
                 clubs_table.push([category?.name, channel?.name, role?.name, give?.name])
             }
 
-            if (!clubs_table.length === 0) {
+            if (!clubs_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Channel', 'Category', 'Role', 'Give')
@@ -47,7 +47,7 @@ module.exports = {
                 const position = await message.guild.roles.fetch(result.position)
                 custom_table.push([result?.system, role?.name, position?.name, result?.amount, result?.tag, result?.remove])
             }
-            if (!custom_table.length === 0) {
+            if (!custom_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Type', 'Role', 'Position', 'Amount', 'Tag', 'Remove')
@@ -64,7 +64,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 count_table.push([channel?.name, role?.name, result?.count, display_time(result?.delay)])
             }
-            if (!count_table.length === 0) {
+            if (!count_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Channel', 'Role', 'Count', 'Delay')
@@ -80,7 +80,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 boost_table.push([role?.name, result?.date])
             }
-            if (!boost_table.length === 0) {
+            if (!boost_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Role', 'Day')
@@ -96,7 +96,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 invite_table.push([role?.name, result?.date])
             }
-            if (!invite_table.length === 0) {
+            if (!invite_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Role', 'Day')
@@ -113,7 +113,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 overwrite_table.push([channel?.name, role?.name])
             }
-            if (!overwrite_table.length === 0) {
+            if (!overwrite_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Channel', 'Role')
@@ -129,7 +129,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 position_table.push([result?.type, role?.name, display_time(result?.member)])
             }
-            if (!position_table.length === 0) {
+            if (!position_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Type', 'Role', 'Time')
@@ -145,7 +145,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 autorole_table.push([result?.type, role?.name, display_time(result?.member)])
             }
-            if(!autorole_table.length === 0) {
+            if(!autorole_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Type', 'Role', 'Time')
@@ -161,7 +161,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 sticky_table.push([role?.name])
             }
-            if (!sticky_table.length === 0) {
+            if (!sticky_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('role')
@@ -195,7 +195,7 @@ module.exports = {
                 const role = await message.guild.roles.fetch(result.role)
                 flag_table.push([role?.name, result?.date])
             }
-            if(!flag_table.length === 0) {
+            if(!flag_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Role', 'Flag')
@@ -213,7 +213,7 @@ module.exports = {
                 const reward = await message.guild.roles.fetch(result.difficulty)
                 partnership_table.push([channel?.name, role?.name, reward?.name, result?.level])
             }
-            if (!partnership_table.length === 0) {
+            if (!partnership_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Channel', 'Role', 'Reward', 'Amount')
@@ -230,7 +230,7 @@ module.exports = {
                 const channel = await message.guild.channels.fetch(result.level)
                 leveling_table.push([result?.system, channel?.name, role?.name, result?.difficulty])
             }
-            if (!leveling_table.length === 0) {
+            if (!leveling_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('Type', 'Channel', 'Role', 'Value')
@@ -248,7 +248,7 @@ module.exports = {
                 const blacklist = await message.guild.roles.fetch(result.blacklist)
                 reaction_table.push([role?.name, channel?.name, blacklist?.name, result?.message, result?.emote, result?.type])
             }
-            if (!reaction_table.length === 0) {
+            if (!reaction_table.length) {
                 sent = true
                 const table = new AsciiTable()
                     .setHeading('role', 'channel', 'blacklist', 'message', 'emote', 'type')

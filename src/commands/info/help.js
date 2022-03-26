@@ -16,7 +16,6 @@ module.exports = {
             await help.startHelp(message)
         } else {
             const command = message.client.commands.get(message.options.getString("command"));
-            console.log(command.data)
             if (command) {
                 // check if subcommands
                 let usage = "";

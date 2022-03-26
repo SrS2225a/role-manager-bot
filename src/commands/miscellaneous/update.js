@@ -86,7 +86,7 @@ module.exports = {
                 await db.query("UPDATE message SET messages = $1 WHERE guild = $2 and member = $3 and channel= $4", [messages, message.guildId, member.id, channel.id])
                 await message.reply(`Messages updated successfully for ${member.user.username}!`)
             } else {
-                await db.query("INSERT INTO message(guild, messages, day, member, channel) VALUES($1, $2, $3, $4, $5)", [message.guildId, messages, dayjs(new Date(), 'YYYY-MM-DD'), member.id, channel.id])
+                await db.query("INSERT INTO message(guild, messages, day, member, channel) VALUES($1, $2, $3, $4, $5)", [message.guildId, messages, new Date(), member.id, channel.id])
                 await message.reply(`Messages updated successfully for ${member.user.username}!`)
             }
         } else if (message.options.getSubcommand() === "invites") {

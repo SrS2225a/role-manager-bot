@@ -11,7 +11,7 @@ module.exports = {
             .setDescription("The invite to search for")),
     async execute(message) {
         const db = await pool.connect()
-        const total = await db.query("SELECT amount, amount2, amount3, member FROM invite WHERE guild = $1 and invite = $2 LIMIT 1", [message.guild.id, message.options.getString("invite")])
+        const total = await db.query("SELECT SUM(amount)::integer AS amount, SUM(amount2)::integer AS amount2, SUM(amount3)::integer AS amount3, member FROM invite WHERE guild = $1 and invite.invite = $2 GROUP BY member", [message.guild.id, message.options.getString("invite")])
         if (total.rowCount === 0) {
             message.reply("Invite not found")
             return

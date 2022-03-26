@@ -11,7 +11,7 @@ module.exports = {
             .setDescription("Sets the blacklist for the leveling system")
             .addStringOption(option => option
                 .setName("main")
-                .setDescription("The role text, or voice channel to blacklist")
+                .setDescription("The role text, or channel to blacklist")
                 .setRequired(true)
             )
         )
