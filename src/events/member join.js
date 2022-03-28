@@ -83,7 +83,6 @@ module.exports = {
                     member.client.emit("inviteUpdate", member, invite)
                 }
             }).catch(err => {
-                console.log(err)
             })
             // end invite update emitter
 

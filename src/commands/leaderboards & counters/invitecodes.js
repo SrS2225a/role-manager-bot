@@ -4,7 +4,7 @@ const {Formatters, MessageEmbed} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("invitecodes")
-        .setDescription("Shows info about how many members you invited or someone else's")
+        .setDescription("Shows the invite codes for the server.")
         .addUserOption(option => option
             .setName("user")
             .setDescription("The user to get the invite info of")
