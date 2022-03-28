@@ -26,7 +26,7 @@ module.exports = {
         .addSubcommand(subcommand => subcommand
                 .setName("invites")
                 .setDescription("Shows someones invites over a period of time.")
-            .addStringOption(option => option
+            .addUserOption(option => option
                 .setName("invite")
                 .setDescription("The invite code to check.")
                 .setRequired(false))),
