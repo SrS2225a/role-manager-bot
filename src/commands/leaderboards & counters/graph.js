@@ -163,6 +163,7 @@ module.exports = {
                 message.reply("No data to display.")
                 return
             }
+            console.log(messages.rows)
             const max = Math.round(Date.parse(messages.rows[0].day))
             for (const row of messages.rows) {
                 row.day = Math.round(Date.parse(row.day))
@@ -393,7 +394,8 @@ module.exports = {
             // Graphically showing someone’s invites over time
             const invite = message.options.getUser("invite") || message.user
             const date = await db.query("SELECT lookback FROM settings WHERE guild = $1", [message.guild.id])
-            const invites = await db.query("SELECT sum(amount)::integer AS a, sum(amount2)::integer AS b, sum(amount3)::integer AS c, day FROM invite WHERE guild = $1 and member = $2 and day > $3 GROUP BY day ORDER BY day", [message.guild.id, invite.id, getDayDelta(date.rows[0]?.lookback || 30)])
+            const invites = await db.query("SELECT sum(amount)::integer AS a, sum(amount2)::integer AS b, sum(amount3)::integer AS c, day FROM invite WHERE guild = $1 and member = $2 and day > $3 GROUP BY day ORDER BY day DESC ", [message.guild.id, invite.id, getDayDelta(date.rows[0]?.lookback || 30)])
+
             let day = [0, 0]
             let week = [0, 0]
             let month = [0, 0]
@@ -404,13 +406,14 @@ module.exports = {
                 return
             }
 
-            const max = Math.round(Date.parse(invites.rows[0].day))
+            const max = Math.round(Date.parse(voice.rows[0].day))
             for (const row of invites.rows) {
                 row.day = Math.round(Date.parse(row.day))
                 x.push(row.day)
                 y.push(row.a + (row.b - row.c))
 
                 if (row.day === max) {
+                    console.log(row.day)
                     day[0] += row.a
                     day[1] += row.b + row.c
                 } else if (max - 24 * 60 * 60 * 1000 <= row.day) {

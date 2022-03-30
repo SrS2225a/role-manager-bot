@@ -25,6 +25,6 @@ module.exports = {
             await db.query("INSERT INTO afk(guild, member, message, count) VALUES($1, $2, $3, $4)", [message.guildId, message.user.id, reason, 0])
             await message.reply(`<@${message.user.id}> I marked you as AFK!`)
         }
-        db.release()
+        await db.release()
     }
 }

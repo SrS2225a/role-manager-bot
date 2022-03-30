@@ -86,6 +86,7 @@ module.exports = {
                     }
                 }
                 // end of leveling
+
                 // code for counting
                 const count = await db.query("SELECT * FROM count WHERE guild = $1 and channel = $2", [message.guild.id, message.channel.id]);
                 if (count.rowCount > 0) {
