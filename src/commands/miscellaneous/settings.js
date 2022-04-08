@@ -172,7 +172,7 @@ module.exports = {
         }
         if (setting === 'announce' || ident_flag) {
             const announce = await db.query("SELECT announce FROM settings WHERE guild= $1", [message.guildId])
-            if (announce.rows[0].announce) {
+            if (announce.rows[0]?.announce) {
                 sent = true
                 const channel = await message.guild.channels.fetch(announce.rows[0].announce)
                 const announceSend = `**Announce Settings** \n${Formatters.codeBlock(channel.name)}`
@@ -181,7 +181,7 @@ module.exports = {
         }
         if (setting === 'suggest' || ident_flag) {
             const suggest = await db.query("SELECT suggest FROM settings WHERE guild= $1", [message.guildId])
-            if (suggest.rows[0].suggest) {
+            if (suggest.rows[0]?.suggest) {
                 sent = true
                 const channel = await message.guild.channels.fetch(suggest.rows[0].suggest)
                 const suggeestSend = `**Suggest Settings** \n${Formatters.codeBlock(channel.name)}`

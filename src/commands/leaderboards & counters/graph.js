@@ -163,7 +163,7 @@ module.exports = {
                 message.reply("No data to display.")
                 return
             }
-            console.log(messages.rows)
+            
             const max = Math.round(Date.parse(messages.rows[0].day))
             for (const row of messages.rows) {
                 row.day = Math.round(Date.parse(row.day))
@@ -413,7 +413,6 @@ module.exports = {
                 y.push(row.a + (row.b - row.c))
 
                 if (row.day === max) {
-                    console.log(row.day)
                     day[0] += row.a
                     day[1] += row.b + row.c
                 } else if (max - 24 * 60 * 60 * 1000 <= row.day) {

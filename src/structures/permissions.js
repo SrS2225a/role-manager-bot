@@ -13,10 +13,11 @@ function userPermissions(message, permission) {
             })()
         }
         const missing = permissions.missing(permission)
+        console.log(missing)
         return missing.length === 0 ? true : (() => {
             throw {
                 identifier: "MissingUserPermissions",
-                message: `You are missing the following permission(s) to run this command: ${permission.join(', ')}`
+                message: `You are missing the following permission(s) to run this command: ${missing.join(', ')}`
             }
         })()
     }
