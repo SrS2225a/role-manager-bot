@@ -1,6 +1,6 @@
 {
   "name": "dionysus-discord.js-rewrite",
-  "version": "3.0.0",
+  "version": "3.2.0",
   "description": "Dionysus is a Greek themed, fun, interactive, general purpose discord bot - made to cater to various needs in a server. Rewrite Version.",
   "main": "src/main.js",
   "scripts": {
