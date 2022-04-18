@@ -35,7 +35,7 @@ module.exports = {
         clientPermissions(message, ["EMBED_LINKS", "ATTACH_FILES"])
         if (message.options.getSubcommand() === "members") {
             const lookback = await db.query("SELECT lookback FROM settings WHERE guild = $1", [message.guild.id])
-            const members = await db.query("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 order by day", [message.guildId, getDayDelta(lookback.rows[0]?.lookback || 30)])
+            const members = await db.query("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 order by day DESC", [message.guildId, getDayDelta(lookback.rows[0]?.lookback || 30)])
             let day = [0, 0]
             let week = [0, 0]
             let month = [0, 0]
