@@ -3,7 +3,7 @@ function ConvertDate(time) {
         return undefined;
     } else {
         let date = Date.parse(time) / 1000
-        if (!date) {
+        if (isNaN(date)) {
             const times = time.match(/\d+\s*\w+/g);
             let years = 0;
             let months = 0;
@@ -15,44 +15,67 @@ function ConvertDate(time) {
             if (times) {
                 times.forEach(time => {
                     const value = time.match(/\d+/g)[0];
-                    const label = time.match(/(?<=\s|\d)(mo|[ywdhms])/gi)[0];
+                    const label = time.match(/(?<=\s|\d)(mo|[ywdhms])/gi);
+                    if (label !== null) {
+                        switch (label[0]) {
+                            case 'y':
+                                years = value * 365 * 24 * 60 * 60;
+                                break;
 
-                    switch (label) {
-                        case 'y':
-                            years = value * 365 * 24 * 60 * 60;
-                            break;
+                            case 'mo':
+                                months = value * 30 * 24 * 60 * 60;
+                                break;
 
-                        case 'mo':
-                            months = value * 30 * 24 * 60 * 60;
-                            break;
+                            case 'w':
+                                weeks = value * 7 * 24 * 60 * 60;
+                                break;
 
-                        case 'w':
-                            weeks = value * 7 * 24 * 60 * 60;
-                            break;
+                            case 'd':
+                                days = value * 24 * 60 * 60;
+                                break;
 
-                        case 'd':
-                            days = value * 24 * 60 * 60;
-                            break;
+                            case 'h':
+                                hours = value * 60 * 60;
+                                break;
 
-                        case 'h':
-                            hours = value * 60 * 60;
-                            break;
+                            case 'm':
+                                minutes = value * 60;
+                                break;
 
-                        case 'm':
-                            minutes = value * 60;
-                            break;
-
-                        case 's':
-                            seconds = value;
-                            break;
+                            case 's':
+                                seconds = value;
+                                break;
+                        }
                     }
                 });
-                return years + months + weeks + days + hours + minutes + seconds
+                const result = years + months + weeks + days + hours + minutes + seconds
+                if (result === 0) {
+                    const matchTime = time.match(/\b(24:00|2[0-3]:\d\d|[01]?\d((:\d\d)( ?(a|p)m?)?| ?(a|p)m?))\b/ig)
+                    if (matchTime) {
+                        const time = matchTime[0].split(':')
+                        let hours = parseInt(time[0])
+                        const minutes = parseInt(time[1])
+                        console.log(time[1])
+                        const ampm = time[1]?.match(/[a|p]m?/i)
+                        if (ampm) {
+                            if (ampm[0].toLowerCase() === 'a' || ampm[0].toLowerCase() === 'am') {
+                                if (hours === 12) {
+                                    hours = 0
+                                }
+                            } else {
+                                if (hours !== 12) {
+                                    hours += 12
+                                }
+                            }
+                        }
+                        return hours * 60 * 60 + minutes * 60
+                    }
+                } else {return result}
             } else {
-                return undefined
+                return undefined;
             }
         } else {
-            return date.time
+            return date
         }
     }
 }
