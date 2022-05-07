@@ -1,8 +1,6 @@
 const packageDetails = require("../../package.json");
 const {Reminder, Giveaway, Poll, AutoRole, GlobalTasks, DeleteExpiringInvites} = require("../structures/tasks");
-const {ownerPermissions} = require("../structures/permissions");
 const {Collection} = require("discord.js");
-const json = require('../config.json');
 module.exports = {
     name: 'ready',
     once: true,
@@ -30,8 +28,8 @@ module.exports = {
 
         // set permissions
         if (!bot.application?.owner) await bot.application?.fetch();
-        const command = await bot.guilds.cache.get("531247629649182750")?.commands.fetch(json['devCommand'])
-        await command.permissions.add(ownerPermissions())
+        // const command = await bot.guilds.cache.get("531247629649182750")?.commands.fetch(json['devCommand'])
+        // await command.permissions.add(ownerPermissions())
     },
 };
 

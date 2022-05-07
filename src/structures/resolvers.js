@@ -64,9 +64,11 @@ async function resolveMessage(message, parameter) {
     const channel = message.channel ?? message.message.channel
 
     async function resolveById(message, parameter) {
-        const resolved = await channel.messages.fetch(parameter)
-        if (!resolved) return null
-        return resolved
+        try {
+            return await channel.messages.fetch(parameter);
+        } catch (e) {
+            return null;
+        }
     }
 
     function getMessageFromChannel(channels, messages) {
@@ -82,7 +84,11 @@ async function resolveMessage(message, parameter) {
         if(!match) return null
         const channel = match.groups.channel ? await resolveById(match.groups.channel, parameter) : parameter.message.channel
         if(!channel) return null
-        return channel.messages.fetch(match.groups.message)
+        try {
+            return channel.messages.fetch(match.groups.message)
+        } catch (e) {
+            return null
+        }
     }
 
     async function resolveByChannelAndMessage(message, parameter) {
@@ -91,6 +97,7 @@ async function resolveMessage(message, parameter) {
         return getMessageFromChannel(result.channelId, result.messageId)
     }
     const msg = await resolveById(message, parameter) ?? await resolveByLink(message, parameter) ?? await resolveByChannelAndMessage(message, parameter)
+    console.log(msg)
     if(msg) {return msg} else {(() => {throw {identifier: "ArgumentMessageError", message: `I could not find the message ${parameter}`}})()}
 }
 
@@ -144,7 +151,6 @@ function resolveCommands(client) {
     (async () => {
         const rest = new REST({version: '9'}).setToken(json['token'])
         await rest.put(Routes.applicationCommands(json["clientID"]), {body: commands})
-        await rest.put(Routes.applicationGuildCommands(json["clientID"], '531247629649182750'), {body: guildCommands})
     })()
 }
 
