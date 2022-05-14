@@ -28,14 +28,14 @@ module.exports = {
                 .setDescription("Shows someones invites over a period of time.")
             .addUserOption(option => option
                 .setName("invite")
-                .setDescription("The invite code to check.")
+                .setDescription("The member to show the invites of.")
                 .setRequired(false))),
     async execute(message) {
         const db = await pool.connect()
         clientPermissions(message, ["EMBED_LINKS", "ATTACH_FILES"])
         if (message.options.getSubcommand() === "members") {
             const lookback = await db.query("SELECT lookback FROM settings WHERE guild = $1", [message.guild.id])
-            const members = await db.query("SELECT joins, leaves, day FROM member WHERE guild = $1 and day > $2 order by day DESC", [message.guildId, getDayDelta(lookback.rows[0]?.lookback || 30)])
+            const members = await db.query("SELECT sum(joins)::integer AS joins, sum(leaves)::integer AS leaves, day FROM member WHERE guild = $1 and day > $2 group by day order by day DESC", [message.guildId, getDayDelta(lookback.rows[0]?.lookback || 30)])
             let day = [0, 0]
             let week = [0, 0]
             let month = [0, 0]
@@ -406,7 +406,7 @@ module.exports = {
                 return
             }
 
-            const max = Math.round(Date.parse(voice.rows[0].day))
+            const max = Math.round(Date.parse(invites.rows[0].day))
             for (const row of invites.rows) {
                 row.day = Math.round(Date.parse(row.day))
                 x.push(row.day)
@@ -432,7 +432,7 @@ module.exports = {
                 .addField("Week", `${week[0]} Joins, ${week[1]} False`, true)
                 .addField("Month", `${month[0]} Joins, ${month[1]} False`, true)
                 .addField("Average", `${Math.round(month[0] / (month[1] + week[1] + day[1]))} Joins, ${Math.round(month[1] / (month[1] + week[1] + day[1]))} Leaves`, true)
-                .addField("Total", invites.rows.reduce((a, b) => a + b.a + b.b - b.c, 0).toString(), true)
+                .addField("Total", invites.rows.reduce((a, b) => a + b.a, 0).toString(), true)
                 .addField("\u200b", "\u200b")
 
             const chart = new ChartJSNodeCanvas({width: 800, height: 600, plugins: {globalVariableLegacy: ['chartjs-adapter-moment']}})

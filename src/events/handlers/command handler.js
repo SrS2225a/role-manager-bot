@@ -13,7 +13,7 @@ module.exports = {
             const blockedUser = await db.query("SELECT message FROM blacklist WHERE member = $1 and type = $2 LIMIT 1", [interaction.user.id, 'user'])
             await db.release()
             if (blacklistedCommand.rows.length) {interaction.reply(`DisabledCommand: ${interaction.commandName} command is disabled.`)}
-            else if (blockedUser.rows.length) {interaction.reply(`ClientPermissionsMissing: You are currently blocked from using this bot for **${Util.removeMentions(blockedUser.rows[0].message)}**. If you believe that this is an error, please join the support server @ https://discord.gg/JHkhnzDvWG and explain why.`)}
+            else if (blockedUser.rows.length) {interaction.reply(`ClientPermissionsMissing: You are currently blocked from using this bot for: **${Util.removeMentions(blockedUser.rows[0].message)}**. If you believe that this is an error, please join the support server @ https://discord.gg/JHkhnzDvWG and explain why.`)}
             else {
                 await command.execute(interaction)
                 const channel = interaction.client.channels.cache.get('866678659862626355')

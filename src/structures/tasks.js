@@ -484,11 +484,11 @@ class GlobalTasks {
                                         member.roles.remove(role)
                                     }
                                 }
-                                if (top.type === "day" && top.level === 1) {
+                                if (top.type === 0 && top.level === 1) {
                                     member.roles.add(role)
-                                } else if (top.type === "week" && top.level === 7) {
+                                } else if (top.type === 1 && top.level === 7) {
                                     member.roles.add(role)
-                                } else if (top.type === "month" && top.level === 30) {
+                                } else if (top.type === 2 && top.level === 30) {
                                     member.roles.add(role)
                                 }
                             }

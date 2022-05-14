@@ -55,7 +55,6 @@ function resolveAsChannel_Role(message, args) {
             if (role) {
                 return role;
             }
-            return null;
         }
     }
 }
@@ -97,7 +96,6 @@ async function resolveMessage(message, parameter) {
         return getMessageFromChannel(result.channelId, result.messageId)
     }
     const msg = await resolveById(message, parameter) ?? await resolveByLink(message, parameter) ?? await resolveByChannelAndMessage(message, parameter)
-    console.log(msg)
     if(msg) {return msg} else {(() => {throw {identifier: "ArgumentMessageError", message: `I could not find the message ${parameter}`}})()}
 }
 

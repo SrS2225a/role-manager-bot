@@ -41,7 +41,7 @@ module.exports = {
                                 if (role.rowCount > 0) {
                                     const behavoir = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2", [message.guild.id, 'behavior']);
                                     if (behavoir.rowCount > 0) {
-                                        if (behavoir.rows[0].type === "true") {
+                                        if (behavoir.rows[0].type === 1) {
                                             const member = message.guild.members.cache.get(message.author.id);
                                             if (member) {
                                                 const role = message.guild.roles.cache.get(role.rows[0].role);
