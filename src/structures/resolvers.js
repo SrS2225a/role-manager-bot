@@ -6,9 +6,9 @@ const json = require('../config.json');
 
 function resolveAsChannel_Dm_Here(message, args) {
     if (args) {
-        if (args.toLowerCase() === 'here') {
+        if (args?.toLowerCase() === 'here') {
             return message.channel;
-        } else if (args.toLowerCase() === 'dm') {
+        } else if (args?.toLowerCase() === 'dm') {
             return message.user;
         } else {
             const channel = resolveById(args, message.guild) ?? resolveByQuery(args, message.guild);
@@ -22,7 +22,8 @@ function resolveAsChannel_Dm_Here(message, args) {
             }
 
             function resolveByQuery(args, guild) {
-                const channel = guild.channels.find(c => c.name === args.toLowerCase());
+                console.log(guild.channels)
+                const channel = guild.channels.cache.find(c => c.name === args.toLowerCase());
                 return channel ? channel : null;
             }
         }

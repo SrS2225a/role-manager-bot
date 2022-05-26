@@ -49,9 +49,9 @@ module.exports = {
             for (const row of rows.rows) {
                 const delta = new Date(row.date)
                 if (row.type === 1) {
-                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nEnds <t:${Math.round(delta.valueOf() / 1000)}:R>`)
+                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nEnds in: <t:${Math.round(delta.valueOf() / 1000)}:R>`)
                 } else {
-                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nStarts <t:${Math.round(delta.valueOf() / 1000)}:R>`)
+                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nStarts in: <t:${Math.round(delta.valueOf() / 1000)}:R>`)
                 }
             }
             return await message.reply({embeds: [embed]});

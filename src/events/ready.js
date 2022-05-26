@@ -27,7 +27,7 @@ module.exports = {
         })
 
         // set permissions
-        if (!bot.application?.owner) await bot.application?.fetch();
+        // if (!bot.application?.owner) await bot.application?.fetch();
         // const command = await bot.guilds.cache.get("531247629649182750")?.commands.fetch(json['devCommand'])
         // await command.permissions.add(ownerPermissions())
     },

@@ -17,10 +17,9 @@ module.exports = {
 
                 const user = reaction.message.guild.members.cache.get(mem.id) || await reaction.message.guild.members.fetch(mem.id);
                 const db = await pool.connect()
-                const result = await db.query("SELECT options FROM vote WHERE guild = $1 and message = $2 and channel = $3 and not type = $4", [reaction.message.guild.id, reaction.message.id, reaction.message.channel.id, 2])
+                const result = await db.query("SELECT options FROM vote WHERE guild = $1 and message = $2 and channel = $3 and not type = $4", [reaction.message.guild.id, reaction.message.id, reaction.message.channel.id, 3])
                 let sendSuccess = true
                 if (result.rowCount > 0) {
-                    console.log(result)
                     const res = result.rows[0].options
                     if (res?.role_requirement) {
                         const role = reaction.message.guild.roles.cache.get(res.role_requirement)
@@ -30,7 +29,6 @@ module.exports = {
                         }
                     }
                     if (res?.message_requirement) {
-                        console.log(res.message_requirement)
                         const messages = await db.query("SELECT member FROM message WHERE guild = $1 GROUP BY member HAVING SUM(messages) >= $2 and member = $3", [reaction.message.guild.id, res.message_requirement, user.id])
                         if (messages.rowCount < 1) {
                             removeEntree("Failed to enter giveaway. You don't have the required messages.")

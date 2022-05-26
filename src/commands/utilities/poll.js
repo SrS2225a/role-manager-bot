@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
-const {ConvertDate} = require("../../structures/converters");
-const {MessageEmbed} = require("discord.js");
+const {ConvertDate, ConvertBool} = require("../../structures/converters");
+const {MessageEmbed, Modal, TextInputComponent, MessageActionRow} = require("discord.js");
 const {userPermissions, clientPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");
 const {Poll} = require("../../structures/tasks");
@@ -11,22 +11,7 @@ module.exports = {
         .addSubcommand(subcommand => subcommand
             .setName("create")
             .setDescription("Creates a poll")
-            .addStringOption(option => option
-                .setName("questions")
-                .setDescription("The questions for the poll. To add more questions, add a comma between each one")
-                .setRequired(true))
-            .addStringOption(option => option
-                .setName("topic")
-                .setDescription("The topic of the poll")
-                .setRequired(true))
-            .addStringOption(option => option
-                .setName("duration")
-                .setDescription("The duration of the poll")
-                .setRequired(true))
-            .addBooleanOption(option => option
-                .setName("multiple")
-                .setDescription("Whether the poll allows multiple answers")
-                .setRequired(false)))
+        )
         .addSubcommand(subcommand => subcommand
             .setName("end")
             .setDescription("Ends a poll")
@@ -41,35 +26,81 @@ module.exports = {
         userPermissions(message, ["MANAGE_MESSAGES"]);
         const db = await pool.connect()
         if (message.options.getSubcommand() === "create") {
-            clientPermissions(message, ["ADD_REACTIONS", "EMBED_LINKS"]);
-            const questions = message.options.getString("questions").split(",");
-            const topic = message.options.getString("topic");
-            const time = ConvertDate(message.options.getString("duration"))
-            const multiple = message.options.getBoolean("multiple");
-            if (questions.length < 2) {
-                return await message.reply("You must provide at least 2 questions");
-            } else if (questions.length > 20) {
-                return await message.reply("You can only provide a maximum of 20 questions");
-            }
-            if (time === undefined) {
-                return await message.reply("Invalid duration")
-            } else if (time < 0) {
-                return await message.reply("Duration must be in the future")
-            }
-            const delta = new Date(Date.now() + time * 1000)
-            const multiple_choice = multiple ? "multiple-choice" : "single-choice";
-            const indicators = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹"].slice(0, questions.length);
-            const embed = new MessageEmbed()
-                .setTitle(topic)
-                .setDescription(`${questions.map((question, index) => `${indicators[index]} ${question}`).join("\n")} \n\nEnds <t:${Math.round(delta.valueOf() / 1000)}:R>`)
-                .setColor('WHITE')
-                .setFooter(`This is a ${multiple_choice} poll`)
-            const interaction = await message.channel.send({embeds: [embed]})
-            await indicators.forEach(emoji => interaction.react(emoji))
-            const id = Math.random().toString(36).substr(2, 8)
-            await db.query("INSERT INTO vote(guild, message, date, win, type, channel, id) VALUES($1, $2, $3, $4, $5, $6, $7)", [message.guild.id, interaction.id, delta, multiple, 3, message.channel.id, id]);
-            await new Poll().dispatch_poll(message.client)
-            return await message.reply(`Poll created with id: ${id}`);
+        clientPermissions(message, ["ADD_REACTIONS", "EMBED_LINKS"]);
+        await showModal()
+
+        async function showModal() {
+            const modal = new Modal()
+                .setCustomId('pollModal')
+                .setTitle('Create Poll')
+
+            const topicInput = new TextInputComponent()
+                .setCustomId('topicInput')
+                .setLabel('What is the topic of the poll?')
+                .setRequired(true)
+                .setStyle('SHORT')
+
+            const durationInput = new TextInputComponent()
+                .setCustomId('durationInput')
+                .setLabel('How long should the poll last?')
+                .setRequired(true)
+                .setStyle('SHORT')
+                .setPlaceholder('Example: 1d1h')
+
+            const questions = new TextInputComponent()
+                .setCustomId('questionsInput')
+                .setLabel('What are the questions for the poll?')
+                .setRequired(true)
+                .setStyle('SHORT')
+                .setPlaceholder('To add more questions, add a comma between each one')
+
+            modal.addComponents(new MessageActionRow().addComponents(topicInput), new MessageActionRow().addComponents(durationInput), new MessageActionRow().addComponents(questions))
+
+            await message.showModal(modal)
+        }
+
+        const filter = (interaction) => interaction.customId === 'pollModal';
+        message.awaitModalSubmit({ filter, time: 40000 })
+            .then(async modal => {
+                const pollTopic = modal.fields.getTextInputValue('topicInput')
+                const pollQuestions = modal.fields.getTextInputValue('questionsInput')
+                const durationInput = modal.fields.getTextInputValue('durationInput')
+
+                await modal.deferUpdate()
+                const questions = pollQuestions.split(',')
+                if (questions.length < 2) {
+                    await message.channel.send('You need at least 2 questions')
+                    return
+                } else if (questions.length > 20) {
+                    await modal.deferUpdate()
+                    await message.channel.send("You can only provide a maximum of 20 questions")
+                    return
+                }
+
+                const time = ConvertDate(durationInput)
+                if (time === undefined) {
+                    await message.channel.send("Invalid duration")
+                    return
+                } else if (time < 0) {
+                    await message.channel.send("Duration must not be in the future")
+                    return
+                }
+
+                const delta = new Date((Date.now() + time * 1000))
+                const id = Math.random().toString(36).substr(2, 8)
+                const indicators = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸", "🇹"].slice(0, questions.length);
+                const embed = new MessageEmbed()
+                    .setTitle(pollTopic)
+                    .setDescription(`${questions.map((question, index) => `${indicators[index]} ${question}`).join("\n")} \n\nEnds <t:${Math.round(delta.valueOf() / 1000)}:R>`)
+                    .setColor('WHITE')
+                    .setFooter(`Poll ID: ${id}`)
+                const pollMessage = await message.channel.send({embeds: [embed]})
+                await indicators.forEach(emoji => pollMessage.react(emoji))
+                await db.query("INSERT INTO vote(guild, message, date, type, channel, id) VALUES($1, $2, $3, $4, $5,$6)", [message.guild.id, pollMessage.id, delta, 3, message.channel.id, id]);
+                await new Poll().dispatch_poll(message.client)
+            }).catch(async () => {
+                await message.channel.send("Timed out")
+            })
         } else if (message.options.getSubcommand() === "list") {
             clientPermissions(message, ["EMBED_LINKS"]);
             const rows = await db.query("SELECT * FROM vote WHERE guild = $1 AND type = $2", [message.guild.id, "poll"])

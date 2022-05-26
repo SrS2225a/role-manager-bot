@@ -55,7 +55,6 @@ function ConvertDate(time) {
                         const time = matchTime[0].split(':')
                         let hours = parseInt(time[0])
                         const minutes = parseInt(time[1])
-                        console.log(time[1])
                         const ampm = time[1]?.match(/[a|p]m?/i)
                         if (ampm) {
                             if (ampm[0].toLowerCase() === 'a' || ampm[0].toLowerCase() === 'am') {

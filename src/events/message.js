@@ -102,7 +102,7 @@ module.exports = {
                             const forgotSend = await message.channel.send({content: `${Formatters.userMention(message.author.id)} just forgot how to count!`,});
                             setTimeout(async () => {
                                 await forgotSend.delete();
-                            }, 5000);
+                            }, 4000);
                             if (count.rows[0].delay > 0) {
                                 await message.member.roles.add({roles: [count.rows[0].role]});
                                 setTimeout(async () => {

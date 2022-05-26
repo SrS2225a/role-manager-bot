@@ -99,6 +99,7 @@ class Poll {
             const embed = new MessageEmbed()
                 .setTitle("Poll Results")
                 .setDescription(`${embed_content.title} \n\nEnded <t:${Math.round(poll.date / 1000)}:R>`)
+                .setFooter(`Poll ID: ${poll.id}`)
                 .setColor('WHITE')
 
             for (const reaction of reactions) {
@@ -106,7 +107,7 @@ class Poll {
                 if (indicators.includes(react.emoji.name)) {
                     const emoji = react.emoji.name
                     const count = react.count - 1
-                    const percentage = Math.round((count / votes) * 100)
+                    const percentage = Math.round((count / votes) * 100) || 0
                     embed.addField(emoji, `${count} (${percentage}%)`, true)
                 }
             }
@@ -122,7 +123,6 @@ class Poll {
     async dispatch_poll(client) {
         const db = await pool.connect()
         const poll = await this.get_active_polls(db)
-        await db.release()
         if (poll) {
             clearTimeout(client?.poll_timer)
             const now = new Date()
