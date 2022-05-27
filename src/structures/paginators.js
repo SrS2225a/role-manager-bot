@@ -336,6 +336,7 @@ class PaginateWhileRunning {
         this.message = message
         this.collect = true
         this.lang = ''
+        this.show_points = false
         this.channel = message.channel
         this.per_page = 20
         this.author = message.user

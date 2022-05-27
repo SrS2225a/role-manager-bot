@@ -1,8 +1,8 @@
 const {MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu, Modal, TextInputComponent} = require("discord.js");
 const fs = require("fs");
 const {ConvertDate} = require("./converters");
-const {resolveRole, resolveAsChannel_Dm_Here} = require("./resolvers");
-const {Giveaway, Reminder} = require("./tasks");
+const {resolveRole} = require("./resolvers");
+const {Giveaway} = require("./tasks");
 const {pool} = require("../database");
 
 class HelpMenu {

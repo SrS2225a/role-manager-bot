@@ -89,8 +89,8 @@ module.exports = {
                     const reminder = new Reminder()
 
                     await modal.deferUpdate()
-                    const time = await ConvertDate(duration)
-                    if (time === null) {
+                    const time = ConvertDate(duration)
+                    if (time === undefined) {
                         await message.channel.send("Invalid duration")
                         return
                     } else if (time < 0) {

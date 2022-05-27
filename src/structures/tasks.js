@@ -471,30 +471,32 @@ class GlobalTasks {
         if (guild.rowCount > 0) {
             for (const get of guild.rows) {
                 const guild = this.client.guilds.cache.get(get.guild)
-                const level = await this.db.query("SELECT level, role, type FROM leveling WHERE guild = $1 and system = $2", [guild.id, 'top'])
-                if (level.rowCount > 0) {
-                    for (const top of level) {
-                        const current = await this.db.query("SELECT user_id FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC LIMIT 1", [guild.id])
-                        if (current.rowCount > 0) {
-                            const member = guild.members.cache.get(current.rows[0].user_id)
-                            const role = guild.roles.cache.get(top.role)
-                            if (member && role) {
-                                for (const mem of role.members.cache) {
-                                    if (mem.id !== member.id) {
-                                        member.roles.remove(role)
+                if (guild) {
+                    const level = await this.db.query("SELECT level, role, type FROM leveling WHERE guild = $1 and system = $2", [guild.id, 'top'])
+                    if (level.rowCount > 0) {
+                        for (const top of level) {
+                            const current = await this.db.query("SELECT user_id FROM levels WHERE guild_id = $1 ORDER BY lvl DESC, exp DESC LIMIT 1", [guild.id])
+                            if (current.rowCount > 0) {
+                                const member = guild.members.cache.get(current.rows[0].user_id)
+                                const role = guild.roles.cache.get(top.role)
+                                if (member && role) {
+                                    for (const mem of role.members.cache) {
+                                        if (mem.id !== member.id) {
+                                            member.roles.remove(role)
+                                        }
                                     }
-                                }
-                                if (top.type === 0 && top.level === 1) {
-                                    member.roles.add(role)
-                                } else if (top.type === 1 && top.level === 7) {
-                                    member.roles.add(role)
-                                } else if (top.type === 2 && top.level === 30) {
-                                    member.roles.add(role)
+                                    if (top.type === 0 && top.level === 1) {
+                                        member.roles.add(role)
+                                    } else if (top.type === 1 && top.level === 7) {
+                                        member.roles.add(role)
+                                    } else if (top.type === 2 && top.level === 30) {
+                                        member.roles.add(role)
+                                    }
                                 }
                             }
                         }
+                        await this.db.query("UPDATE leveling SET level = level + 1 < 30 OR 0 WHERE guild = $1 and system = $2", [guild.id, 'top'])
                     }
-                    await this.db.query("UPDATE leveling SET level = level + 1 < 30 OR 0 WHERE guild = $1 and system = $2", [guild.id, 'top'])
                 }
             }
         }
