@@ -14,9 +14,9 @@ module.exports = {
                     const role = channel.guild.roles.cache.get(voice.rows[0].role)
                     if (role) {
                         if (after.channel) {
-                            after.channel.guild.members.cache.get(after.member.id).roles.add(role)
+                            after.channel.guild.members.cache.get(after.member.id)?.roles.add(role)
                         } else {
-                            before.channel.guild.members.cache.get(before.member.id).roles.remove(role)
+                            before.channel.guild.members.cache.get(before.member.id)?.roles.remove(role)
                         }
                     }
                 }

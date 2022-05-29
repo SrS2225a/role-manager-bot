@@ -22,9 +22,14 @@ module.exports = {
         const embed = new MessageEmbed()
             .setTitle(`${user.username}'s Voice Time`)
             .setColor('WHITE')
-            .setDescription(`${voice.rows.map(row => `**<#${row.channel}>**: ${display_time(row.a + row.b, 6)}`).join("\n")}`)
-            .addField("Total Voice Time", display_time(voice.rows.map(row => row.a + row.b).reduce((acc, val) => acc + val, 0), 6))
-            .setFooter(`You are in place #${place.rows[0].count} with your voice time`)
+            .setFooter(`You are in place #${place.rows[0].count} with ${display_time(voice.rows.map(row => row.a + row.b).reduce((acc, val) => acc + val, 0), 6)} voice time.`)
+        let empty_voice = 0
+        let total_voice = []
+        voice.rows.forEach(row => {
+            if (!message.guild.channels.cache.has(row.channel)) empty_voice += row.a + row.b
+            else total_voice.push(`**<#${row.channel}>** - ${display_time(row.a + row.b, 6)}`)
+        })
+        embed.setDescription(empty_voice > 0 ? `${total_voice.join("\n")}\n\n**deleted channel(s)** - ${display_time(empty_voice, 6)}` : total_voice.join("\n"))
         message.reply({embeds: [embed]})
         await db.release()
     }

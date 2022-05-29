@@ -1,6 +1,7 @@
 const {SlashCommandBuilder, ContextMenuCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {MessageEmbed} = require("discord.js");
+const {display_time} = require("../../structures/converters");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("messages")
@@ -21,8 +22,15 @@ module.exports = {
         const embed = new MessageEmbed()
             .setTitle(`${user.username}'s Messages`)
             .setColor('WHITE')
-            .setDescription(messages.rows.map(row => `**<#${row.channel}>** - ${row.sum}`).join("\n"))
             .setFooter(`${user.username} is in ${place.rows[0].count} place with ${messages.rows.reduce((acc, cur) => acc + cur.sum, 0)} messages.`)
+
+        let empty_message = 0
+        let total_message = []
+        messages.rows.forEach(row => {
+            if (!message.guild.channels.cache.has(row.channel)) empty_message += row.sum
+            else total_message.push(`**<#${row.channel}>** - ${row.sum}`)
+        })
+        embed.setDescription(empty_message > 0 ? `${total_message.join("\n")}\n\n**deleted channel(s)** - ${empty_message}` : total_message.join("\n"))
         message.reply({embeds: [embed]})
         await db.release()
     }
