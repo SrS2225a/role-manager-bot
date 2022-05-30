@@ -1,7 +1,6 @@
 const {SlashCommandBuilder, ContextMenuCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {MessageEmbed} = require("discord.js");
-const {display_time} = require("../../structures/converters");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("messages")

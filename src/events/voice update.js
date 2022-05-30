@@ -26,7 +26,6 @@ module.exports = {
                 const graph = await db.query("SELECT * FROM voice WHERE guild = $1 and member = $2 and channel = $3 and day = $4 LIMIT 1", [channel.guild.id, member.id, channel.id, new Date()])
                 if (graph.rowCount === 0) {
                     await db.query("INSERT INTO voice VALUES ($1, $2, $3, $4, 0, 0, $5)", [new Date(), channel.guild.id, member.id, channel.id, new Date()])
-                    await db.query("DELETE FROM member WHERE day < $1", [new Date(Date.now() - 8640000000)])
                 } else {
                     if (after.channel) {
                         await db.query("UPDATE voice SET created = $1 WHERE guild = $2 and member = $3 and channel = $4 and day = $5", [new Date(), channel.guild.id, after.id, channel.id, new Date()])

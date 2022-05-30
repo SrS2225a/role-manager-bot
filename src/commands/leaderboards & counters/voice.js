@@ -23,6 +23,7 @@ module.exports = {
             .setTitle(`${user.username}'s Voice Time`)
             .setColor('WHITE')
             .setFooter(`You are in place #${place.rows[0].count} with ${display_time(voice.rows.map(row => row.a + row.b).reduce((acc, val) => acc + val, 0), 6)} voice time.`)
+        
         let empty_voice = 0
         let total_voice = []
         voice.rows.forEach(row => {
