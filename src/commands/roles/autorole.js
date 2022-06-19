@@ -44,7 +44,7 @@ module.exports = {
                     await message.channel.send("Duration must be in the future")
                     return
                 }
-                await db.query("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", [message.guildId, new Date(Date.now() + time * 1000), role.id, 'add'])
+                await db.query("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", [message.guildId, time, role.id, 'add'])
                 await message.reply("Auto Position Set Successfully!")
             } else {
                 await db.query("DELETE FROM roles WHERE guild = $1 and role = $2 and type = $3", [message.guildId, role.id, 'add'])
@@ -63,7 +63,7 @@ module.exports = {
                     await message.channel.send("Duration must be in the future")
                     return
                 }
-                await db.query("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", [message.guildId, new Date(Date.now() + time * 1000), role.id, 'remove'])
+                await db.query("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", [message.guildId, time, role.id, 'remove'])
                 await message.reply("Auto Position Set Successfully!")
             } else {
                 await db.query("DELETE FROM roles WHERE guild = $1 and role = $2 and type = $3", [message.guildId, role.id, 'remove'])
