@@ -104,7 +104,7 @@ module.exports = {
                         await message.channel.send("To prevent spam in servers, repeating reminders must be at least 2 hours long")
                         return
                     }
-                    await db.query("INSERT INTO remind (id, member, date, message, destination, repeat, assigned) VALUES ($1, $2, $3, $4, $5, $6, $7)", [id, message.user.id, delta, description, channel.id, repeats, new Date()])
+                    await db.query("INSERT INTO remind (id, member, date, message, destination, repeat, assigned) VALUES ($1, $2, $3, $4, $5, $6, current_timestamp)", [id, message.user.id, delta, description, channel.id, repeats])
                     await message.channel.send(`Ok, reminding you ${repeats ? "every" : "in"} ${display_time(time)} ${channel?.type === "GUILD_TEXT" ? `in ${Formatters.channelMention(channel.id)}` : `in DMs`} for ${Formatters.inlineCode(description)}`)
                     await reminder.dispatch_reminder(message.client)
                 })

@@ -342,16 +342,16 @@ module.exports = {
         } else if (message.options.getSubcommand() === "sql") {
             const query = message.options.getString("argument")
             try {
-                await message.deferReply()
+                const now = Date.now()
                 const result = await db.query(query)
                 if (result.rows.length === 0) {
-                    await message.reply("The query did not return anything")
+                    await message.reply(`Took ${(Date.now() - now)} milliseconds to execute`)
                 } else {
-                    const paginate = new paginator(message, JSON.stringify(result.rows, null, 2).split('\n'))
-                    paginate.per_page = 40
+                    const paginate = new paginator(message, JSON.stringify(result.rows, null, 2).split('\n'), 40)
                     paginate.show_entry_count = false
                     paginate.lang = "json"
                     await paginate.paginate()
+                    await message.channel.send(`Took ${(Date.now() - now)} milliseconds to execute`)
                 }
             } catch (error) {
                 await message.channel.send(`\`\`\`js\n${error.stack}\`\`\``)

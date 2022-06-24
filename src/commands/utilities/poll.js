@@ -120,7 +120,7 @@ module.exports = {
             if (poll.length === 0) {
                 return await message.reply("That poll does not exist")
             }
-            await db.query("UPDATE vote SET date = $1 WHERE guild = $1 and message = $2 and type = $3", [new Date(), poll.rows[0].message, "poll"]) // update this instead to current date to trigger the endpoll and reload task
+            await db.query("UPDATE vote SET date = current_timestamp WHERE guild = $1 and message = $2 and type = $3", [poll.rows[0].message, "poll"]) // update this instead to current date to trigger the endpoll and reload task
             await new Poll().dispatch_poll(message)
             await message.reply("Poll ended")
         }

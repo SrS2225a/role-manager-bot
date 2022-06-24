@@ -30,7 +30,7 @@ module.exports = {
             } catch (e) {
                 console.log(e)
             } finally {
-                db.release()
+                await db.release()
             }
         }
     }

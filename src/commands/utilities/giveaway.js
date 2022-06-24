@@ -66,7 +66,7 @@ module.exports = {
             if (delta < Date.now()) {
                 return await message.reply("Giveaway has already ended");
             }
-            await db.query("UPDATE vote SET date = $1 WHERE guild= $2 and id = $3", [new Date(), message.guild.id, id]);
+            await db.query("UPDATE vote SET date = current_timestamp WHERE guild= $2 and id = $3", [message.guild.id, id]);
             await new Giveaway().dispatch_giveaway(message.client)
             return await message.reply("Giveaway ended");
         } else if (message.options.getSubcommand() === "reroll") {
