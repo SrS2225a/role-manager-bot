@@ -4,7 +4,7 @@
 - Dionysus is a Greek themed, fun, interactive, general purpose discord bot - made to cater to various needs in a server.
 - We welcome feedback & criticism to engineer the very best bot.
 
-[add dionysus now](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot%20applications.commands) ・ [support server here](https://discord.gg/JHkhnzDvWG) ・ [support us here](https://donatebot.io/checkout/521325637558861825) ・ [trello board](https://trello.com/b/Y86Q7qKA/dionysus-bot)
+[add dionysus now](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=bot%20applications.commands) ・ [support server here](https://discord.gg/JHkhnzDvWG) ・ [trello board](https://trello.com/b/Y86Q7qKA/dionysus-bot)
 
 # Why Dionysus?
 ## Keeping it short:
