@@ -6,10 +6,10 @@ module.exports = {
         try {
             // check if user is bot
             if (reaction.emoji.name === '🎉' && !mem.bot) {
-                function removeEntree(error) {
-                    reaction.users.remove(user.id)
+                async function removeEntree(error) {
+                    await reaction.users.remove(user.id)
                     try {
-                        mem.send(error)
+                        await mem.send(error)
                     } catch (error) {
                         console.log(error)
                     }
@@ -24,14 +24,14 @@ module.exports = {
                     if (res?.role_requirement) {
                         const role = reaction.message.guild.roles.cache.get(res.role_requirement)
                         if (!user.roles.cache.has(role.id)) {
-                            removeEntree("Failed to enter giveaway. You don't have the required role.")
+                            await removeEntree("Failed to enter giveaway. You don't have the required role.")
                             sendSuccess = false
                         }
                     }
                     if (res?.message_requirement) {
                         const messages = await db.query("SELECT member FROM message WHERE guild = $1 GROUP BY member HAVING SUM(messages) >= $2 and member = $3", [reaction.message.guild.id, res.message_requirement, user.id])
                         if (messages.rowCount < 1) {
-                            removeEntree("Failed to enter giveaway. You don't have the required messages.")
+                            await removeEntree("Failed to enter giveaway. You don't have the required messages.")
                             sendSuccess = false
                         }
                     }
@@ -39,7 +39,7 @@ module.exports = {
                         // select by voice_requirement
                         const voice = await db.query("SELECT member FROM voice WHERE guild = $1 GROUP BY member HAVING SUM(voice.voice OR voice2) >= $2 and member = $3", [reaction.message.guild.id, res.voice_requirement, user.id])
                         if (voice.rowCount < 1) {
-                            removeEntree("Fail to enter giveaway. You don't have the required voice time.")
+                            await removeEntree("Fail to enter giveaway. You don't have the required voice time.")
                             sendSuccess = false
                         }
                     }
@@ -47,7 +47,7 @@ module.exports = {
                         // catch error
                         console.log("send success")
                         try {
-                            mem.send("You have entered the giveaway.")
+                            await mem.send("You have entered the giveaway.")
                         } catch (error) {
                             console.log(error)
                         }
