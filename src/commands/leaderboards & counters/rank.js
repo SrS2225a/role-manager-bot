@@ -23,11 +23,9 @@ module.exports = {
             if (result.rows.length) {
                 const exp = result.rows[0].exp;
                 const lvl = result.rows[0].lvl;
-                // await db.query("SELECT COUNT(*) FROM (SELECT member, SUM(voice)::integer AS a, SUM(voice2)::integer AS b FROM voice WHERE guild = $1 GROUP BY member ORDER BY sum(voice) DESC, sum(voice2) DESC) AS t WHERE member = $2"
                 const place = await db.query("SELECT COUNT(*)::integer FROM (SELECT user_id, sum(exp)::integer AS a, sum(lvl)::integer AS b FROM levels WHERE guild_id = $1 GROUP BY user_id ORDER BY sum(exp) DESC , sum(lvl) DESC) AS t WHERE a >= $2 AND b >= $3", [message.guild.id, exp, lvl]);
                 const rank = place.rows[0].count;
                 const nextLvl = Math.floor(Math.pow(lvl, 1.5) * 100)
-                // const nextLvl = Math.floor(Math.pow(lvl, difficulty.rows[0].difficulty) * 100);)
                 const embed = new MessageEmbed()
                     .setTitle(`${user ? user.username : message.author.username}'s rank`)
                     .setColor('WHITE')

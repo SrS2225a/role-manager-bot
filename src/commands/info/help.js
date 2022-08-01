@@ -45,7 +45,9 @@ module.exports = {
                      const embed = new MessageEmbed()
                          .setTitle(`Dionysus Help - ${command.data.name}`)
                          .setDescription(`${command.data.description}`)
-                         .addField("Usage", usage)
+                     if (usage !== "") {
+                        embed.addField("Usage", `\n${usage}`, true)
+                     }
                      message.reply({embeds: [embed]});
                  }
             } else {

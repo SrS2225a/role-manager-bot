@@ -1,13 +1,14 @@
 const {MessageActionRow, MessageButton, Formatters, MessageEmbed} = require("discord.js");
 var AsciiTable = require('ascii-table')
 class paginators {
-    constructor(context, entries) {
+    constructor(context, entries, per_page) {
         this.bot = context.client.bot
         this.message = context
         this.author = context.user
         this.channel = context.channel
         this.entries = entries;
-        this.per_page = 20
+        this.per_page = per_page || 20;
+        console.log(this.per_page)
         this.lang = ''
         let pages = Math.floor(this.entries.length / this.per_page)
         let left_over = this.entries.length % this.per_page
@@ -336,6 +337,7 @@ class PaginateWhileRunning {
         this.message = message
         this.collect = true
         this.lang = ''
+        this.show_points = false
         this.channel = message.channel
         this.per_page = 20
         this.author = message.user

@@ -1,4 +1,4 @@
-const {MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu} = require("discord.js");
+const {MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu, Modal, TextInputComponent} = require("discord.js");
 const fs = require("fs");
 const {ConvertDate} = require("./converters");
 const {resolveRole} = require("./resolvers");
@@ -175,181 +175,113 @@ class HelpMenu {
     }
 }
 
-
-// noinspection JSPotentiallyInvalidTargetOfIndexedPropertyAccess
 class GiveawayCreator {
-    constructor(client) {
-        this.client = client
+    constructor() {
         this.giveArray = []
         this.json = {}
+        this.sent_message = null
     }
+
     async createGiveaway(message) {
-        await message.deferReply()
-        await this.selection1(message)
-    }
-    async selection1(message) {
-        let cont = 0
-        const defaultEmbedSelection1 = new MessageEmbed()
-            .setColor("WHITE")
-            .setTitle("Giveaway Creator")
-            .setDescription("Alright, let's get started. What do you want to name your giveaway?")
-            .setFooter("You can exit this by typing 'exit'")
-        await message.editReply({embeds: [defaultEmbedSelection1], ephemeral: true})
-            // take input from user and store it in a variable before editing the message with the next embed
-        const filter = i => i.user === message.author;
-        await message.channel.awaitMessages({filter, max: 1, time: 20000}).then(
-            collected => {
-                if (collected.first().content.toLowerCase() === 'exit') {
-                    // exit out of the function of function
-                    cont = 1
-                } else {
-                    this.giveArray.push(collected.first().content)
-                    // delete the message
-                    collected.first().delete()
-                }
-                collected.clear()
-            }
+        await this.showModal(message,'giveawayModal', 'Create Giveaway', [{
+            id: 'giveawayName',
+            label: "What is the name of the giveaway?",
+            required: true,
+        }, {
+            id: 'numberOfWinners',
+            label: "How many winners do you want?",
+            required: true,
+        }, {
+            id: 'giveawayTime',
+            label: "How long do you want the giveaway to last?",
+            required: true,
+        }])
+        const filter = (interaction) => interaction.customId === 'giveawayModal';
+        message.awaitModalSubmit({ filter, time: 20000 })
+            .then(async (modal) => {
+                const giveawayName = modal.fields.getTextInputValue('giveawayName')
+                const numberOfWinners = modal.fields.getTextInputValue('numberOfWinners')
+                const giveawayTime = modal.fields.getTextInputValue('giveawayTime')
+                await modal.deferUpdate()
 
-        ).catch(() => {
-            message.channel.send("You didn't respond in time.")
-            cont = 1
-        })
-        if (cont === 1) {
-            await message.deleteReply()
-        } else if (cont === 2) {
-           await this.selection1(message)
-        } else {
-            await this.selection2(message)
+                this.giveArray.push(giveawayName, numberOfWinners, giveawayTime)
+                await this.extraGiveawayOptions(message)
+            })
+    }
+
+    async showModal(message, id, title, options) {
+        const modal = new Modal()
+            .setCustomId(id)
+            .setTitle(title)
+        // .setComponents with for loop
+        for (const option of options) {
+            const component = new TextInputComponent()
+                .setCustomId(option.id)
+                .setLabel(option.label)
+                .setRequired(option.required)
+                .setStyle('SHORT')
+            if (component.placeholder) {
+                component.setPlaceholder(option.placeholder)
+            }
+            modal.addComponents(new MessageActionRow().addComponents(component))
         }
+
+        await message.showModal(modal)
     }
 
-    async selection2(message) {
-        let cout = 0
-        const defaultEmbedSelection2 = new MessageEmbed()
+    async extraGiveawayOptions(message, shouldEdit = false) {
+        const embed = new MessageEmbed()
             .setColor("WHITE")
             .setTitle("Giveaway Creator")
-            .setDescription("Now, how many winners do you want?")
-            .setFooter("You can exit this by typing 'exit'")
-        await message.editReply({embeds: [defaultEmbedSelection2]})
-        const filter = i => i.user === message.author;
-        await message.channel.awaitMessages({filter, max: 1, time: 20000}).then(
-            collected => {
-                if (collected.first().content.toLowerCase() === 'exit') {
-                    cout = 1
-                } else {
-                    // check if the number is a number
-                    if (parseInt(collected.first().content)) {
-                        if (parseInt(collected.first().content) >= 1) {
-                            this.giveArray.push(collected.first().content)
-                            collected.first().delete()
-                        } else {
-                            message.channel.send("You must have at least one winner. Try again.")
-                            cout = 2
-                        }
-                    } else {
-                        message.channel.send("That's not a number! Try again.")
-                        cout = 2
-                    }
-                }
-            }
-        ).catch(() => {
-            message.channel.send("You didn't respond in time.")
-            cout = 1
-        })
-        if (cout === 1) {
-            await message.deleteReply()
-        } else if (cout === 2) {
-            await this.selection2(message)
+            .setDescription("You may now select any additional options for your giveaway by selecting one of the dropdown options below. Or if you like, you can start the giveaway now")
+            .setFooter("You have 60 seconds to select an option.")
+        const dropdown = new MessageActionRow()
+            .addComponents(
+                new MessageSelectMenu()
+                    .setCustomId("giveaway-options")
+                    .setPlaceholder("Select an option")
+                    .addOptions([{
+                        label: "Add Role Requirement",
+                        description: "Add a role requirement to the giveaway.",
+                        value: "add-role-requirement",
+                    }, {
+                        label: "Add Message Requirement",
+                        description: "Add a message requirement to the giveaway.",
+                        value: "add-message-requirement",
+                    }, {
+                        label: "Add Voice Requirement",
+                        description: "Add a voice requirement to the giveaway.",
+                        value: "add-voice-requirement",
+                    }, {
+                        label: "Add Time Requirement",
+                        description: "Add a time requirement to the giveaway for when it should start.",
+                        value: "add-time-requirement",
+                    }, {
+                        label: "Add Role Multiplier",
+                        description: "Add a role multiplier to the giveaway.",
+                        value: "add-role-multiplier",
+                    }, {
+                        label: "Add Role Reward",
+                        description: "Add a role reward for the giveaway.",
+                        value: "add-role-reward",
+                    }])
+            )
+        // show modal after dropdown interaction
+        const button = new MessageActionRow()
+            .addComponents(
+                new MessageButton()
+                    .setCustomId("start-giveaway")
+                    .setLabel("Start Giveaway")
+                    .setEmoji("🎉")
+                    .setStyle("PRIMARY")
+            )
+        // send message
+        if (shouldEdit) {
+            await this.sent_message.edit({embeds: [embed], components: [dropdown, button]})
         } else {
-            await this.selection3(message)
-        }                    console.log("exit")
-    }
-
-    async selection3(message) {
-        let cout = 0
-        const defaultEmbedSelection3 = new MessageEmbed()
-            .setColor("WHITE")
-            .setTitle("Giveaway Creator")
-            .setDescription("Now, how long do you want the giveaway to last?")
-            .setFooter("You can exit this by typing 'exit'")
-        await message.editReply({embeds: [defaultEmbedSelection3]})
-        const filter = i => i.user === message.author;
-        await message.channel.awaitMessages({filter, max: 1, time: 20000}).then(
-            collected => {
-                if (collected.first().content.toLowerCase() === 'exit') {
-                    // exit out of the function
-                    cout = 1
-                } else {
-                    const toDate = ConvertDate(collected.first().content)
-                    if (toDate === undefined) {
-                        message.channel.send("That's not a valid date! Try again.")
-                        cout = 2
-                    } else if (toDate <= 0) {
-                        message.channel.send("You can't set a giveaway to start in the past! Try again.")
-                        cout = 2
-                    } else {
-                        this.giveArray.push(toDate)
-                        collected.first().delete()
-                    }
-                }
-
-            }
-        ).catch(() => {
-            message.channel.send("You didn't respond in time!")
-            cout = 1
-        })
-        if (cout === 1) {
-            await message.deleteReply()
-        } else if (cout === 2) {
-            await this.selection3(message)
-        } else {
-            const defaultEmbedSelection5 = new MessageEmbed()
-                .setColor("WHITE")
-                .setTitle("Giveaway Creator")
-                .setDescription("You may now select any additional options for your giveaway by selecting one of the dropdown options below. Or if you like, you can start the giveaway now")
-                .setFooter("You have 60 seconds to select an option.")
-            const dropdown = new MessageActionRow()
-                .addComponents(
-                    new MessageSelectMenu()
-                        .setCustomId("giveaway-options")
-                        .setPlaceholder("Select an option")
-                        .addOptions([{
-                            label: "Add Role Requirement",
-                            description: "Add a role requirement to the giveaway.",
-                            value: "add-role-requirement",
-                        }, {
-                            label: "Add Message Requirement",
-                            description: "Add a message requirement to the giveaway.",
-                            value: "add-message-requirement",
-                        }, {
-                            label: "Add Voice Requirement",
-                            description: "Add a voice requirement to the giveaway.",
-                            value: "add-voice-requirement",
-                        }, {
-                            label: "Add Time Requirement",
-                            description: "Add a time requirement to the giveaway for when it should start.",
-                            value: "add-time-requirement",
-                        }, {
-                            label: "Add Role Multiplier",
-                            description: "Add a role multiplier to the giveaway.",
-                            value: "add-role-multiplier",
-                        }, {
-                            label: "Add Role Reward",
-                            description: "Add a role reward for the giveaway.",
-                            value: "add-role-reward",
-                        }])
-                )
-            const button = new MessageActionRow()
-                .addComponents(
-                    new MessageButton()
-                        .setCustomId("start-giveaway")
-                        .setLabel("Start Giveaway")
-                        .setEmoji("🎉")
-                        .setStyle("PRIMARY")
-                )
-            await message.editReply({embeds: [defaultEmbedSelection5], components: [dropdown, button]})
-            await this.giveawayOptions(message)
+            this.sent_message = await message.channel.send({embeds: [embed], components: [dropdown, button]})
         }
+        await this.giveawayOptions(message)
     }
 
     async giveawayOptions(message) {
@@ -382,22 +314,29 @@ class GiveawayCreator {
     }
 
     async addRoleRequirement(message) {
-        await message.channel.send("Please enter the role you would like to add.")
+        const roleadd = await message.channel.send("Please enter the role you would like to add.")
         const filter = (m) => m.user === message.author;
         await message.channel.awaitMessages({filter, time: 20000, max: 1})
             .then(async (collected) => {
                 const role = await resolveRole(message, collected.first().content)
                 if (role) {
                     this.json.role_requirement = role.id
-                    await message.channel.send("Added role requirement!")
+                    const requirment = await message.channel.send("Added role requirement!")
+                    setTimeout(async () => {
+                        await requirment.delete();
+                    }, 4000);
                 } else {
-                    await message.channel.send("That role doesn't exist!")
+                    const doesNotExist = await message.channel.send("That role doesn't exist!")
+                    setTimeout(async () => {
+                        await doesNotExist.delete();
+                    }, 4000);
                 }
                 await collected.first().delete()
             })
             .catch(() => {
                 message.channel.send("You didn't respond in time!")
             })
+        await roleadd.delete()
     }
 
     async addMessageRequirement(message) {
@@ -512,7 +451,6 @@ class GiveawayCreator {
     }
 
     async startGiveaway(message) {
-        await message.deleteReply()
         const array = this.giveArray
         const json = this.json
         const id = Math.random().toString(36).substr(2, 8)
@@ -523,7 +461,7 @@ class GiveawayCreator {
         const multiplier = `${json.role_multiplier_role ? `\nRole multiplier: ${message.guild.roles.cache.get(json.role_multiplier_role).name}` : ""} x ${json.role_multiplier ? `${json.role_multiplier}` : ""}`
         if (json?.time_requirement === undefined) {
             startAs = 1
-            const delta = new Date(Date.now() + array[2] * 1000)
+            const delta = new Date(Date.now() + ConvertDate(array[2]) * 1000)
             embed.setTitle(array[0])
                 embed.setDescription(`React with 🎉 to enter!\n\n${requirements ? `**Requirements:** ${requirements}\n` : ""}${json.role_multiplier_role ? `**Multiplier:** ${multiplier}` : ""}\n**Winners:** ${array[1]} \n**Ends:** <t:${Math.round(delta.valueOf() / 1000)}:R>`)
                 embed.setColor('WHITE')
@@ -532,7 +470,7 @@ class GiveawayCreator {
             await msg.react("🎉")
             await db.query("INSERT INTO vote(guild, message, date, win, type, channel, id, options) VALUES($1, $2, $3, $4, $5, $6, $7, $8)", [message.guild.id, msg.id, delta, array[1], startAs, message.channel.id, id, json]);
         } else {
-            const delta = new Date(Date.now() + (array[2] + json.time_requirement) * 1000)
+            const delta = new Date(Date.now() + (ConvertDate(array[2]) + json.time_requirement) * 1000)
             json.time_requirement = new Date(Date.now() + json.time_requirement * 1000)
             embed.setTitle(array[0])
             embed.setDescription(`${requirements ? `**Requirements:** ${requirements}\n` : ""}${json.role_multiplier_role ? `**Multiplier:** ${multiplier}` : ""}\n**Winners:** ${array[1]} \n**Starting:** <t:${Math.round(new Date(json.time_requirement).valueOf() / 1000)}:R>`)
@@ -543,7 +481,7 @@ class GiveawayCreator {
         }
         await db.release()
         await new Giveaway().dispatch_giveaway(message.client)
-        await message.channel.send("Giveaway started with ID: " + id)
+        this.sent_message.delete()
     }
 }
 

@@ -16,8 +16,7 @@ module.exports = {
             // end autoroles
 
             // for member leave graph
-            // increment member leaves by 1 else add on a new date
-            await db.query("UPDATE member SET leaves = member.leaves + 1 WHERE guild = $1 and day = $2", [member.guild.id, new Date()])
+            await db.query("UPDATE member SET leaves = member.leaves + 1 WHERE guild = $1 and day = current_date", [member.guild.id])
             // end member leave graph
 
             // for invite leaves
@@ -53,7 +52,7 @@ module.exports = {
         } catch (e) {
             console.log(e)
         } finally {
-            db.release()
+            await db.release()
         }
     }
 }

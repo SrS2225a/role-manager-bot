@@ -3,7 +3,7 @@ const {Reminder, Giveaway, Poll, AutoRole, GlobalTasks, DeleteExpiringInvites} =
 const {Collection} = require("discord.js");
 module.exports = {
     name: 'ready',
-    once: true,
+    once: false,
     async execute(bot) {
         console.log(`\n\nCreated by: Nyx#8614 and Vendron#2001\nLogged in as: ${bot.user.username} - ${bot.user.id}\ndiscord.js & postgres Version: ${packageDetails.dependencies["discord.js"]} - ${packageDetails.dependencies["pg"]}\n`)
         bot.user.setActivity("the greek multi-bot @ dionysus.gg", {type: "PLAYING"})
@@ -27,7 +27,7 @@ module.exports = {
         })
 
         // set permissions
-        if (!bot.application?.owner) await bot.application?.fetch();
+        // if (!bot.application?.owner) await bot.application?.fetch();
         // const command = await bot.guilds.cache.get("531247629649182750")?.commands.fetch(json['devCommand'])
         // await command.permissions.add(ownerPermissions())
     },

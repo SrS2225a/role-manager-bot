@@ -2,8 +2,9 @@ const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const fs = require("fs");
 const json = require("../../config.json");
+const pm2 = require('pm2')
 const {paginator, PaginateWhileRunning} = require("../../structures/paginators");
-const {MessageEmbed, MessageAttachment} = require("discord.js");
+const {MessageEmbed, MessageAttachment, MessageActionRow, MessageButton} = require("discord.js");
 const {resolveCommands, resolveEvents} = require("../../structures/resolvers");
 module.exports = {
     data: new SlashCommandBuilder()
@@ -173,14 +174,60 @@ module.exports = {
             }
         } else if (message.options.getSubcommand() === "shutdown") {
             const restart = message.options.getBoolean("restart")
+            // use pm2 api to shutdown and restart the bot
             if (restart) {
-                await message.reply("Restarting...")
-                message.client.destroy()
-                await message.client.login(json['token'])
+                message.reply("Restarting...")
+                pm2.connect(function(err) {
+                    if (err) {
+                        console.error(err);
+                    }
+                    pm2.restart('main', function(err, apps) {
+                        pm2.disconnect();
+                        if (err) {
+                            console.error(err);
+                        }
+                    });
+                });
             } else {
-                await message.reply("Shutting down...")
-                message.client.destroy()
-                process.exit(0)
+                const embed = new MessageEmbed()
+                    .setTitle("Are you sure you want to shutdown the bot?")
+                    .setDescription("This will completely shutdown the bot and will not restart it. It must be restarted manually by the bots server console.")
+                    .setColor("#000000")
+                const buttons = new MessageActionRow()
+                    .addComponents(
+                        new MessageButton()
+                            .setCustomId('yes')
+                            .setEmoji('✅')
+                            .setStyle('SUCCESS'),
+                        new MessageButton()
+                            .setCustomId('no')
+                            .setEmoji('❎')
+                            .setStyle('DANGER')
+
+                    )
+                await message.reply({embeds: [embed], components: [buttons]})
+                const msg = await message.fetchReply()
+                const filter = i => i.user.id === this.author.id
+                const collector = message.channel.createMessageComponentCollector(filter, { time: 30000 })
+                collector.on('collect', async i => {
+                    if (i.customId === 'yes') {
+                        await msg.edit("Shutting down...")
+                        pm2.connect(function(err) {
+                            if (err) {
+                                console.error(err);
+                            }
+                            pm2.stop('main', function(err, apps) {
+                                pm2.disconnect();
+                                if (err) {
+                                    console.error(err);
+                                }
+                            });
+                        });
+                    } else {
+                        await msg.edit("Shutdown cancelled")
+                    }
+                    await i.deferUpdate();
+                })
             }
         } else if (message.options.getSubcommand() === "rtt") {
             await message.reply(`Response time: ${message.client.ws.ping}ms`)
@@ -295,16 +342,16 @@ module.exports = {
         } else if (message.options.getSubcommand() === "sql") {
             const query = message.options.getString("argument")
             try {
-                await message.deferReply()
+                const now = Date.now()
                 const result = await db.query(query)
                 if (result.rows.length === 0) {
-                    await message.reply("The query did not return anything")
+                    await message.reply(`Took ${(Date.now() - now)} milliseconds to execute`)
                 } else {
-                    const paginate = new paginator(message, JSON.stringify(result.rows, null, 2).split('\n'))
-                    paginate.per_page = 40
+                    const paginate = new paginator(message, JSON.stringify(result.rows, null, 2).split('\n'), 40)
                     paginate.show_entry_count = false
                     paginate.lang = "json"
                     await paginate.paginate()
+                    await message.channel.send(`Took ${(Date.now() - now)} milliseconds to execute`)
                 }
             } catch (error) {
                 await message.channel.send(`\`\`\`js\n${error.stack}\`\`\``)

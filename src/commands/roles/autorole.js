@@ -37,8 +37,11 @@ module.exports = {
             const result = await db.query("SELECT role FROM roles WHERE guild = $1 and type = $2 and role = $3", [message.guildId, 'add', role.id])
             if (!result.rows.length) {
                 const time = ConvertDate(date)
-                if (time < 0) {
-                    await message.reply('Times cannot be in the past!')
+                if (time === undefined) {
+                    await message.channel.send("Invalid duration")
+                    return
+                } else if (time < 0) {
+                    await message.channel.send("Duration must be in the future")
                     return
                 }
                 await db.query("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", [message.guildId, time, role.id, 'add'])
@@ -52,9 +55,12 @@ module.exports = {
             const date = message.options.getString("delay")
             const result = await db.query("SELECT role FROM roles WHERE guild = $1 and type = $2 and role = $3", [message.guildId, 'remove', role.id])
             if (!result.rows.length) {
-                const time = new ConvertDate(date).time || 0
-                if (time < 0) {
-                    await message.reply('Times cannot be in the past!')
+                const time = ConvertDate(date)
+                if (time === undefined) {
+                    await message.channel.send("Invalid duration")
+                    return
+                } else if (time < 0) {
+                    await message.channel.send("Duration must be in the future")
                     return
                 }
                 await db.query("INSERT INTO roles(guild, member, role, type) VALUES($1, $2, $3, $4)", [message.guildId, time, role.id, 'remove'])

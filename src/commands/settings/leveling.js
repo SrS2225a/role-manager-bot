@@ -31,7 +31,7 @@ module.exports = {
         )
         .addSubcommand(subcommand => subcommand
             .setName("weight")
-            .setDescription("Sets the weight of the leveling system")
+            .setDescription("Sets the leveling weight of the leveling system. This also enables it")
             .addIntegerOption(option => option
                 .setName("weight")
                 .setDescription("The weight to set")
@@ -51,12 +51,12 @@ module.exports = {
             .setName("multiplier")
             .setDescription("Sets the multiplier for the leveling system")
             .addStringOption(option => option
-                .setName("type")
+                .setName("main")
                 .setDescription("The text channel, voice or role to set the multiplier to")
                 .setRequired(true)
             )
             .addIntegerOption(option => option
-                .setName("multi")
+                .setName("multiplier")
                 .setDescription("The multiplier to set")
                 .setRequired(true)
             )
@@ -66,7 +66,7 @@ module.exports = {
             .setDescription("Allows you to add support for member of the day, week, or month")
             .addStringOption(option => option
                 .setName("type")
-                .addChoices([['day', 'day'], ['week', 'week'], ['month', 'month']])
+                .addChoices([['day', '0'], ['week', '1'], ['month', '2']])
                 .setDescription("The type of tor to set")
                 .setRequired(true)
             )
@@ -80,24 +80,24 @@ module.exports = {
         userPermissions(message, ["MANAGE_GUILD"]);
         const db = await pool.connect();
         if (message.options.getSubcommand() === "blacklist") {
-            const main = resolveAsChannel_Role(message.options.getString('main'))
+            const main = resolveAsChannel_Role(message, message.options.getString('main'))
             const result = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3", [message.guild.id, 'blacklist', main.id])
             if (result.rowCount === 0) {
                 await db.query("INSERT INTO leveling(guild, system, role) VALUES($1, $2, $3)", [message.guild.id, 'blacklist', main.id])
                 message.reply(`Set the blacklist channel to ${main.name}`)
             } else {
                 await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3", [message.guild.id, 'blacklist', main.id])
-                message.reply(`Set the blacklist channel to ${main.name}`)
+                message.reply(`Removed the blacklist channel from ${main.name}`)
             }
         } else if (message.options.getSubcommand() === "multiplier") {
-            const main = resolveAsChannel_Role(message.options.getString('main'))
-            const result = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", [message.guild.id, 'multiplier', main.id, message.options.getInteger("multiply")])
+            const main = resolveAsChannel_Role(message, message.options.getString('main'))
+            const result = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", [message.guild.id, 'multiplier', main.id, message.options.getInteger("multiplier")])
             if (result.rowCount === 0) {
-                await db.query("INSERT INTO leveling(guild, system, role, difficulty) VALUES($1, $2, $3, $4)", [message.guild.id, 'multiplier', main.id, message.options.getInteger("multiply")])
+                await db.query("INSERT INTO leveling(guild, system, role, difficulty) VALUES($1, $2, $3, $4)", [message.guild.id, 'multiplier', main.id, message.options.getInteger("multiplier")])
                 message.reply(`Set the multiplier channel to ${main.name}`)
             } else {
-                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", [message.guild.id, 'multiplier', main.id, message.options.getInteger("multiply")])
-                message.reply(`Set the multiplier channel to ${main.name}`)
+                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and difficulty = $4", [message.guild.id, 'multiplier', main.id, message.options.getInteger("multiplier")])
+                message.reply(`Removed the multiplier channel from ${main.name}`)
             }
         } else if (message.options.getSubcommand() === "weight") {
             const result = await db.query("SELECT difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guild.id, 'weight'])
@@ -105,17 +105,17 @@ module.exports = {
                 await db.query("INSERT INTO leveling(guild, system, difficulty) VALUES($1, $2, $3)", [message.guild.id, 'weight', message.options.getInteger('weight')])
                 message.reply(`Set the weight to ${message.options.getInteger('weight')}`)
             } else {
-                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2", [message.guild.id, 'weight', message.options.getInteger('weight')])
-                message.reply(`Set the weight to ${message.options.getInteger('weight')}`)
+                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and difficulty = $3", [message.guild.id, 'weight', message.options.getInteger('weight')])
+                message.reply(`Removed the weight`)
             }
         } else if (message.options.getSubcommand() === "behavior") {
-            const result = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and type = $3", [message.guild.id, 'behavior', message.options.getBoolean('type')])
+            const result = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and type = $3", [message.guild.id, 'behavior', message.options.getBoolean('type') ? 1 : 0])
             if (result.rowCount === 0) {
-                await db.query("INSERT INTO leveling(guild, system, type) VALUES($1, $2, $3)", [message.guild.id, 'behavior', message.options.getBoolean('type')])
+                await db.query("INSERT INTO leveling(guild, system, type) VALUES($1, $2, $3)", [message.guild.id, 'behavior', message.options.getBoolean('type') ? 1 : 0])
                 message.reply(`Set the behavior to ${message.options.getBoolean('type')}`)
             } else {
-                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and type = $3", [message.guild.id, 'behavior', message.options.getBoolean('type')])
-                message.reply(`Set the behavior to ${message.options.getBoolean('type')}`)
+                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and type = $3", [message.guild.id, 'behavior', message.options.getBoolean('type') ? 1 : 0])
+                message.reply(`Remove the behavior as ${message.options.getBoolean('type')}`)
             }
         } else if (message.options.getSubcommand() === "rank") {
             const result = await db.query("SELECT type FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4", [message.guild.id, 'rank', message.options.getRole('role').id, message.options.getInteger('level')])
@@ -124,16 +124,16 @@ module.exports = {
                 message.reply(`Set the rank to ${message.options.getRole('role').name} at level ${message.options.getInteger('level')}`)
             } else {
                 await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and level = $4", [message.guild.id, 'rank', message.options.getRole('role').id, message.options.getInteger('level')])
-                message.reply(`Set the rank to ${message.options.getRole('role').name} at level ${message.options.getInteger('level')}`)
+                message.reply(`Removed the rank as ${message.options.getRole('role').name} at level ${message.options.getInteger('level')}`)
             }
         } else if (message.options.getSubcommand() === "tor") {
             const result = await db.query("SELECT role FROM leveling WHERE guild = $1 and system = $2 and type = $3", [message.guild.id, 'tor', message.options.getString('type')])
             if (result.rowCount === 0) {
-                await db.query("INSERT INTO leveling(guild, system, role, type) VALUES($1, $2, $3, $4)", [message.guild.id, 'tor', message.options.getRole('role').id, message.options.getString('type')])
+                await db.query("INSERT INTO leveling(guild, system, role, type) VALUES($1, $2, $3, $4)", [message.guild.id, 'tor', message.options.getRole('role').id, parseInt(message.options.getString('type'))])
                 message.reply(`Set the tor to ${message.options.getRole('role').name}`)
             } else {
-                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and type = $4", [message.guild.id, 'tor', message.options.getRole('role').id, message.options.getString('type')])
-                message.reply(`Set the tor to ${message.options.getRole('role').name}`)
+                await db.query("DELETE FROM leveling WHERE guild = $1 and system = $2 and role = $3 and type = $4", [message.guild.id, 'tor', message.options.getRole('role').id, parseInt(message.options.getString('type'))])
+                message.reply(`Removed the tor from ${message.options.getRole('role').name}`)
             }
         }
         await db.release()

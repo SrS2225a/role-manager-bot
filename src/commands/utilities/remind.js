@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {Util, MessageEmbed, Formatters} = require("discord.js");
+const {Util, MessageEmbed, Formatters, Modal, TextInputComponent, MessageActionRow} = require("discord.js");
 const {ConvertDate, display_time} = require("../../structures/converters");
 const {Reminder} = require("../../structures/tasks");
 const {resolveAsChannel_Dm_Here} = require("../../structures/resolvers");
@@ -11,14 +11,6 @@ module.exports = {
         .addSubcommand(subcommand => subcommand
             .setName("create")
             .setDescription("Creates a reminder")
-            .addStringOption(option => option
-                .setName("description")
-                .setDescription("The description of the reminder")
-                .setRequired(true))
-            .addStringOption(option => option
-                .setName("duration")
-                .setDescription("The duration of the reminder")
-                .setRequired(true))
             .addStringOption(option => option
                 .setName("destination")
                 .setDescription("The destination of the reminder")
@@ -50,8 +42,8 @@ module.exports = {
                 .setColor('WHITE')
                 .setFooter(`You have ${reminders.rows.length} reminders`)
             for (const reminder of reminders.rows) {
-                const channel = message.client.channels.cache.get(reminder.destination) || await message.client.channels.fetch(reminder.destination)
-                embed.addField(`Reminder ${Formatters.inlineCode(reminder.id)}: <t:${(Math.round(reminder.date.valueOf() / 1000))}:R>`, `${channel ? Formatters.channelMention(channel.id) : Formatters.userMention(message.user.id)} - ${reminder.message} ${reminder.repeat ? `\nRepeats every ${reminder.assigned}` : ''}`)
+                const channel = message.client.channels.cache.get(reminder.destination)
+                embed.addField(`Reminder ${Formatters.inlineCode(reminder.id)}: <t:${(Math.round(reminder.date.valueOf() / 1000))}:R>`, `${channel?.type === "GUILD_TEXT" ? Formatters.channelMention(channel.id) : Formatters.userMention(message.user.id)} - ${reminder.message} ${reminder.repeat ? `\nRepeats every ${reminder.assigned}` : ''}`)
             }
             await message.reply({embeds: [embed]})
         }
@@ -62,27 +54,60 @@ module.exports = {
             await reminder_start.dispatch_reminder(message)
             await message.reply("Reminder deleted")
         } else if (message.options.getSubcommand() === "create") {
-            const time = ConvertDate(message.options.getString("duration"))
-            if (time === null) {
-                await message.reply("Invalid duration")
-                return
-            } else if (time < 0) {
-                await message.reply("Duration must be in the future")
-                return
+            await showModal()
+
+            async function showModal() {
+                const modal = new Modal()
+                    .setCustomId('remindModal')
+                    .setTitle('Create Reminder')
+
+                const description = new TextInputComponent()
+                    .setCustomId('description')
+                    .setLabel('What is the reminder about?')
+                    .setRequired(true)
+                    .setStyle('SHORT')
+
+                const duration = new TextInputComponent()
+                    .setCustomId('duration')
+                    .setLabel('How long should the reminder last?')
+                    .setRequired(true)
+                    .setStyle('SHORT')
+                    .setPlaceholder('Example: 1d1h')
+
+                modal.addComponents(new MessageActionRow().addComponents(description), new MessageActionRow().addComponents(duration))
+
+                await message.showModal(modal)
             }
-            const description = message.options.getString("description")
-            const channel = resolveAsChannel_Dm_Here(message, message.options.getString("destination")) || message.channel
-            const delta = new Date(Date.now() + time * 1000)
-            const id = Math.random().toString(36).substr(2, 8)
-            const repeat = message.options.getBoolean("repeats") || false
-            if (repeat && time < 7200) {
-                await message.reply("Repeating reminders must be at least 2 hours")
-                return
-            }
-            await db.query("INSERT INTO remind (id, member, date, message, destination, repeat, assigned) VALUES ($1, $2, $3, $4, $5, $6, $7)", [id, message.user.id, delta, description, channel.id, repeat, new Date()])
-            await message.reply(`Ok, reminding you ${repeat ? "every": "in"} ${display_time(time)} about: **${Util.removeMentions(description)}**`)
-            const reminder_start = new Reminder()
-            await reminder_start.dispatch_reminder(message.client)
+
+            const filter = (interaction) => interaction.customId === 'remindModal';
+            message.awaitModalSubmit({ filter, time: 20000 })
+                .then(async (modal) => {
+                    const description = modal.fields.getTextInputValue('description')
+                    const duration = modal.fields.getTextInputValue('duration')
+                    const channel = resolveAsChannel_Dm_Here(message, message.options.getString("destination")) || message.channel
+                    const repeats = message.options.getBoolean('repeats') || false
+                    const reminder = new Reminder()
+
+                    await modal.deferUpdate()
+                    const time = ConvertDate(duration)
+                    if (time === undefined) {
+                        await message.channel.send("Invalid duration")
+                        return
+                    } else if (time < 0) {
+                        await message.channel.send("Duration must be in the future")
+                        return
+                    }
+
+                    const delta = new Date(Date.now() + time * 1000)
+                    const id = Math.random().toString(36).substr(2, 8)
+                    if (repeats && time < 7200) {
+                        await message.channel.send("To prevent spam in servers, repeating reminders must be at least 2 hours long")
+                        return
+                    }
+                    await db.query("INSERT INTO remind (id, member, date, message, destination, repeat, assigned) VALUES ($1, $2, $3, $4, $5, $6, current_timestamp)", [id, message.user.id, delta, description, channel.id, repeats])
+                    await message.channel.send(`Ok, reminding you ${repeats ? "every" : "in"} ${display_time(time)} ${channel?.type === "GUILD_TEXT" ? `in ${Formatters.channelMention(channel.id)}` : `in DMs`} for ${Formatters.inlineCode(description)}`)
+                    await reminder.dispatch_reminder(message.client)
+                })
         }
         await db.release()
     }

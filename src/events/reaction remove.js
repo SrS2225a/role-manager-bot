@@ -15,7 +15,7 @@ module.exports = {
         } catch (err) {
             console.log(err)
         } finally {
-            db.release()
+            await db.release()
         }
     }
 }

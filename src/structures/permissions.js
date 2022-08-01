@@ -13,7 +13,6 @@ function userPermissions(message, permission) {
             })()
         }
         const missing = permissions.missing(permission)
-        console.log(missing)
         return missing.length === 0 ? true : (() => {
             throw {
                 identifier: "MissingUserPermissions",
@@ -56,23 +55,4 @@ function clientPermissions(message, permission) {
     })()
 }
 
-function ownerPermissions() {
-    const permissions = [
-        {
-            id: '270848136006729728',
-            type: 'USER',
-            permission: true
-        }, {
-            id: '508455796783317002',
-            type: 'USER',
-            permission: true
-        }, {
-            id: "222492698236420099",
-            type: "USER",
-            permission: true
-        }
-    ]
-    return {permissions}
-}
-
-module.exports = {userPermissions, rolePermissions, clientPermissions, ownerPermissions}
+module.exports = {userPermissions, rolePermissions, clientPermissions}

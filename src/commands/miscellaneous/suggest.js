@@ -12,7 +12,7 @@ module.exports = {
     async execute(message) {
         const db = await pool.connect()
         const vote = ['✔', '❌']
-        const result = await db.query("SELECT suggest FROM settings WHERE guild = $1", message.guild.id)
+        const result = await db.query("SELECT suggest FROM settings WHERE guild = $1", [message.guild.id])
         if (result.rows.length) {
             const channel = message.guild.channels.fetch(result.rows[0].suggest).catch(null)
             const embed = new MessageEmbed()

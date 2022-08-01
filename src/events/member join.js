@@ -19,11 +19,11 @@ module.exports = {
         try {
             // for member join graph
             // increment member joins by 1 else add on a new date
-            const memberJoin = await db.query("SELECT joins FROM member WHERE guild = $1 and day = $2 LIMIT 1", [member.guild.id, new Date()])
+            const memberJoin = await db.query("SELECT joins FROM member WHERE guild = $1 and day = current_date LIMIT 1", [member.guild.id])
             if (memberJoin.rowCount === 0) {
-                await db.query("INSERT INTO member (guild, day, joins, leaves) VALUES ($1, $2, 1, 0)", [member.guild.id, new Date()])
+                await db.query("INSERT INTO member (guild, day, joins, leaves) VALUES ($1, current_date, 1, 0)", [member.guild.id,])
             } else {
-                await db.query("UPDATE member SET joins = joins + 1 WHERE guild = $1 and day = $2", [member.guild.id, new Date()])
+                await db.query("UPDATE member SET joins = joins + 1 WHERE guild = $1 and day = current_date", [member.guild.id])
             }
             // end member join graph
 

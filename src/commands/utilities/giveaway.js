@@ -49,9 +49,9 @@ module.exports = {
             for (const row of rows.rows) {
                 const delta = new Date(row.date)
                 if (row.type === 1) {
-                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nEnds <t:${Math.round(delta.valueOf() / 1000)}:R>`)
+                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nEnds in: <t:${Math.round(delta.valueOf() / 1000)}:R>`)
                 } else {
-                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nStarts <t:${Math.round(delta.valueOf() / 1000)}:R>`)
+                    embed.addField(`${row.id}`, `[Jump To Active Giveaway](https://discordapp.com/channels/${message.guild.id}/${row.channel}/${row.message}) - ${row.win} Winners\nStarts in: <t:${Math.round(delta.valueOf() / 1000)}:R>`)
                 }
             }
             return await message.reply({embeds: [embed]});
@@ -66,7 +66,7 @@ module.exports = {
             if (delta < Date.now()) {
                 return await message.reply("Giveaway has already ended");
             }
-            await db.query("UPDATE vote SET date = $1 WHERE guild= $2 and id = $3", [new Date(), message.guild.id, id]);
+            await db.query("UPDATE vote SET date = current_timestamp WHERE guild= $2 and id = $3", [message.guild.id, id]);
             await new Giveaway().dispatch_giveaway(message.client)
             return await message.reply("Giveaway ended");
         } else if (message.options.getSubcommand() === "reroll") {

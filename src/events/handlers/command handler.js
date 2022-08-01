@@ -12,8 +12,8 @@ module.exports = {
             const blacklistedCommand = await db.query('SELECT message FROM blacklist WHERE member = $1 and message = $2 and type = $3 LIMIT 1', [interaction.guildId, interaction.commandName, 'command'])
             const blockedUser = await db.query("SELECT message FROM blacklist WHERE member = $1 and type = $2 LIMIT 1", [interaction.user.id, 'user'])
             await db.release()
-            if (blacklistedCommand.rows.length) {interaction.reply(`DisabledCommand: ${interaction.commandName} command is disabled.`)}
-            else if (blockedUser.rows.length) {interaction.reply(`ClientPermissionsMissing: You are currently blocked from using this bot for **${Util.removeMentions(blockedUser.rows[0].message)}**. If you believe that this is an error, please join the support server @ https://discord.gg/JHkhnzDvWG and explain why.`)}
+            if (blockedUser.rows.length) {interaction.reply(`ClientPermissionsMissing: You are currently blocked from using this bot for: **${Util.removeMentions(blockedUser.rows[0].message)}**. If you believe that this is an error, please join the support server @ https://discord.gg/JHkhnzDvWG and explain why.`)}
+            else if (blacklistedCommand.rows.length) {interaction.reply(`DisabledCommand: ${interaction.commandName} command is disabled.`)}
             else {
                 await command.execute(interaction)
                 const channel = interaction.client.channels.cache.get('866678659862626355')
@@ -21,7 +21,7 @@ module.exports = {
                 await db.query('UPDATE bot SET ran = ran + 1')
             }
         } catch (error) {
-            console.log(error.stack)
+            console.error(error.stack)
             if (error.identifier) {
                 await interaction.reply({content: `${error.identifier}: ${Util.removeMentions(error.message)}`, ephemeral: true})
             } else {
@@ -29,7 +29,7 @@ module.exports = {
                     .setColor('WHITE')
                     .setTitle("An unexpected error has occurred")
                     .setDescription(`**This error has automatically been sent to the bot developers and will work to sort this out ASAP**\n• [For more support, visit the support server here](https://discord.gg/JHkhnzDvWG)\n\n${Formatters.codeBlock('js', error)}`)
-                interaction.channel.send({embeds: [embed]});
+                await interaction.reply({embeds: [embed]});
                 const channel = interaction.client.channels.cache.get('840276875301224479')
                 await channel.send(`New exception occurred in guild **${interaction.guild.name} (${interaction.guild.id})** for command **${command.data.name}**\n${Formatters.codeBlock('js', error.stack)}`)
             }
