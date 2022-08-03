@@ -10,7 +10,6 @@ module.exports = {
                 const member = after.member || before.member
                 // for voice roles
                 const voice = await db.query("SELECT role FROM reward WHERE guild = $1 and channel = $2 and type = $3 LIMIT 1", [channel.guild.id, channel.id, "voice"])
-                console.log(voice.rows)
                 if (voice.rowCount > 0) {
                     const role = channel.guild.roles.cache.get(voice.rows[0].role)
                     if (role) {

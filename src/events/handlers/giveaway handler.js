@@ -44,12 +44,10 @@ module.exports = {
                         }
                     }
                     if (sendSuccess) {
-                        // catch error
-                        console.log("send success")
                         try {
                             await mem.send("You have entered the giveaway.")
-                        } catch (error) {
-                            console.log(error)
+                        } catch (e) {
+                            console.log(e)
                         }
                     }
                 }

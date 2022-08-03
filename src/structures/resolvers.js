@@ -22,7 +22,6 @@ function resolveAsChannel_Dm_Here(message, args) {
             }
 
             function resolveByQuery(args, guild) {
-                console.log(guild.channels)
                 const channel = guild.channels.cache.find(c => c.name === args.toLowerCase());
                 return channel ? channel : null;
             }

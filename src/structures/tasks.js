@@ -528,8 +528,8 @@ class DeleteExpiringInvites {
                     this.dispatch_delete_invites(this.client)
                 },12 * 60 * 60 * 1000)
             }
-        }).catch(err => {
-            console.log(err)
+        }).catch(e => {
+            console.log(e)
             setTimeout(() => {
                 this.dispatch_delete_invites(this.client)
             },12 * 60 * 60 * 1000)

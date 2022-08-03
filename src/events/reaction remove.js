@@ -12,8 +12,8 @@ module.exports = {
                     await member.roles.remove(react.rows[0].role)
                 }
             }
-        } catch (err) {
-            console.log(err)
+        } catch (e) {
+            console.log(e)
         } finally {
             await db.release()
         }

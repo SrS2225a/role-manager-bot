@@ -8,7 +8,6 @@ class paginators {
         this.channel = context.channel
         this.entries = entries;
         this.per_page = per_page || 20;
-        console.log(this.per_page)
         this.lang = ''
         let pages = Math.floor(this.entries.length / this.per_page)
         let left_over = this.entries.length % this.per_page

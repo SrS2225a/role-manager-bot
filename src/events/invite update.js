@@ -27,8 +27,8 @@ module.exports = {
                 await db.query("INSERT INTO invite VALUES($1, $2, $3, 1, 0, 0, current_date)", [member.guild.id, invite.inviter.id, invite.code])
             }
             await db.query("INSERT INTO invite2 VALUES($1, $2, $3)", [member.guild.id, member.id, invite.code])
-        } catch (err) {
-            console.log(err)
+        } catch (e) {
+            console.log(e)
         } finally {
             await db.release()
         }

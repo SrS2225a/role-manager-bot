@@ -17,7 +17,6 @@ module.exports = {
             let no = []
             for (const [, overwrite] of channel.permissionOverwrites.cache) {
                 if (overwrite.type === 'role') {
-                    console.log('role')
                     if (overwrite.allow.has('SEND_MESSAGES')) {
                         yes.push(`<@&${overwrite.id}>`)
                     } else {
