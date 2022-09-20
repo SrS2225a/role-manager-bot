@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {MessageEmbed} = require("discord.js");
+const {EmbedBuilder} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("suggest")
@@ -15,7 +15,7 @@ module.exports = {
         const result = await db.query("SELECT suggest FROM settings WHERE guild = $1", [message.guild.id])
         if (result.rows.length) {
             const channel = message.guild.channels.fetch(result.rows[0].suggest).catch(null)
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setTitle(`${message.author.username + '#' + message.author.tag} Suggestion`)
                 .setDescription(await message.interaction.getString("suggestion"))
             const sent = await channel.send({embeds: [embed]})

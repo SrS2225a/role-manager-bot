@@ -1,5 +1,5 @@
 const {pool} = require("../../database");
-const {Util, MessageEmbed, Formatters} = require('discord.js');
+const {escapeMarkdown, EmbedBuilder, Formatters, Colors} = require('discord.js');
 
 module.exports = {
     name: 'interactionCreate',
@@ -12,7 +12,7 @@ module.exports = {
             const blacklistedCommand = await db.query('SELECT message FROM blacklist WHERE member = $1 and message = $2 and type = $3 LIMIT 1', [interaction.guildId, interaction.commandName, 'command'])
             const blockedUser = await db.query("SELECT message FROM blacklist WHERE member = $1 and type = $2 LIMIT 1", [interaction.user.id, 'user'])
             await db.release()
-            if (blockedUser.rows.length) {interaction.reply(`ClientPermissionsMissing: You are currently blocked from using this bot for: **${Util.removeMentions(blockedUser.rows[0].message)}**. If you believe that this is an error, please join the support server @ https://discord.gg/JHkhnzDvWG and explain why.`)}
+            if (blockedUser.rows.length) {interaction.reply(`ClientPermissionsMissing: You are currently blocked from using this bot for: **${escapeMarkdown(blockedUser.rows[0].message)}**. If you believe that this is an error, please join the support server @ https://discord.gg/JHkhnzDvWG and explain why.`)}
             else if (blacklistedCommand.rows.length) {interaction.reply(`DisabledCommand: ${interaction.commandName} command is disabled.`)}
             else {
                 await command.execute(interaction)
@@ -23,10 +23,10 @@ module.exports = {
         } catch (error) {
             console.error(error.stack)
             if (error.identifier) {
-                await interaction.reply({content: `${error.identifier}: ${Util.removeMentions(error.message)}`, ephemeral: true})
+                await interaction.reply({content: `${error.identifier}: ${escapeMarkdown(error.message)}`, ephemeral: true})
             } else {
-                const embed = new MessageEmbed()
-                    .setColor('WHITE')
+                const embed = new EmbedBuilder()
+                    .setColor(Colors.Red)
                     .setTitle("An unexpected error has occurred")
                     .setDescription(`**This error has automatically been sent to the bot developers and will work to sort this out ASAP**\n• [For more support, visit the support server here](https://discord.gg/JHkhnzDvWG)\n\n${Formatters.codeBlock('js', error)}`)
                 await interaction.reply({embeds: [embed]});

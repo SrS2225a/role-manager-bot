@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {MessageEmbed} = require("discord.js");
+const {EmbedBuilder} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("searchinvite")
@@ -17,7 +17,7 @@ module.exports = {
             return
         }
         const row = total.rows[0]
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle(`Invite: ${message.options.getString("invite")}`)
             .setDescription(`${row.amount} joins, ${row.amount2 ? `${row.amount2} ` : "0"} leaves, ${row.amount3 ? `${row.amount3} ` : "0"} fakes. (${(total.rows[0].amount - total.rows[0].amount2 + total.rows[0].amount3) || 0})`)
             .setColor('WHITE')

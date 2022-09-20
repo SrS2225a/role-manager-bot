@@ -1,6 +1,6 @@
 const {SlashCommandBuilder, ContextMenuCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {MessageEmbed} = require("discord.js");
+const {EmbedBuilder, Colors} = require("discord.js");
 const {ProgressBar} = require("../../structures/converters");
 module.exports = {
     data: new SlashCommandBuilder()
@@ -26,9 +26,9 @@ module.exports = {
                 const place = await db.query("SELECT COUNT(*)::integer FROM (SELECT user_id, sum(exp)::integer AS a, sum(lvl)::integer AS b FROM levels WHERE guild_id = $1 GROUP BY user_id ORDER BY sum(exp) DESC , sum(lvl) DESC) AS t WHERE a >= $2 AND b >= $3", [message.guild.id, exp, lvl]);
                 const rank = place.rows[0].count;
                 const nextLvl = Math.floor(Math.pow(lvl, 1.5) * 100)
-                const embed = new MessageEmbed()
+                const embed = new EmbedBuilder()
                     .setTitle(`${user ? user.username : message.author.username}'s rank`)
-                    .setColor('WHITE')
+                    .setColor(Colors.White)
                     .addFields(
                         {name: "Rank", value: rank.toString(), inline: true},
                         {name: "Level", value: lvl.toString(), inline: true},
@@ -37,9 +37,9 @@ module.exports = {
                     )
                 await message.reply({embeds: [embed]});
             } else {
-                const embed = new MessageEmbed()
+                const embed = new EmbedBuilder()
                     .setTitle(`${user ? user.username : message.author.username}'s rank`)
-                    .setColor('WHITE')
+                    .setColor(Colors.White)
                     .addFields(
                         {name: "Rank", value: "0", inline: true},
                         {name: "Level", value: "0", inline: true},

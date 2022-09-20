@@ -1,6 +1,6 @@
 const {SlashCommandBuilder, ContextMenuCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {MessageEmbed} = require("discord.js");
+const {EmbedBuilder} = require("discord.js");
 const {display_time} = require("../../structures/converters");
 module.exports = {
     data: new SlashCommandBuilder()
@@ -19,10 +19,10 @@ module.exports = {
         const voice = await db.query("SELECT channel, SUM(voice)::integer AS a, SUM(voice2)::integer AS b FROM voice WHERE guild = $1 and member = $2 GROUP BY channel ORDER BY sum(voice) DESC, sum(voice2) DESC", [message.guild.id, user.id])
         if (voice.rowCount === 0) return message.reply("You have not yet recorded any voice time")
         const place = await db.query("SELECT COUNT(*) FROM (SELECT member, SUM(voice)::integer AS a, SUM(voice2)::integer AS b FROM voice WHERE guild = $1 GROUP BY member ORDER BY sum(voice) DESC, sum(voice2) DESC) AS t WHERE a >= $2 AND b >= $3", [message.guild.id, voice.rows[0]?.a, voice.rows[0].b])
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle(`${user.username}'s Voice Time`)
             .setColor('WHITE')
-            .setFooter(`You are in place #${place.rows[0].count} with ${display_time(voice.rows.map(row => row.a + row.b).reduce((acc, val) => acc + val, 0), 6)} voice time.`)
+            .setFooter({text: `You are in place #${place.rows[0].count} with ${display_time(voice.rows.map(row => row.a + row.b).reduce((acc, val) => acc + val, 0), 6)} voice time.`})
         
         let empty_voice = 0
         let total_voice = []

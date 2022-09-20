@@ -1,5 +1,5 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
-const {MessageEmbed} = require("discord.js");
+const {MessageEmbed, EmbedBuilder} = require("discord.js");
 const {HelpMenu} = require("../../structures/menus");
 module.exports = {
     data: new SlashCommandBuilder()
@@ -35,14 +35,13 @@ module.exports = {
                     }
                 }
                  if (subcommand !== "") {
-                     const embed = new MessageEmbed()
+                     const embed = new EmbedBuilder()
                          .setTitle(`${command.data.name} Help`)
                          .setDescription(`${command.data.description}`)
-
                          .addField("Subcommands", `\n${subcommand}`, true)
                      message.reply({embeds: [embed]});
                  } else {
-                     const embed = new MessageEmbed()
+                     const embed = new EmbedBuilder()
                          .setTitle(`Dionysus Help - ${command.data.name}`)
                          .setDescription(`${command.data.description}`)
                      if (usage !== "") {

@@ -1,4 +1,4 @@
-const {MessageEmbed, Formatters} = require("discord.js");
+const {Formatters, ChannelType, PermissionsBitField, EmbedBuilder} = require("discord.js");
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
@@ -11,8 +11,8 @@ module.exports = {
             .setRequired(false)),
     async execute(message) {
         const channel = await message.options.getChannel('channel') || message.channel
-        if (channel.isThread()) {
-            clientPermissions(message, ['MANAGE_MESSAGES', 'EMBED_LINKS'])
+        if (channel.type === ChannelType.GuildPrivateThread || channel.type === ChannelType.GuildPublicThread) {
+            clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks, PermissionsBitField.Flags.ManageMessages]);
             let yes = []
             let no = []
             for (const [, overwrite] of channel.permissionOverwrites.cache) {
@@ -24,23 +24,22 @@ module.exports = {
                     }
                 }
             }
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setTitle("Channel Info")
-                .setColor('WHITE')
                 .setFields({name: "Channel Name", value: Formatters.codeBlock(channel.name), inline: true},
                     {name: "Category", value: Formatters.codeBlock(channel.parent.name), inline: true},
                     {name: "Channel ID", value: Formatters.codeBlock(channel.id)},
                     {name: "Created At", value: Formatters.codeBlock(Intl.DateTimeFormat('en-US', {dateStyle: 'long', timeStyle: 'long'}).format(channel.createdAt)), inline: true},
                     {name: "Archived At", value: Formatters.codeBlock(Intl.DateTimeFormat('en-US', {dateStyle: 'long', timeStyle: 'long'}).format(channel.archivedAt)), inline: true},
                     {name: "Overwrites", value: `**Permitted**\n${yes.join(' ')}\n**Denied**\n${no.join(' ')}`},
-                    {name: "Owner", value: Formatters.codeBlock(channel.fetchOwner().name), inline: true},
+                    {name: "Owner", value: Formatters.codeBlock(channel.fetchOwner()), inline: true},
                     {name: "Locked", value: Formatters.codeBlock(channel.locked), inline: true},
                     {name: "Pins", value: Formatters.codeBlock((await channel.messages.fetchPinned()).size), inline: true},
                     {name: "Archived", value: Formatters.codeBlock(channel.archived), inline: true},
                     {name: "Type", value: Formatters.codeBlock(channel.type), inline: true})
             await message.reply({embeds: [embed]})
-        } else if (channel.isVoice()) {
-            clientPermissions(message, ['EMBED_LINKS'])
+        } else if (channel.type === ChannelType.GuildVoice) {
+            clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks]);
             let yes = []
             let no = []
             for (const [, overwrite] of channel.permissionOverwrites.cache) {
@@ -52,7 +51,7 @@ module.exports = {
                     }
                 }
             }
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setTitle("Channel Info")
                 .setFields({name: "Channel Name", value: Formatters.codeBlock(channel.name), inline: true},
                     {name: "Category", value: Formatters.codeBlock(channel.parent.name), inline: true},
@@ -67,8 +66,9 @@ module.exports = {
                     {name: "Type", value: Formatters.codeBlock(channel.type), inline: true})
             await message.reply({embeds: [embed]})
         }
-        else if (channel.isText()) {
-            clientPermissions(message, ['EMBED_LINKS', 'MANAGE_MESSAGES', 'MANAGE_GUILD', 'MANAGE_WEBHOOKS'])
+        else if (channel.type === ChannelType.GuildText) {
+            // clientPermissions(message, ['EMBED_LINKS', 'MANAGE_MESSAGES', 'MANAGE_GUILD', 'MANAGE_WEBHOOKS'])
+            clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks, PermissionsBitField.Flags.ManageMessages, PermissionsBitField.Flags.ManageGuild, PermissionsBitField.Flags.ManageWebhooks]);
             let yes = []
             let no = []
             for (const [, overwrite] of channel.permissionOverwrites.cache) {
@@ -80,7 +80,7 @@ module.exports = {
                     }
                 }
             }
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setTitle("Channel Info")
                 .setFields({name: "Channel Name", value: Formatters.codeBlock(channel.name), inline: true},
                     {name: "Category", value: Formatters.codeBlock(channel.parent.name), inline: true},
@@ -112,7 +112,7 @@ module.exports = {
                     {name: "NSFW", value: Formatters.codeBlock(channel.nsfw), inline: true},
                     {name: "Type", value: Formatters.codeBlock(channel.type), inline: true})
             await message.reply({embeds: [embed]})
-        } else if (channel.type === 'GUILD_CATEGORY') {
+        } else if (channel.type === ChannelType.GuildCategory) {
             clientPermissions(message, ['EMBED_LINKS'])
             let yes = []
             let no = []
@@ -125,7 +125,7 @@ module.exports = {
                     }
                 }
             }
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setTitle("Channel Info")
                 .setFields({name: 'Channel Name', value: Formatters.codeBlock(channel.name), inline: true},
                     {name: "Channel ID", value: Formatters.codeBlock(channel.id), inline: true},

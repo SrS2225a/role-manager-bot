@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {Formatters, MessageEmbed, Permissions} = require("discord.js");
+const {Formatters, Permissions, EmbedBuilder, Colors, PermissionsBitField} = require("discord.js");
 const {rolePermissions, userPermissions, clientPermissions} = require("../../structures/permissions");
 const {checkChannelType} = require("../../structures/resolvers");
 module.exports = {
@@ -126,26 +126,26 @@ module.exports = {
             const name = await message.options.getString("name")
             const description = await message.options.getString("description")
             const graphic = await message.options.getString("url")
-            clientPermissions(message, ['MANAGE_CHANNELS', 'MANAGE_ROLES', 'MANAGE_MESSAGES', 'ADD_REACTIONS', 'EMBED_LINKS'])
+            clientPermissions(message, [PermissionsBitField.Flags.ManageChannels, PermissionsBitField.Flags.ManageRoles, PermissionsBitField.Flags.ManageMessages, PermissionsBitField.Flags.AddReactions, PermissionsBitField.Flags.EmbedLinks])
             if (/(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(graphic)) {return message.reply("The graphic argument must be a valid url")}
             const owners = [await message.options.getMember("representative1"), await message.options.getMember("representative2"), await message.options.getMember("representative3")].filter(item => typeof item === 'string')
             const club = await db.query("SELECT level, role, difficulty FROM leveling WHERE guild = $1 and system = $2", [message.guildId, 'points'])
             if (club.rows.length) {
                 rolePermissions(message, [club?.rows[0].difficulty || message.guild.roles.everyone.id])
                 await message.reply(`Creating the club with the name ${name}!`)
-                const embed = new MessageEmbed()
+                const embed = new EmbedBuilder()
                     .setTitle(`${name} Club`)
                     .setDescription(`${description} \n\n**Representatives:** \n${owners.map(owner => Formatters.userMention(owner?.user.id)).join(' ')}\n\n React with ☑ to join`)
                     .setImage(graphic)
-                    .setColor('WHITE')
+                    .setColor(Colors.White)
                 const created = await message.guild.roles.create({
                     name: name,
                     color: 'RANDOM'
                 })
                 let overwrites = [{
                     id: created.id,
-                    allow: [Permissions.FLAGS.VIEW_CHANNEL]
-                }, {id: message.guild.roles.everyone.id, deny: [Permissions.FLAGS.VIEW_CHANNEL]}]
+                    allow: [PermissionsBitField.Flags.ViewChannel]
+                }, {id: message.guild.roles.everyone.id, deny: [PermissionsBitField.Flags.ViewChannel]}]
                 const give = await message.guild.roles.fetch(club.rows[0].difficulty)
                 for (const owner of owners) {
                     await owner?.roles.add(created)
@@ -154,7 +154,7 @@ module.exports = {
                     await owner.voice.disconnect()
                     overwrites.push({
                         id: owner?.user.id,
-                        allow: [Permissions.FLAGS.MENTION_EVERYONE, Permissions.FLAGS.MANAGE_MESSAGES, Permissions.FLAGS.MANAGE_CHANNELS],
+                        allow: [PermissionsBitField.Flags.MentionEveryone, PermissionsBitField.Flags.ManageMessages, PermissionsBitField.Flags.ManageChannels],
                     })
                 }
                 const clubChannel = await message.guild.channels.create(name, {
@@ -193,10 +193,10 @@ module.exports = {
                 const newChannel = await message.guild.channels.fetch(club.rows[0].channel)
                 let overwrites = [{
                     id: role.id,
-                    allow: [Permissions.FLAGS.VIEW_CHANNEL]
+                    allow: [PermissionsBitField.Flags.ViewChannel]
                 }, {
                     id: msg.guild.roles.everyone.id,
-                    deny: [Permissions.FLAGS.VIEW_CHANNEL]
+                    deny: [PermissionsBitField.Flags.ViewChannel]
                 }]
                 const embedDescriptionMention = /<[@]?[0-9]+>/g.exec(msg.embeds[0].description)
                 for (const host of embedDescriptionMention) {
@@ -209,7 +209,7 @@ module.exports = {
                                 await owner.roles.add(role)
                                 overwrites.update({
                                     id: owner.id,
-                                    allow: [Permissions.FLAGS.MENTION_EVERYONE, Permissions.FLAGS.MANAGE_MESSAGES, Permissions.FLAGS.MANAGE_CHANNELS]
+                                    allow: [PermissionsBitField.Flags.MentionEveryone, PermissionsBitField.Flags.ManageMessages, PermissionsBitField.Flags.ManageChannels],
                                 })
                             }
                         }
@@ -221,11 +221,11 @@ module.exports = {
                     topic: description,
                     permissionOverwrites: overwrites
                 })
-                const embed = new MessageEmbed()
+                const embed = new EmbedBuilder()
                     .setTitle(`${name} Club`)
                     .setDescription(` ${description} \n\n**Representatives:** \n${owners.map(member => Formatters.userMention(member.id))} \n\n React with ☑ to join`)
                     .setImage(graphic)
-                    .setColor('WHITE')
+                    .setColor(Colors.White)
                 await msg.edit({embeds: [embed]})
                 await message.editReply({content: `Club ${name} edited successfully!`})
             } else {

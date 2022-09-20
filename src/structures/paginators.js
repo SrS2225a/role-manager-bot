@@ -1,4 +1,4 @@
-const {MessageActionRow, MessageButton, Formatters, MessageEmbed} = require("discord.js");
+const {Formatters, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, Colors} = require("discord.js");
 var AsciiTable = require('ascii-table')
 class paginators {
     constructor(context, entries, per_page) {
@@ -14,8 +14,7 @@ class paginators {
         if (left_over) (pages += 1)
         this.maxium_pages = pages
         this.content = ''
-        this.embed = new MessageEmbed().setColor('WHITE')
-        this.paginating = entries.length > this.per_page
+        this.embed = new EmbedBuilder().setColor(Colors.White)
         this.show_entry_count = true
         this.show_points = false
         this.show_embed = true
@@ -45,10 +44,10 @@ class paginators {
         if (this.maxium_pages > 1) {
             if (this.show_entry_count) {
                 const text = `Page ${page}/${this.maxium_pages} | Total Entries: ${this.entries.length}`
-                this.embed.setFooter(text)
+                this.embed.setFooter({text: text})
             } else {
                 const text = `Page ${page}/${this.maxium_pages}`
-                this.embed.setFooter(text)
+                this.embed.setFooter({text: text})
             }
         }
         this.embed.setDescription(Formatters.codeBlock(this.lang, p.join('\n')))
@@ -113,49 +112,49 @@ class paginators {
             disableButtons = [true, false]
         }
         if (this.maxium_pages === 2) {
-            return new MessageActionRow()
+            return new ActionRowBuilder()
                 .addComponents(
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('back')
                         .setEmoji('◀')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setCustomId('stop')
                         .setEmoji('⏹')
-                        .setStyle('DANGER'),
-                    new MessageButton()
-                        .setDisabled(disableButtons[1])
+                        .setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder()
                         .setCustomId('next')
                         .setEmoji('▶')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
+                        .setDisabled(disableButtons[1])
                 )
         } else {
-            return new MessageActionRow()
+            return new ActionRowBuilder()
                 .addComponents(
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('firstPage')
                         .setEmoji('⏪')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('back')
                         .setEmoji('◀')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setCustomId('stop')
                         .setEmoji('⏹')
-                        .setStyle('DANGER'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder()
                         .setCustomId('next')
                         .setEmoji('▶')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
                         .setDisabled(disableButtons[1]),
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setCustomId('lastPage')
                         .setEmoji('⏩')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
                         .setDisabled(disableButtons[1]),
                 )
         }
@@ -201,7 +200,7 @@ class PaginatorAsTable {
         let left_over = this.entries.length % this.per_page
         if (left_over) (pages += 1)
         this.maxium_pages = pages
-        this.embed = new MessageEmbed().setColor('WHITE')
+        this.embed = new EmbedBuilder().setColor(Colors.White)
         this.paginating = entries.length > this.per_page
         this.show_entry_count = true
         this.heading = []
@@ -222,10 +221,10 @@ class PaginatorAsTable {
         if(this.title) (this.embed.setTitle(this.title))
         if (this.show_entry_count) {
             const text = `Page ${page}/${this.maxium_pages} | Total Entries: ${this.entries.length}`
-            this.embed.setFooter(text)
+            this.embed.setFooter({text: text})
         } else {
             const text = `Page ${page}/${this.maxium_pages}`
-            this.embed.setFooter(text)
+            this.embed.setFooter({text: text})
         }
         this.embed.setDescription(Formatters.codeBlock(table.toString()))
     }
@@ -254,49 +253,49 @@ class PaginatorAsTable {
             disableButtons = [true, false]
         }
         if (this.maxium_pages === 2) {
-            return new MessageActionRow()
+            return new ActionRowBuilder()
                 .addComponents(
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('back')
                         .setEmoji('◀')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setCustomId('stop')
                         .setEmoji('⏹')
-                        .setStyle('DANGER'),
-                    new MessageButton()
-                        .setDisabled(disableButtons[1])
+                        .setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder()
                         .setCustomId('next')
                         .setEmoji('▶')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
+                        .setDisabled(disableButtons[1]),
                 )
         } else {
-            return new MessageActionRow()
+            return new ActionRowBuilder()
                 .addComponents(
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('firstPage')
                         .setEmoji('⏪')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('back')
                         .setEmoji('◀')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setCustomId('stop')
                         .setEmoji('⏹')
-                        .setStyle('DANGER'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder()
                         .setCustomId('next')
                         .setEmoji('▶')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
                         .setDisabled(disableButtons[1]),
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setCustomId('lastPage')
                         .setEmoji('⏩')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
                         .setDisabled(disableButtons[1]),
                 )
         }
@@ -371,49 +370,49 @@ class PaginateWhileRunning {
             disableButtons = [true, false]
         }
         if (this.maxium_pages === 2) {
-            return new MessageActionRow()
+            return new ActionRowBuilder()
                 .addComponents(
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('back')
                         .setEmoji('◀')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setCustomId('stop')
                         .setEmoji('⏹')
-                        .setStyle('DANGER'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[1])
                         .setCustomId('next')
                         .setEmoji('▶')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
                 )
         } else {
-            return new MessageActionRow()
+            return new ActionRowBuilder()
                 .addComponents(
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('firstPage')
                         .setEmoji('⏪')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setDisabled(disableButtons[0])
                         .setCustomId('back')
                         .setEmoji('◀')
-                        .setStyle('PRIMARY'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
                         .setCustomId('stop')
                         .setEmoji('⏹')
-                        .setStyle('DANGER'),
-                    new MessageButton()
+                        .setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder()
                         .setCustomId('next')
                         .setEmoji('▶')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
                         .setDisabled(disableButtons[1]),
-                    new MessageButton()
+                    new ButtonBuilder()
                         .setCustomId('lastPage')
                         .setEmoji('⏩')
-                        .setStyle('PRIMARY')
+                        .setStyle(ButtonStyle.Primary)
                         .setDisabled(disableButtons[1]),
                 )
         }

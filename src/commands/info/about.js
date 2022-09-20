@@ -1,4 +1,4 @@
-const {MessageEmbed} = require("discord.js");
+const {Colors, PermissionsBitField, EmbedBuilder} = require("discord.js");
 const si = require('systeminformation');
 const {pool} = require("../../database.js");
 const {display_time} = require("../../structures/converters");
@@ -9,7 +9,7 @@ module.exports = {
         .setName("about")
         .setDescription("Shows info about the bot"),
     async execute(message) {
-        clientPermissions(message, ["EMBED_LINKS"]);
+        clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks]);
         const db = await pool.connect();
         await message.deferReply()
         const ran = await db.query('SELECT ran FROM bot LIMIT 1')
@@ -22,9 +22,9 @@ module.exports = {
         si.networkStats().then(data => {
             tx = data[0].tx_bytes
         })
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle("About Dionysus")
-            .setColor('WHITE')
+            .setColor(Colors.White)
             .addFields(
                 {name: "Credits", value: "**Main Devs**\n<@!270848136006729728> <@!508455796783317002>\n**Contributors**\n<@!332180997653135383>", inline: true},
                 {name: "Url's", value: "Bot Invite: [Click Here](https://discord.com/api/oauth2/authorize?client_id=437447118127366154&permissions=8&scope=applications.commands%20bot)\nOpen Source: [Click Here](https://github.com/SrS2225a/role-manager-bot/tree/master)\nSupport: [Click Here](https://discord.gg/JHkhnzDvWG) \nDocumentation: [Click Here](https://github.com/SrS2225a/role-manager-bot/wiki)\nTO-DO: [Click Here](https://trello.com/b/Y86Q7qKA/dionysus-bot)\ntop.gg: [Click Here](https://top.gg/bot/437447118127366154)", inline: true},

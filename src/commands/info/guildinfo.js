@@ -1,4 +1,4 @@
-const {MessageEmbed, Formatters} = require("discord.js");
+const {Formatters, PermissionsBitField, EmbedBuilder, Colors} = require("discord.js");
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {clientPermissions} = require("../../structures/permissions");
 
@@ -7,7 +7,7 @@ module.exports = {
         .setName('guildinfo')
         .setDescription("Shows info about the current guild"),
     async execute(message) {
-        clientPermissions(message, ["EMBED_LINKS"]);
+        clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks]);
         const guild = message.guild
         let channel_count = 0
         let voice_count = 0
@@ -45,9 +45,9 @@ module.exports = {
         const stickers = guild.stickers.cache
             .map(emoji => emoji.id)
             .filter(x => x)
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle("Guild Info")
-            .setColor('WHITE')
+            .setColor(Colors.White)
             .setThumbnail(message.guild.iconURL())
             .addFields({name: "Guild Name", value: Formatters.codeBlock(guild.name), inline: true},
                 {name: "Owner", value: Formatters.codeBlock(owner.user.username + '#' + owner.user.discriminator), inline: true},

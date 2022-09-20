@@ -1,4 +1,4 @@
-const {MessageEmbed, Formatters} = require("discord.js");
+const {Formatters, EmbedBuilder, Colors, PermissionsBitField} = require("discord.js");
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
@@ -10,7 +10,7 @@ module.exports = {
                 .setDescription("The user to get information about")
                 .setRequired(false)),
     async execute(message) {
-        clientPermissions(message, ["EMBED_LINKS"]);
+        clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks]);
         const user = await message.options.getMember('member') || message.member
         await user.user.fetch(true)
         let userPermissions = []
@@ -35,9 +35,9 @@ module.exports = {
             .map(member => member.id)
             .indexOf(user.id)
 
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle("User Info")
-            .setColor('WHITE')
+            .setColor(Colors.White)
             .setThumbnail(user.user.displayAvatarURL( {dynamic: true} ))
             .setImage(user.user.bannerURL({dynamic: true, size: 512}))
             .addFields(

@@ -1,4 +1,5 @@
-const {MessageEmbed, MessageActionRow, MessageButton, MessageSelectMenu, Modal, TextInputComponent} = require("discord.js");
+const {SelectMenuBuilder, ModalBuilder, TextInputComponent, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder
+} = require("discord.js");
 const fs = require("fs");
 const {ConvertDate} = require("./converters");
 const {resolveRole} = require("./resolvers");
@@ -7,42 +8,42 @@ const {pool} = require("../database");
 
 class HelpMenu {
     async startHelp(message) {
-        const buttons = new MessageActionRow()
+        const buttons = new ActionRowBuilder()
             .addComponents(
-                new MessageButton()
+                new ButtonBuilder()
                     .setCustomId("info")
                     .setEmoji("ℹ")
-                    .setStyle("PRIMARY"),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
                     .setCustomId("leaderbard-&-counters")
                     .setEmoji("📈")
-                    .setStyle("PRIMARY"),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
                     .setCustomId("miscellaneous")
                     .setEmoji("➕")
-                    .setStyle("PRIMARY"),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
                     .setCustomId("roles")
                     .setEmoji("👤")
-                    .setStyle("PRIMARY"),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
                     .setCustomId("settings")
                     .setEmoji("⚙")
-                    .setStyle("PRIMARY"),
+                    .setStyle(ButtonStyle.Primary),
             )
-        const buttons2 = new MessageActionRow()
+        const buttons2 = new ActionRowBuilder()
             .addComponents(
-                new MessageButton()
+                new ButtonBuilder()
                     .setCustomId("Utilities")
                     .setEmoji("🛠")
-                    .setStyle("PRIMARY"),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
                     .setCustomId("exit")
                     .setEmoji("❌")
                     .setLabel("Exit")
-                    .setStyle("PRIMARY"),
+                    .setStyle(ButtonStyle.Primary),
             )
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle("Dionysus Help")
             .setDescription(`Dionysus is a Greek themed, fun, interactive, general purpose discord bot - made to cater to various needs in a server. \n\nUse the interactive menu below to view our commands,  or use the command \`/help <command>\` to get help for a specific command.`)
             .addFields(
@@ -83,7 +84,7 @@ class HelpMenu {
     }
     async loadHelpCog(context, load) {
         // get commands from folder
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
         embed.title = "Dionysus Help"
         switch (load) {
             case 1: {
@@ -91,7 +92,7 @@ class HelpMenu {
                 for (const command of commands) {
                     const command2 = context.client.commands.get(command.split('.')[0])
                     if (command2?.data) {
-                        embed.addField(`${command2.data.name}`, `${command2.data.description}`)
+                        embed.addFields({name: `${command2.data.name}`, value: `${command2.data.description}`})
                     }
                 }
                 break
@@ -101,7 +102,7 @@ class HelpMenu {
                 for (const command of commands) {
                     const command2 = context.client.commands.get(command.split('.')[0])
                     if (command2?.data) {
-                        embed.addField(`${command2.data.name}`, `${command2.data.description}`)
+                        embed.addFields({name: `${command2.data.name}`, value: `${command2.data.description}`})
                     }
                 }
                 break
@@ -111,7 +112,7 @@ class HelpMenu {
                 for (const command of commands) {
                     const command2 = context.client.commands.get(command.split('.')[0])
                     if (command2?.data) {
-                        embed.addField(`${command2.data.name}`, `${command2.data.description}`)
+                        embed.addFields({name: `${command2.data.name}`, value: `${command2.data.description}`})
                     }
                 }
                 break
@@ -121,7 +122,7 @@ class HelpMenu {
                 for (const command of commands) {
                     const command2 = context.client.commands.get(command.split('.')[0])
                     if (command2?.data) {
-                        embed.addField(`${command2.data.name}`, `${command2.data.description}`)
+                        embed.addFields({name: `${command2.data.name}`, value: `${command2.data.description}`})
                     }
                 }
                 break
@@ -131,7 +132,7 @@ class HelpMenu {
                 for (const command of commands) {
                     const command2 = context.client.commands.get(command.split('.')[0])
                     if (command2?.data) {
-                        embed.addField(`${command2.data.name}`, `${command2.data.description}`)
+                        embed.addFields({name: `${command2.data.name}`, value: `${command2.data.description}`})
                     }
                 }
                 break
@@ -141,24 +142,24 @@ class HelpMenu {
                 for (const command of commands) {
                     const command2 = context.client.commands.get(command.split('.')[0])
                     if (command2?.data) {
-                        embed.addField(`${command2.data.name}`, `${command2.data.description}`)
+                        embed.addFields({name: `${command2.data.name}`, value: `${command2.data.description}`})
                     }
                 }
                 break
             }
         }
-        const button = new MessageActionRow()
+        const button = new ActionRowBuilder()
             .addComponents(
-                new MessageButton()
+                new ButtonBuilder()
                     .setCustomId("main-menu")
                     .setEmoji("⬆")
                     .setLabel("Main Menu")
-                    .setStyle("PRIMARY"),
-                new MessageButton()
+                    .setStyle(ButtonStyle.Primary),
+                new ButtonBuilder()
                     .setCustomId("exit")
                     .setEmoji("❌")
                     .setLabel("Exit")
-                    .setStyle("PRIMARY"),
+                    .setStyle(ButtonStyle.Primary),
             )
         await context.editReply({embeds: [embed], components: [button]});
         const filter = i => i.user.id === context.user.id
@@ -210,7 +211,7 @@ class GiveawayCreator {
     }
 
     async showModal(message, id, title, options) {
-        const modal = new Modal()
+        const modal = new ModalBuilder()
             .setCustomId(id)
             .setTitle(title)
         // .setComponents with for loop
@@ -237,7 +238,7 @@ class GiveawayCreator {
             .setFooter("You have 60 seconds to select an option.")
         const dropdown = new MessageActionRow()
             .addComponents(
-                new MessageSelectMenu()
+                new SelectMenuBuilder()
                     .setCustomId("giveaway-options")
                     .setPlaceholder("Select an option")
                     .addOptions([{

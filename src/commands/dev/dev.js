@@ -4,7 +4,7 @@ const fs = require("fs");
 const json = require("../../config.json");
 const pm2 = require('pm2')
 const {paginator, PaginateWhileRunning} = require("../../structures/paginators");
-const {MessageEmbed, MessageAttachment, MessageActionRow, MessageButton} = require("discord.js");
+const {EmbedBuilder, Colors, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder} = require("discord.js");
 const {resolveCommands, resolveEvents} = require("../../structures/resolvers");
 module.exports = {
     data: new SlashCommandBuilder()
@@ -174,7 +174,7 @@ module.exports = {
             }
         } else if (message.options.getSubcommand() === "shutdown") {
             const restart = message.options.getBoolean("restart")
-            // use pm2 api to shutdown and restart the bot
+            // use pm2 api to shut down and restart the bot
             if (restart) {
                 message.reply("Restarting...")
                 pm2.connect(function(err) {
@@ -189,20 +189,20 @@ module.exports = {
                     });
                 });
             } else {
-                const embed = new MessageEmbed()
+                const embed = new EmbedBuilder()
                     .setTitle("Are you sure you want to shutdown the bot?")
                     .setDescription("This will completely shutdown the bot and will not restart it. It must be restarted manually by the bots server console.")
-                    .setColor("#000000")
-                const buttons = new MessageActionRow()
+                    .setColor(Colors.Red)
+                const buttons = new ActionRowBuilder()
                     .addComponents(
-                        new MessageButton()
+                        new ButtonBuilder()
                             .setCustomId('yes')
                             .setEmoji('✅')
-                            .setStyle('SUCCESS'),
-                        new MessageButton()
+                            .setStyle(ButtonStyle.Success),
+                        new ButtonBuilder()
                             .setCustomId('no')
                             .setEmoji('❎')
-                            .setStyle('DANGER')
+                            .setStyle(ButtonStyle.Danger)
 
                     )
                 await message.reply({embeds: [embed], components: [buttons]})
@@ -254,7 +254,7 @@ module.exports = {
                 for (const file of commandFiles) {
                     const command = require(`../../commands/${folder}/${file}`)
                     if (command.data.name === pull) {
-                        const attachment = new MessageAttachment(`./commands/${folder}/${file}`)
+                        const attachment = new AttachmentBuilder(`./commands/${folder}/${file}`)
                         await message.reply({files: [attachment]})
                     }
                 }

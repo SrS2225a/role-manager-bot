@@ -1,6 +1,6 @@
 const {SlashCommandBuilder, ContextMenuCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {MessageEmbed} = require("discord.js");
+const {Colors, EmbedBuilder} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("partners")
@@ -20,11 +20,11 @@ module.exports = {
         const result = await db.query("SELECT number FROM partner WHERE guild = $1 and member = $2", [message.guild.id, user.id])
         if (result.rowCount === 0) return message.reply(`${user.username} has not completed any partnerships`)
         const place = await db.query("SELECT COUNT(*)::integer FROM (SELECT member, sum(number)::integer AS a FROM partner WHERE guild = $1 GROUP BY member ORDER BY sum(number) DESC) AS t WHERE a >= $2", [message.guild.id, result.rows[0].number])
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle(`${user.username}'s partnerships`)
-            .setColor('WHITE')
+            .setColor(Colors.White)
             .setDescription(`${user.username} has completed ${result.rows[0].number} partnerships`)
-            .addField("Place", place.rows[0].count.toString())
+            .addFields({name: "Place", value: place.rows[0].count.toString()})
         await message.reply({embeds: [embed]})
         await db.release()
     }

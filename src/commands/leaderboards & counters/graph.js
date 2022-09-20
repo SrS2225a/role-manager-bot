@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {MessageEmbed, MessageAttachment} = require("discord.js");
+const {MessageEmbed, MessageAttachment, PermissionsBitField, EmbedBuilder, Colors, AttachmentBuilder} = require("discord.js");
 const {ChartJSNodeCanvas} = require("chartjs-node-canvas");
 const {ConvertDate, display_time} = require("../../structures/converters");
 const {clientPermissions} = require("../../structures/permissions");
@@ -32,7 +32,7 @@ module.exports = {
                 .setRequired(false))),
     async execute(message) {
         const db = await pool.connect()
-        clientPermissions(message, ["EMBED_LINKS", "ATTACH_FILES"])
+        clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks, PermissionsBitField.Flags.AttachFiles]);
         if (message.options.getSubcommand() === "members") {
             const lookback = await db.query("SELECT lookback FROM settings WHERE guild = $1", [message.guild.id])
             const members = await db.query("SELECT sum(joins)::integer AS joins, sum(leaves)::integer AS leaves, day FROM member WHERE guild = $1 and day > $2 group by day order by day DESC", [message.guildId, getDayDelta(lookback.rows[0]?.lookback || 30)])
@@ -63,10 +63,10 @@ module.exports = {
                 y1.push(row.joins)
                 y2.push(row.leaves)
             }
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setTitle(`${message.guild.name} Member Graph`)
                 .setDescription(`Showing the last ${lookback[0]?.lookback || 30} days.`)
-                .setColor('WHITE')
+                .setColor(Colors.White)
                 .addField("Members Joined", `${month[0]}`, true)
                 .addField("Members Left", `${month[1]}`, true)
                 .addField("Total Members", `${message.guild.memberCount}`, true)
@@ -187,16 +187,11 @@ module.exports = {
             for (const row of channels.rows) {
                 topChannel += `<#${row.channel}> - ${row.sum}\n`
             }
-            const embed = new MessageEmbed()
-                .setColor('WHITE')
+            const embed = new EmbedBuilder()
+                .setColor(Colors.White)
                 .setTitle(`Messages in ${message.guild.name}`)
                 .setDescription(`Showing the last ${date.rows[0]?.lookback || 30} days`)
-                .addField("Day", `${day} messages`, true)
-                .addField("Week", `${week} messages`, true)
-                .addField("Month", `${month} messages`, true)
-                .addField("Average Messages", `${Math.round(y.reduce((a, b) => a + b, 0) / y.length)} messages`, true)
-                .addField("Top Users", topUser, true)
-                .addField("Top Channels", topChannel, true)
+                .addFields({name: "Day", value: `${day} messages`, inline: true}, {name: "Week", value: `${week} messages`, inline: true}, {name: "Month", value: `${month} messages`, inline: true}, {name: "Average Messages", value: `${Math.round(y.reduce((a, b) => a + b, 0) / y.length)} messages`, inline: true}, {name: "Top Users", value: topUser, inline: true}, {name: "Top Channels", value: topChannel, inline: true})
             const chart = new ChartJSNodeCanvas({width: 800, height: 600, plugins: {
                     globalVariableLegacy: ['chartjs-adapter-moment']}})
             const chartData = {
@@ -258,8 +253,8 @@ module.exports = {
                     }
                 }
             }
-            const attachment = new MessageAttachment(chart.renderToStream(chartData), "graph.png")
-            embed.setImage("attachment://graph.png")
+            const attachment = new AttachmentBuilder(chart.renderToStream(chartData))
+            embed.setImage("attachment://file.jpg")
             message.reply({embeds: [embed], files: [attachment]})
         } else if (message.options.getSubcommand() === "voice") {
             let day = [0, 0]
@@ -303,16 +298,11 @@ module.exports = {
             for (const row of voiceChannel.rows) {
                 topChannel += `<#${row.channel}> - ${display_time(row.b, 6)} \n`
             }
-            const embed = new MessageEmbed()
-                .setColor('WHITE')
+            const embed = new EmbedBuilder()
+                .setColor(Colors.White)
                 .setTitle(`Voice Activity for ${message.guild.name}`)
                 .setDescription(`Showing the last ${date.rows[0]?.lookback || 30} days`)
-                .addField("Day", `${display_time(day[0], 6)} voice and ${display_time(day[1], 6)} stage`, true)
-                .addField("Week", `${display_time(week[0], 6)} voice and ${display_time(week[1], 6)} stage`, true)
-                .addField("Month", `${display_time(month[0], 6)} voice and ${display_time(month[1], 6)} stage`, true)
-                .addField("Average per user", `${display_time(Math.round(month[0] / totalUserCount.rows[0].count), 6)} voice and ${display_time(Math.round(month[1] / totalUserCount.rows[0].count), 6)} stage`, true)
-                .addField("Top users", topUser, true)
-                .addField("Top channels", topChannel, true)
+                .addFields({name: "Day", value: `${display_time(day[0], 6)} voice and ${display_time(day[1], 6)} stage`, inline: true}, {name: "Week", value: `${display_time(week[0], 6)} voice and ${display_time(week[1], 6)} stage`, inline: true}, {name: "Month", value: `${display_time(month[0], 6)} voice and ${display_time(month[1], 6)} stage`, inline: true}, {name: "Average per user", value: `${display_time(Math.round(month[0] / totalUserCount.rows[0].count), 6)} voice and ${display_time(Math.round(month[1] / totalUserCount.rows[0].count), 6)} stage`, inline: true}, {name: "Top users", value: topUser, inline: true}, {name: "Top channels", value: topChannel, inline: true})
 
             const chart = new ChartJSNodeCanvas({width: 800, height: 600,  plugins: {
                     globalVariableLegacy: ['chartjs-adapter-moment']}})
@@ -385,8 +375,8 @@ module.exports = {
                     }
                 }
             }
-            const attachment = new MessageAttachment(chart.renderToStream(chartData), "graph.png")
-            embed.setImage("attachment://graph.png")
+            const attachment = new AttachmentBuilder(chart.renderToStream(chartData))
+            embed.setImage("attachment://file.jpg")
             message.reply({embeds: [embed], files: [attachment]})
         }
         else if (message.options.getSubcommand() === "invites") {
@@ -423,17 +413,12 @@ module.exports = {
                 month[1] += row.b + row.c
             }
 
-            const embed = new MessageEmbed()
-                .setColor('WHITE')
+            const embed = new EmbedBuilder()
+                .setColor(Colors.White)
                 // invite joins over time
                 .setTitle(`${invite.username + '#' + invite.discriminator} Invite Joins`)
                 .setDescription(`Showing the last ${date.rows[0]?.lookback || 30} days.`)
-                .addField("Day", `${day[0]} Joins, ${day[1]} False`, true)
-                .addField("Week", `${week[0]} Joins, ${week[1]} False`, true)
-                .addField("Month", `${month[0]} Joins, ${month[1]} False`, true)
-                .addField("Average", `${Math.round(month[0] / (month[1] + week[1] + day[1]))} Joins, ${Math.round(month[1] / (month[1] + week[1] + day[1]))} Leaves`, true)
-                .addField("Total", invites.rows.reduce((a, b) => a + b.a, 0).toString(), true)
-                .addField("\u200b", "\u200b")
+                .addFields({name: "Day", value: `${day[0]} Joins, ${day[1]} False`, inline: true}, {name: "Week", value: `${week[0]} Joins, ${week[1]} False`, inline: true}, {name: "Month", value: `${month[0]} Joins, ${month[1]} False`, inline: true}, {name: "Average", value: `${Math.round(month[0] / (month[1] + week[1] + day[1]))} Joins, ${Math.round(month[1] / (month[1] + week[1] + day[1]))} Leaves`, inline: true}, {name: "Total", value: invites.rows.reduce((a, b) => a + b.a, 0).toString(), inline: true})
 
             const chart = new ChartJSNodeCanvas({width: 800, height: 600, plugins: {globalVariableLegacy: ['chartjs-adapter-moment']}})
             const chartData = {
@@ -496,8 +481,8 @@ module.exports = {
                     }
                 }
             }
-            const attachment = new MessageAttachment(chart.renderToStream(chartData), 'graph.png')
-            embed.setImage('attachment://graph.png')
+            const attachment = new AttachmentBuilder(chart.renderToStream(chartData))
+            embed.setImage("attachment://file.jpg")
             message.reply({embeds: [embed], files: [attachment]})
         }
         await db.release()

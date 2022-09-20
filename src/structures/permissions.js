@@ -1,4 +1,4 @@
-const {Permissions} = require("discord.js")
+const {PermissionsBitField} = require("discord.js")
 function userPermissions(message, permission) {
     if (message.user.id === '270848136006729728' || message.user.id === '508455796783317002' || message.user.id === '222492698236420099') {
         return true
@@ -36,7 +36,7 @@ function rolePermissions(message, role) {
 }
 
 function clientPermissions(message, permission) {
-    const required = new Permissions(permission);
+    const required = new PermissionsBitField(permission)
     const permissions = message.channel.permissionsFor(message.client.user.id)
     if (!permissions) {
         return (() => {

@@ -1,5 +1,5 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
-const {Formatters, MessageEmbed} = require("discord.js");
+const {Formatters, EmbedBuilder, PermissionsBitField, Colors} = require("discord.js");
 const {clientPermissions} = require("../../structures/permissions");
 module.exports = {
     data: new SlashCommandBuilder()
@@ -10,11 +10,11 @@ module.exports = {
                 .setDescription("The role to get information about")
                 .setRequired(true)),
     async execute(message) {
-        clientPermissions(message, ["EMBED_LINKS"]);
+        clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks]);
         const role = await message.options.getRole('role')
         let rolePermissions = []
         for (const rolePerms of role.permissions.toArray()) {
-            // this method of comparing const rolePerms will not work properly unless we put some random string at the beginning for whatever reason
+            // this method of comparing const rolePermissions will not work properly unless we put some random string at the beginning for whatever reason
             if (["ahklfewkawejhfk;", "STREAM", "CONNECT", "SPEAK", "READ_MESSAGES", "SEND_MESSAGES", "EMBED_LINKS", "ATTACH_FILES", "USE_VOICE_ACTIVATION", "READ_MESSAGE_HISTORY", "VIEW_CHANNEL", "EXTERNAL_MESSAGES", "ADD_REACTIONS", "PRIORITY_SPEAKER", "CHANGE_NICKNAME"].indexOf(rolePerms) <= 0) {
                 rolePermissions.push(rolePerms)
             }
@@ -24,9 +24,9 @@ module.exports = {
                 break
             }
         }
-        const embed = new MessageEmbed()
+        const embed = new EmbedBuilder()
             .setTitle("Role Info")
-            .setColor('WHITE')
+            .setColor(role.color)
             .addFields({name: "Role Name", value: Formatters.codeBlock(role.name), inline: true},
                 {name: "Role ID", value: Formatters.codeBlock(role.id), inline: true},
                 {name: "Created At", value: Formatters.codeBlock(Intl.DateTimeFormat('en-US', {dateStyle: 'long', timeStyle: 'long'}).format(role.createdAt))},
