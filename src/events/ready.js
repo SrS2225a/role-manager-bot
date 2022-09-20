@@ -22,7 +22,7 @@ module.exports = {
             guild.invites.fetch().then(invites => {
                 bot.invites.set(guild.id, new Map(invites.map(invite => [invite.code, invite.uses])))
             }).catch(err => {
-                console.log(e)
+                console.log(err)
             })
         })
 

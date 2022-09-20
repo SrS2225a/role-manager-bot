@@ -66,7 +66,8 @@ module.exports = {
             .setDescription("Allows you to add support for member of the day, week, or month")
             .addStringOption(option => option
                 .setName("type")
-                .addChoices([['day', '0'], ['week', '1'], ['month', '2']])
+                // .addChoices([['day', '0'], ['week', '1'], ['month', '2']])
+                .addChoices({name: 'day', value: '0'}, {name: 'week', value: '1'}, {name: 'month', value: '2'})
                 .setDescription("The type of tor to set")
                 .setRequired(true)
             )

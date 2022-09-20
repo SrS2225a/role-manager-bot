@@ -1,6 +1,7 @@
-const {SlashCommandBuilder} = require("@discordjs/builders");
+const {SlashCommandBuilder} = require('discord.js');
 const {pool} = require("../../database");
 const emote = require('../../emojis.json')
+
 const {resolveMessage} = require("../../structures/resolvers");
 const {clientPermissions, userPermissions} = require("../../structures/permissions");
 module.exports = {
@@ -22,7 +23,7 @@ module.exports = {
         .addStringOption(option => option
             .setName("type")
             .setDescription("The type of reaction role to set up")
-            .addChoices([["reaction", "reaction"], ["toggle", "toggle"], ["once", "once"]])
+            .addChoices({name: "reaction", value: "reaction"}, {name: "toggle", value: "toggle"}, {name: "once", value: "once"})
             .setRequired(true))
         .addRoleOption(option => option
             .setName("blacklist")
