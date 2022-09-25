@@ -67,15 +67,7 @@ module.exports = {
                 .setTitle(`${message.guild.name} Member Graph`)
                 .setDescription(`Showing the last ${lookback[0]?.lookback || 30} days.`)
                 .setColor(Colors.White)
-                .addField("Members Joined", `${month[0]}`, true)
-                .addField("Members Left", `${month[1]}`, true)
-                .addField("Total Members", `${message.guild.memberCount}`, true)
-                .addField("Member Retention", `${Math.round(month[0] / (month[0] + month[1]) * 100)}%`, true)
-                .addField("Average Change", `${Math.round((month[0] - month[1]) / (month[0] + month[1]) * 100)}%`, true)
-                .addField("Net Change", `${month[0] - month[1]}`, true)
-                .addField("Day", `${day[0]} joins, ${day[1]} leaves`, true)
-                .addField("Week", `${week[0]} joins, ${week[1]} leaves`, true)
-                .addField("Month", `${month[0]} joins, ${month[1]} leaves`, true)
+                .addFields({name: "Members Joined", value: `${month[0]}`, inline: true}, {name: "Members Left", value: `${month[1]}`, inline: true}, {name: "Total Members", value: `${message.guild.memberCount}`, inline: true}, {name: "Member Retention", value: `${Math.round(month[0] / (month[0] + month[1]) * 100)}%`, inline: true}, {name: "Average Change", value: `${Math.round((month[0] - month[1]) / (month[0] + month[1]) * 100)}%`, inline: true}, {name: "Net Change", value: `${month[0] - month[1]}`, inline: true}, {name: "Day", value: `${day[0]} joins, ${day[1]} leaves`, inline: true}, {name: "Week", value: `${week[0]} joins, ${week[1]} leaves`, inline: true}, {name: "Month", value: `${month[0]} joins, ${month[1]} leaves`, inline: true})
             const chart = new ChartJSNodeCanvas({width: 800, height: 600,  plugins: {
                     globalVariableLegacy: ['chartjs-adapter-moment']}})
             const chartData = {
