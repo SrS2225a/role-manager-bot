@@ -139,8 +139,8 @@ module.exports = {
                     }
                 }
             }
-            const attachment = new MessageAttachment(chart.renderToStream(chartData), "graph.png")
-            embed.setImage("attachment://graph.png")
+            const attachment = new AttachmentBuilder(chart.renderToStream(chartData))
+            embed.setImage("attachment://file.jpg")
             message.reply({embeds: [embed], files: [attachment]})
 
         } else if (message.options.getSubcommand() === "messages") {
