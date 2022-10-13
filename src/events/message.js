@@ -120,7 +120,7 @@ module.exports = {
                 // code for partnerships
                 const partner = await db.query("SELECT * FROM leveling WHERE guild = $1 and type = $2 and system = 'partners'", [message.guild.id, message.channel.id]);
                 if (partner.rowCount > 0) {
-                    if (message.member.roles.cache.has(partner[0].difficulty) && /.*[https://]?discord(.*(gg))\S?\w{7}.*\n?/.test(message.content)) {
+                    if (message.member.roles.cache.has(partner[0]?.difficulty) && /.*[https://]?discord(.*(gg))\S?\w{7}.*\n?/.test(message.content)) {
                         const partner_id = await db.query("SELECT number FROM partner WHERE guild = $1 and member = $2", [message.guild.id, message.author.id]);
                         if (partner_id[0]) {
                             await db.query("UPDATE partner SET number = number + 1 WHERE guild = $1 and member = $2", [message.guild.id, message.author.id]);
