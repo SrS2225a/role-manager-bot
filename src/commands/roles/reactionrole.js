@@ -1,4 +1,4 @@
-const {SlashCommandBuilder} = require('discord.js');
+const {SlashCommandBuilder, PermissionsBitField} = require('discord.js');
 const {pool} = require("../../database");
 const emote = require('../../emojis.json')
 
@@ -29,8 +29,8 @@ module.exports = {
             .setName("blacklist")
             .setDescription("The optional role that is needed to use the reaction role")),
     async execute(message) {
-        userPermissions(message, "MANAGE_ROLES");
-        clientPermissions(message, ["ADD_REACTIONS"]);
+        userPermissions(message, PermissionsBitField.Flags.ManageRoles);
+        clientPermissions(message, [PermissionsBitField.Flags.AddReactions]);
         const db = await pool.connect()
         const msg = await resolveMessage(message, message.options.getString("message"))
         const emoji = message.options.getString("emoji")

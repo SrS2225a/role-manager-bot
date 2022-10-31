@@ -1,7 +1,7 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {userPermissions, clientPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");
-const {MessageEmbed} = require("discord.js");
+const {MessageEmbed, PermissionsBitField} = require("discord.js");
 const {Giveaway} = require("../../structures/tasks");
 const {GiveawayCreator} = require("../../structures/menus");
 module.exports = {
@@ -31,10 +31,10 @@ module.exports = {
     async execute(message) {
         // giveaways issues
         // 1, change all vote of type parameters to int. 2, Dionysus is thinking a giveaway is active even though it is not from the event collector code. 3, will not accept more than 1 winner.
-        userPermissions(message, ["MANAGE_MESSAGES"]);
+        userPermissions(message, [PermissionsBitField.Flags.ManageMessages]);
         const db = await pool.connect()
         if (message.options.getSubcommand() === "create") {
-            clientPermissions(message, ["ADD_REACTIONS", "EMBED_LINKS", "MANAGE_MESSAGES"]);
+            clientPermissions(message, [PermissionsBitField.Flags.AddReactions, PermissionsBitField.Flags.EmbedLinks, PermissionsBitField.Flags.ManageMessages])
             const giveaway = new GiveawayCreator()
             await giveaway.createGiveaway(message)
         } else if (message.options.getSubcommand() === "list") {

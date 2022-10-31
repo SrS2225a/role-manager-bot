@@ -1,6 +1,7 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {clientPermissions, userPermissions} = require("../../structures/permissions");
+const {PermissionsBitField} = require("discord.js");
 
 async function resolveMember(member, message) {
     async function resolveById(member, message) {
@@ -49,8 +50,8 @@ module.exports = {
                 .setRequired(true))),
     async execute(message) {
         const db = await pool.connect()
-        userPermissions(message, ["MANAGE_ROLES"]);
-        clientPermissions(message, ["MANAGE_ROLES"])
+        userPermissions(message, [PermissionsBitField.Flags.ManageRoles]);
+        clientPermissions(message, [PermissionsBitField.Flags.ManageRoles])
         if (message.options.getSubcommand() === "add") {
             const role = message.options.getRole("role")
             const to = message.options.getString("member")

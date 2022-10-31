@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {ConvertDate, ConvertBool} = require("../../structures/converters");
-const {MessageEmbed, Modal, TextInputComponent, MessageActionRow} = require("discord.js");
+const {MessageEmbed, Modal, TextInputComponent, MessageActionRow, PermissionsBitField} = require("discord.js");
 const {userPermissions, clientPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");
 const {Poll} = require("../../structures/tasks");
@@ -26,7 +26,7 @@ module.exports = {
         userPermissions(message, ["MANAGE_MESSAGES"]);
         const db = await pool.connect()
         if (message.options.getSubcommand() === "create") {
-        clientPermissions(message, ["ADD_REACTIONS", "EMBED_LINKS"]);
+        clientPermissions(message, [PermissionsBitField.Flags.AddReactions, PermissionsBitField.Flags.EmbedLinks]);
         await showModal()
 
         async function showModal() {

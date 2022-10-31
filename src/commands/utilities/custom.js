@@ -1,7 +1,7 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {rolePermissions, clientPermissions} = require("../../structures/permissions");
-const {Modal, TextInputComponent, MessageActionRow} = require("discord.js");
+const {Modal, TextInputComponent, MessageActionRow, PermissionsBitField} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("custom")
@@ -173,7 +173,7 @@ module.exports = {
         if (message.options.getSubcommandGroup() === "create") {
             // TO DO: Revise /custom command to be a menu command (current system is too much)
             if (message.options.getSubcommand() === "role") {
-                clientPermissions(message, "MANAGE_ROLES")
+                clientPermissions(message, PermissionsBitField.Flags.ManageRoles)
                 const settings = await db.query("SELECT role, position, role FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'role'])
                 if (settings.rowCount === 0) {
                     return message.reply("There is no custom role set up")
@@ -212,7 +212,7 @@ module.exports = {
                         return message.channel.send("You took too long to respond")
                     })
             } else if (message.options.getSubcommand() === "text") {
-                clientPermissions(message, "MANAGE_CHANNELS")
+                clientPermissions(message, PermissionsBitField.Flags.ManageChannels)
                 const settings = await db.query("SELECT role, position, tag FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'text'])
                 if (settings.rowCount === 0) {
                     return message.reply("There is no custom text channel set up")
@@ -258,7 +258,7 @@ module.exports = {
                     })
                 }
             } else if (message.options.getSubcommand() === "voice") {
-                clientPermissions(message, "MANAGE_CHANNELS")
+                clientPermissions(message, PermissionsBitField.Flags.ManageChannels)
                 const settings = await db.query("SELECT role, position, tag FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'voice'])
                 rolePermissions(message, settings.rows[0]?.role)
                 await showModal(message,'customVoice', 'Create Custom Voice Channel', [{
@@ -302,7 +302,7 @@ module.exports = {
                 }
         else if (message.options.getSubcommandGroup() === "edit") {
             if (message.options.getSubcommand() === "role") {
-                clientPermissions(message, "MANAGE_ROLES")
+                clientPermissions(message, PermissionsBitField.Flags.ManageRoles)
                 await showModal(message,'editRole', 'Edit Custom Role', [{
                     id: 'editRoleName',
                     label: "What should the custom role be called?",
@@ -336,7 +336,7 @@ module.exports = {
                     })
                 }
             else if (message.options.getSubcommand() === "text") {
-                clientPermissions(message, "MANAGE_CHANNELS")
+                clientPermissions(message, PermissionsBitField.Flags.ManageChannels)
                 await showModal(message,'editText', 'Edit Custom Text Channel', [{
                     id: 'editTextName',
                     label: "What should the custom text channel be called?",
@@ -370,7 +370,7 @@ module.exports = {
                     })
                 }
             else if (message.options.getSubcommand() === "voice") {
-                clientPermissions(message, "MANAGE_CHANNELS")
+                clientPermissions(message, PermissionsBitField.Flags.ManageChannels)
                 await showModal(message,'editVoice', 'Edit Custom Voice Channel', [{
                     id: 'editVoiceName',
                     label: "What should the custom voice channel be called?",
@@ -406,7 +406,7 @@ module.exports = {
             }
         else if (message.options.getSubcommandGroup() === "delete") {
             if (message.options.getSubcommand() === "role") {
-                clientPermissions(message, "MANAGE_ROLES")
+                clientPermissions(message, PermissionsBitField.Flags.ManageRoles)
                 const result = await db.query("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3 LIMIT 1", [message.guild.id, message.user.id, 'role'])
                 if (result.rowCount === 0) {
                     return message.reply("You do not have a custom role")
@@ -416,7 +416,7 @@ module.exports = {
                 await db.query("DELETE FROM roles WHERE guild = $1 and member = $2 and type = $3", [message.guild.id, message.user.id, 'role'])
                 return message.reply(`The custom role ${role.name} has been deleted`)
             } else if (message.options.getSubcommand() === "text") {
-                clientPermissions(message, "MANAGE_CHANNELS")
+                clientPermissions(message, PermissionsBitField.Flags.ManageChannels)
                 const result = await db.query("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3 LIMIT 1", [message.guild.id, message.user.id, 'text'])
                 if (result.rowCount === 0) {
                     return message.reply("You do not have a custom text channel")
@@ -426,7 +426,7 @@ module.exports = {
                 await db.query("DELETE FROM roles WHERE guild = $1 and member = $2 and type = $3", [message.guild.id, message.user.id, 'text'])
                 return message.reply(`The custom text channel ${channel.name} has been deleted`)
             } else if (message.options.getSubcommand() === "voice") {
-                clientPermissions(message, "MANAGE_CHANNELS")
+                clientPermissions(message, PewrmissionsBitField.Flags.ManageChannels)
                 const result = await db.query("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3 LIMIT 1", [message.guild.id, message.user.id, 'voice'])
                 if (result.rowCount === 0) {
                     return message.reply("You do not have a custom voice channel")
@@ -438,7 +438,7 @@ module.exports = {
             }
         } else if (message.options.getSubcommandGroup() === "give") {
             if (message.options.getSubcommand() === "role") {
-                clientPermissions(message, "MANAGE_ROLES")
+                clientPermissions(message, PermissionsBitField.Flags.ManageRoles)
                 const result = await db.query("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3 LIMIT 1", [message.guild.id, message.user.id, 'role'])
                 const settings = await db.query("SELECT amount FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'role'])
                 if (result.rowCount === 0) {
@@ -462,7 +462,7 @@ module.exports = {
                     }
                 }
             } else if (message.options.getSubcommand() === "text") {
-                clientPermissions(message, "MANAGE_CHANNELS")
+                clientPermissions(message, PermissionsBitField.Flags.ManageChannels)
                 const result = await db.query("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3 LIMIT 1", [message.guild.id, message.user.id, 'text'])
                 const settings = await db.query("SELECT amount FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'text'])
                 if (result.rowCount === 0) {
@@ -489,7 +489,7 @@ module.exports = {
                     }
                 }
             } else if (message.options.getSubcommand() === "voice") {
-                clientPermissions(message, "MANAGE_CHANNELS")
+                clientPermissions(message, PermissionsBitField.Flags.ManageChannels)
                 const result = await db.query("SELECT role FROM roles WHERE guild = $1 and member = $2 and type = $3 LIMIT 1", [message.guild.id, message.user.id, 'voice'])
                 const settings = await db.query("SELECT amount FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'voice'])
                 if (result.rowCount === 0) {
