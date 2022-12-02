@@ -1,5 +1,5 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
-const {ConvertDate, ConvertBool} = require("../../structures/converters");
+const {ConvertDate} = require("../../structures/converters");
 const {MessageEmbed, Modal, TextInputComponent, MessageActionRow, PermissionsBitField} = require("discord.js");
 const {userPermissions, clientPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");
@@ -102,7 +102,7 @@ module.exports = {
                 await message.channel.send("Timed out")
             })
         } else if (message.options.getSubcommand() === "list") {
-            clientPermissions(message, ["EMBED_LINKS"]);
+            clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks]);
             const rows = await db.query("SELECT * FROM vote WHERE guild = $1 AND type = $2", [message.guild.id, "poll"])
             if (rows.length === 0) {
                 return await message.reply("There are no polls running")

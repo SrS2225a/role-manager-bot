@@ -1,4 +1,5 @@
-const {SlashCommandBuilder, PermissionsBitField} = require('discord.js');
+const {PermissionsBitField} = require('discord.js');
+const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const emote = require('../../emojis.json')
 
