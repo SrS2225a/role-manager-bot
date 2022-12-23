@@ -1,5 +1,5 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
-const {ConvertDate, ConvertBool} = require("../../structures/converters");
+const {ConvertDate} = require("../../structures/converters");
 const {MessageEmbed, Modal, TextInputComponent, MessageActionRow, PermissionsBitField} = require("discord.js");
 const {userPermissions, clientPermissions} = require("../../structures/permissions");
 const {pool} = require("../../database");

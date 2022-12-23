@@ -173,7 +173,7 @@ module.exports = {
         if (message.options.getSubcommandGroup() === "create") {
             // TO DO: Revise /custom command to be a menu command (current system is too much)
             if (message.options.getSubcommand() === "role") {
-                clientPermissions(message, PermissionsBitField.Flags.ManageRoles)
+                clientPermissions(message, [PermissionsBitField.Flags.ManageRoles])
                 const settings = await db.query("SELECT role, position, role FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'role'])
                 if (settings.rowCount === 0) {
                     return message.reply("There is no custom role set up")
@@ -212,7 +212,7 @@ module.exports = {
                         return message.channel.send("You took too long to respond")
                     })
             } else if (message.options.getSubcommand() === "text") {
-                clientPermissions(message, PermissionsBitField.Flags.ManageChannels)
+                clientPermissions(message, [PermissionsBitField.Flags.ManageChannels])
                 const settings = await db.query("SELECT role, position, tag FROM custom WHERE guild = $1 and system = $2", [message.guild.id, 'text'])
                 if (settings.rowCount === 0) {
                     return message.reply("There is no custom text channel set up")
@@ -283,10 +283,10 @@ module.exports = {
                                 userLimit: customVoiceLimit,
                                 permissionOverwrites: [{
                                     id: message.guild.id,
-                                    deny: ["VIEW_CHANNEL"],
+                                    deny: [PermissionsBitField.Flags.ViewChannel],
                                 }, {
                                     id: message.user.id,
-                                    allow: ["VIEW_CHANNEL"],
+                                    allow: [PermissionsBitField.Flags.ViewChannel],
                                 }],
                                 position: settings.rows[0].position,
                             })

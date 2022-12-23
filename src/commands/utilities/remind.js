@@ -1,6 +1,6 @@
 const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
-const {Util, MessageEmbed, Formatters, Modal, TextInputComponent, MessageActionRow} = require("discord.js");
+const {MessageEmbed, Formatters, TextInputStyle, MessageActionRow, ModalBuilder, TextInputBuilder} = require("discord.js");
 const {ConvertDate, display_time} = require("../../structures/converters");
 const {Reminder} = require("../../structures/tasks");
 const {resolveAsChannel_Dm_Here} = require("../../structures/resolvers");
@@ -57,21 +57,21 @@ module.exports = {
             await showModal()
 
             async function showModal() {
-                const modal = new Modal()
+                const modal = new ModalBuilder()
                     .setCustomId('remindModal')
                     .setTitle('Create Reminder')
 
-                const description = new TextInputComponent()
+                const description = new TextInputBuilder()
                     .setCustomId('description')
                     .setLabel('What is the reminder about?')
                     .setRequired(true)
-                    .setStyle('SHORT')
+                    .setStyle(TextInputStyle.Short)
 
-                const duration = new TextInputComponent()
+                const duration = new TextInputBuilder()
                     .setCustomId('duration')
                     .setLabel('How long should the reminder last?')
                     .setRequired(true)
-                    .setStyle('SHORT')
+                    .setStyle(TextInputStyle.Short)
                     .setPlaceholder('Example: 1d1h')
 
                 modal.addComponents(new MessageActionRow().addComponents(description), new MessageActionRow().addComponents(duration))
