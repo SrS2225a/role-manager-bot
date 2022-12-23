@@ -2,6 +2,7 @@ const {SlashCommandBuilder} = require("@discordjs/builders");
 const {pool} = require("../../database");
 const {ConvertDate} = require("../../structures/converters");
 const {userPermissions} = require("../../structures/permissions");
+const {PermissionsBitField} = require("discord.js");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("autoposition")
@@ -30,7 +31,7 @@ module.exports = {
                 .setRequired(true))),
     async execute(message) {
         const db = await pool.connect()
-        userPermissions(message, ["MANAGE_ROLES"])
+        userPermissions(message, [PermissionsBitField.Flags.ManageRoles]);
         if (message.options.getSubcommand() === "create") {
             const role = await message.options.getRole("role")
             const date = message.options.getString("delay") || undefined

@@ -23,7 +23,7 @@ module.exports = {
             .setName("list")
             .setDescription("Lists all current running polls")),
     async execute(message) {
-        userPermissions(message, ["MANAGE_MESSAGES"]);
+        userPermissions(message, [PermissionsBitField.Flags.ManageMessages]);
         const db = await pool.connect()
         if (message.options.getSubcommand() === "create") {
         clientPermissions(message, [PermissionsBitField.Flags.AddReactions, PermissionsBitField.Flags.EmbedLinks]);
@@ -102,7 +102,7 @@ module.exports = {
                 await message.channel.send("Timed out")
             })
         } else if (message.options.getSubcommand() === "list") {
-            clientPermissions(message, ["EMBED_LINKS"]);
+            clientPermissions(message, [PermissionsBitField.Flags.EmbedLinks]);
             const rows = await db.query("SELECT * FROM vote WHERE guild = $1 AND type = $2", [message.guild.id, "poll"])
             if (rows.length === 0) {
                 return await message.reply("There are no polls running")
