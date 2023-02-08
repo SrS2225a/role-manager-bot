@@ -15,7 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "@discordjs/builders": "^0.16.0",
-    "@discordjs/rest": "^0.6.0",
+    "@discordjs/rest": "^1.5.0",
     "chartjs-adapter-moment": "^1.0.0",
     "chartjs-node-canvas": "^4.1.6",
     "discord.js": "^14.0.0",
