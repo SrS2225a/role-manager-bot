@@ -14,7 +14,7 @@
   "author": "Nyx",
   "license": "MIT",
   "dependencies": {
-    "@discordjs/builders": "^0.16.0",
+    "@discordjs/builders": "^1.4.0",
     "@discordjs/rest": "^0.6.0",
     "chartjs-adapter-moment": "^1.0.0",
     "chartjs-node-canvas": "^4.1.6",
