@@ -18,7 +18,7 @@
     "@discordjs/rest": "^0.6.0",
     "chartjs-adapter-moment": "^1.0.0",
     "chartjs-node-canvas": "^4.1.6",
-    "discord.js": "^14.0.0",
+    "discord.js": "^14.14.0",
     "pg": "^8.7.1",
     "pg-cursor": "^2.7.1",
     "pg-native": "^3.0.0",
